@@ -23,9 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
-
 README-API.md
 DESIGN.md
-ENPOINTS.md
+ENDPOINTS.md
 
 package-lock.json

@@ -299,7 +299,7 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, theme = 'dark' }) => {
     const { sections, totals, opening } = data;
     const monthAnimClass = navDirection === 'forward' ? 'animate-month-in-forward' : 'animate-month-in-back';
 
-    const renderSection = (section, splitSync) => (
+    const renderSection = (section, splitSync, compact = false) => (
         <BudgetSectionPanel
             section={section}
             items={sections[section].items}
@@ -310,6 +310,7 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, theme = 'dark' }) => {
             onContributeItem={handleContributeItem}
             onViewSyncedExpense={splitSync ? onViewSyncedExpense : undefined}
             openingCash={section === 'income' ? opening.cash_balance : undefined}
+            compact={compact}
             theme={theme}
         />
     );
@@ -477,9 +478,9 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, theme = 'dark' }) => {
                     cuando una sección crece más que las otras. */}
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1.4fr)] items-start">
                     <div className="flex flex-col gap-4">
-                        <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>{renderSection('income', false)}</div>
-                        <div className="animate-fade-up" style={{ animationDelay: '60ms' }}>{renderSection('debt', false)}</div>
-                        <div className="animate-fade-up" style={{ animationDelay: '120ms' }}>{renderSection('saving', false)}</div>
+                        <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>{renderSection('income', false, true)}</div>
+                        <div className="animate-fade-up" style={{ animationDelay: '60ms' }}>{renderSection('debt', false, true)}</div>
+                        <div className="animate-fade-up" style={{ animationDelay: '120ms' }}>{renderSection('saving', false, true)}</div>
                     </div>
                     <div className="animate-fade-up" style={{ animationDelay: '180ms' }}>{renderSection('fixed_expense', false)}</div>
                     <div className="animate-fade-up" style={{ animationDelay: '240ms' }}>{renderSection('tracked_expense', true)}</div>

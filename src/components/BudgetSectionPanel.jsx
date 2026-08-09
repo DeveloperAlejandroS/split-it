@@ -130,7 +130,7 @@ const AbonoForm = ({ onSubmit, onCancel }) => {
     );
 };
 
-const BudgetRow = ({ item, section, allowSavingsLink, allowContribution, onUpdate, onDelete, onContribute, theme }) => {
+const BudgetRow = ({ item, section, allowSavingsLink, allowContribution, onUpdate, onDelete, onContribute, theme, compact }) => {
     const [label, setLabel] = useState(item.label);
     const [budgeted, setBudgeted] = useState(String(item.budgeted_amount));
     const [actual, setActual] = useState(String(item.actual_amount));
@@ -182,10 +182,11 @@ const BudgetRow = ({ item, section, allowSavingsLink, allowContribution, onUpdat
 
     return (
         <>
-            {/* Mobile: apilado en 2 líneas — descripción+acciones arriba,
-                presupuestado/actual lado a lado abajo. 4 columnas fijas no
-                entran cómodas en una pantalla angosta con el texto legible. */}
-            <div className={`sm:hidden py-2.5 border-b border-white/5 last:border-b-0 px-2 ${rowClass}`}>
+            {/* Mobile (o cualquier columna angosta cuando `compact`): apilado
+                en 2 líneas — descripción+acciones arriba, presupuestado/
+                actual lado a lado abajo. 4 columnas fijas no entran cómodas
+                en un espacio angosto con el texto legible. */}
+            <div className={`${compact ? '' : 'sm:hidden'} py-2.5 border-b border-white/5 last:border-b-0 px-2 ${rowClass}`}>
                 <div className="flex items-center gap-2 mb-2">
                     <input
                         value={label}
@@ -219,8 +220,10 @@ const BudgetRow = ({ item, section, allowSavingsLink, allowContribution, onUpdat
                 </div>
             </div>
 
-            {/* Desktop: una sola fila en grid, columnas de ancho fijo. */}
-            <div className={`hidden sm:grid ${DESKTOP_GRID} items-start gap-2 py-2 border-b border-white/5 last:border-b-0 px-1 ${rowClass}`}>
+            {/* Desktop: una sola fila en grid, columnas de ancho fijo — se
+                salta del todo cuando `compact` (columna angosta como
+                Ingresos/Deudas/Ahorros, donde ese grid nunca entra cómodo). */}
+            <div className={`${compact ? 'hidden' : `hidden sm:grid ${DESKTOP_GRID}`} items-start gap-2 py-2 border-b border-white/5 last:border-b-0 px-1 ${rowClass}`}>
                 <input
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
@@ -271,7 +274,7 @@ const BudgetRow = ({ item, section, allowSavingsLink, allowContribution, onUpdat
     );
 };
 
-const AddRowForm = ({ section, onAdd }) => {
+const AddRowForm = ({ section, onAdd, compact }) => {
     const [label, setLabel] = useState('');
     const [budgeted, setBudgeted] = useState('');
     const [actual, setActual] = useState('');
@@ -308,8 +311,8 @@ const AddRowForm = ({ section, onAdd }) => {
 
     return (
         <form onSubmit={handleSubmit} className="pt-2">
-            {/* Mobile */}
-            <div className="sm:hidden space-y-2 px-2">
+            {/* Mobile (o compact) */}
+            <div className={`${compact ? '' : 'sm:hidden'} space-y-2 px-2`}>
                 <div className="flex items-center gap-2">
                     <input
                         value={label}
@@ -336,7 +339,7 @@ const AddRowForm = ({ section, onAdd }) => {
             </div>
 
             {/* Desktop */}
-            <div className={`hidden sm:grid ${DESKTOP_GRID} items-center gap-2 px-1`}>
+            <div className={`${compact ? 'hidden' : `hidden sm:grid ${DESKTOP_GRID}`} items-center gap-2 px-1`}>
                 <input
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
@@ -369,6 +372,7 @@ export const BudgetSectionPanel = ({
     onContributeItem,
     onViewSyncedExpense,
     openingCash,
+    compact = false,
     theme = 'dark',
 }) => {
     const meta = SECTION_META[section];
@@ -409,9 +413,10 @@ export const BudgetSectionPanel = ({
                 </div>
             </div>
 
-            {/* Header de columnas — solo tiene sentido en desktop; en mobile
-                cada input ya trae su propia etiqueta arriba. */}
-            {(manualItems.length > 0 || splitSyncItems.length > 0) && (
+            {/* Header de columnas — solo tiene sentido en la vista de grid;
+                en mobile o en columna angosta (`compact`) cada input ya trae
+                su propia etiqueta arriba. */}
+            {!compact && (manualItems.length > 0 || splitSyncItems.length > 0) && (
                 <div className={`hidden sm:grid ${DESKTOP_GRID} gap-2 mt-3 mb-1 px-1`}>
                     <span className="text-[9px] font-bold uppercase tracking-wider text-muted">Descripción</span>
                     <span className="text-[9px] font-bold uppercase tracking-wider text-muted text-right">Presupuestado</span>
@@ -451,12 +456,13 @@ export const BudgetSectionPanel = ({
                             onDelete={onDeleteItem}
                             onContribute={onContributeItem}
                             theme={theme}
+                            compact={compact}
                         />
                     ))}
                 </div>
             )}
 
-            <AddRowForm section={section} onAdd={onAddItem} />
+            <AddRowForm section={section} onAdd={onAddItem} compact={compact} />
 
             {splitSyncItems.length > 0 && (
                 <div className="mt-4 pt-3 border-t border-white/10">

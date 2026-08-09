@@ -470,48 +470,51 @@ export const BudgetSectionPanel = ({
                         Gastos compartidos · Split.it
                     </p>
                     <p className="text-[10px] text-muted mb-2 leading-snug">
-                        Se agregan solos cuando pagás o te toca pagar un gasto compartido — no se editan acá, tocá para ver el gasto.
+                        {section === 'income'
+                            ? 'Reembolsos de gastos que le adelantaste a alguien — no se editan acá, tocá para ver el gasto.'
+                            : 'Se agregan solos cuando pagás o te toca pagar un gasto compartido — no se editan acá, tocá para ver el gasto.'}
                     </p>
                     <div className="space-y-1.5">
                         {splitSyncItems.map((item) => {
-                            // budgeted_amount se fija al monto total original al crearse;
-                            // actual_amount baja con cada liquidación de un participante.
-                            // La diferencia es exactamente lo que ya te devolvieron.
-                            const alreadyReturned = item.budgeted_amount - item.actual_amount;
                             // is_pending = todavía no pagaste de verdad tu parte, así que
                             // esto no cuenta en tu Balance — se marca distinto (ámbar) para
                             // que se note que es una obligación visible, no plata movida.
                             const isPending = item.is_pending;
+                            const isIncomeRefund = item.split_role === 'payer_income';
                             return (
                                 <button
                                     key={item.id}
                                     type="button"
                                     onClick={() => onViewSyncedExpense?.(item.split_expense_id)}
                                     className={`w-full flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-left hover:brightness-95 transition-all animate-row-in ${
-                                        isPending ? 'bg-(--warning-soft)' : 'bg-(--info-soft)'
+                                        isPending ? 'bg-(--warning-soft)' : isIncomeRefund ? 'bg-(--success-soft)' : 'bg-(--info-soft)'
                                     }`}
                                 >
                                     <span className="text-xs text-primary truncate flex items-center gap-1.5 min-w-0">
                                         <span className="line-clamp-2" title={item.label}>{item.label}</span>
-                                        <ExternalLink size={11} className={isPending ? 'text-(--warning) shrink-0' : 'text-(--info) shrink-0'} />
+                                        <ExternalLink size={11} className={`shrink-0 ${isPending ? 'text-(--warning)' : isIncomeRefund ? 'text-(--success)' : 'text-(--info)'}`} />
                                     </span>
                                     <span className="text-right shrink-0">
-                                        <span className={`block text-xs font-semibold tabular ${isPending ? 'text-(--warning)' : 'text-(--info)'}`}>
+                                        <span className={`block text-xs font-semibold tabular ${isPending ? 'text-(--warning)' : isIncomeRefund ? 'text-(--success)' : 'text-(--info)'}`}>
                                             {formatCurrency(item.actual_amount)}
                                         </span>
                                         {isPending ? (
                                             <span className="block text-[9px] text-(--warning) font-bold uppercase tracking-wide">
                                                 Pendiente de pago
                                             </span>
-                                        ) : alreadyReturned > 0 ? (
-                                            <span className="block text-[9px] text-(--success) tabular">
-                                                ya te devolvieron {formatCurrency(alreadyReturned)}
+                                        ) : isIncomeRefund ? (
+                                            <span className="block text-[9px] text-(--success) font-bold uppercase tracking-wide">
+                                                Reembolso recibido
                                             </span>
                                         ) : item.split_role === 'participant' ? (
                                             <span className="block text-[9px] text-(--success) font-bold uppercase tracking-wide">
                                                 Ya pagado
                                             </span>
-                                        ) : null}
+                                        ) : (
+                                            <span className="block text-[9px] text-(--info) font-bold uppercase tracking-wide">
+                                                Tu parte
+                                            </span>
+                                        )}
                                     </span>
                                 </button>
                             );

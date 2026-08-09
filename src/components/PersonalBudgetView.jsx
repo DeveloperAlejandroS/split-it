@@ -478,7 +478,7 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, theme = 'dark' }) => {
                     cuando una sección crece más que las otras. */}
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1.4fr)] items-start">
                     <div className="flex flex-col gap-4">
-                        <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>{renderSection('income', false, true)}</div>
+                        <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>{renderSection('income', true, true)}</div>
                         <div className="animate-fade-up" style={{ animationDelay: '60ms' }}>{renderSection('debt', false, true)}</div>
                         <div className="animate-fade-up" style={{ animationDelay: '120ms' }}>{renderSection('saving', false, true)}</div>
                     </div>

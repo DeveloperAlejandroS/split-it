@@ -17,6 +17,7 @@ export const BottomIsland = ({
     onOpenExpenses,
     onOpenFriends,
     onOpenPersonal,
+    onOpenLibreta,
 }) => {
     const handleExpensesShortcut = () => {
         onOpenExpenses?.();
@@ -64,8 +65,8 @@ export const BottomIsland = ({
                                 color: 'var(--accent-contrast)',
                                 boxShadow: '0 18px 40px -14px rgba(212, 162, 78, 0.55)',
                             }}
-                            aria-label={activeTab === 'personal' ? 'Agregar al presupuesto' : 'Añadir gasto'}
-                            title={activeTab === 'personal' ? 'Agregar al presupuesto' : 'Nuevo gasto'}
+                            aria-label={activeTab === 'personal' ? 'Agregar al presupuesto' : activeTab === 'libreta' ? 'Nueva deuda' : 'Añadir gasto'}
+                            title={activeTab === 'personal' ? 'Agregar al presupuesto' : activeTab === 'libreta' ? 'Nueva deuda' : 'Nuevo gasto'}
                         >
                             <Plus size={20} />
                         </button>
@@ -100,6 +101,10 @@ export const BottomIsland = ({
                 onOpenPersonal={() => {
                     onHamburgerOpenChange(false);
                     onOpenPersonal?.();
+                }}
+                onOpenLibreta={() => {
+                    onHamburgerOpenChange(false);
+                    onOpenLibreta?.();
                 }}
                 onCreateExpense={() => {
                     onHamburgerOpenChange(false);

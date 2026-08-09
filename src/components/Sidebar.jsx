@@ -1,4 +1,4 @@
-import { Coins, LayoutGrid, MoonStar, PiggyBank, Plus, SunMedium, UserCircle2, Users } from 'lucide-react';
+import { Coins, LayoutGrid, MoonStar, NotebookText, PiggyBank, Plus, SunMedium, UserCircle2, Users } from 'lucide-react';
 
 // Rail de navegación persistente para desktop. Reemplaza al dock flotante
 // inferior (BottomIsland, que queda solo para mobile) — en pantallas anchas
@@ -9,6 +9,7 @@ export const Sidebar = ({
     onOpenExpenses,
     onOpenFriends,
     onOpenPersonal,
+    onOpenLibreta,
     onCreateExpense,
     onOpenAccount,
     theme = 'dark',
@@ -52,6 +53,16 @@ export const Sidebar = ({
                 >
                     <PiggyBank size={19} />
                 </button>
+
+                <button
+                    type="button"
+                    onClick={onOpenLibreta}
+                    className={navItemClass('libreta')}
+                    aria-label="Libreta"
+                    title="Libreta — deudas de gente que te debe a ti"
+                >
+                    <NotebookText size={19} />
+                </button>
             </nav>
 
             <button
@@ -63,8 +74,8 @@ export const Sidebar = ({
                     color: 'var(--accent-contrast)',
                     boxShadow: '0 14px 28px -12px rgba(212, 162, 78, 0.6)',
                 }}
-                aria-label={activeTab === 'personal' ? 'Agregar al presupuesto' : 'Nuevo gasto'}
-                title={activeTab === 'personal' ? 'Agregar al presupuesto' : 'Nuevo gasto'}
+                aria-label={activeTab === 'personal' ? 'Agregar al presupuesto' : activeTab === 'libreta' ? 'Nueva deuda' : 'Nuevo gasto'}
+                title={activeTab === 'personal' ? 'Agregar al presupuesto' : activeTab === 'libreta' ? 'Nueva deuda' : 'Nuevo gasto'}
             >
                 <Plus size={22} />
             </button>

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { LayoutGrid, MoonStar, PiggyBank, Plus, Settings2, SunMedium, UserCircle2, X } from 'lucide-react';
+import { LayoutGrid, MoonStar, NotebookText, PiggyBank, Plus, Settings2, SunMedium, UserCircle2, X } from 'lucide-react';
 
 const drawerItemClass =
     'w-full flex items-center gap-4 rounded-3xl px-4 py-4 text-left transition-all duration-200 hover:bg-white/5 active:scale-[0.98]';
@@ -13,6 +13,7 @@ export const SideDrawer = ({
     onOpenExpenses,
     onOpenFriends,
     onOpenPersonal,
+    onOpenLibreta,
     onCreateExpense,
     userEmail,
 }) => {
@@ -107,6 +108,19 @@ export const SideDrawer = ({
                         <span className="flex-1">
                             <span className="block text-base font-semibold text-primary">Gastos personales</span>
                             <span className="block text-xs text-secondary">Tu presupuesto mensual</span>
+                        </span>
+                    </button>
+
+                    <button type="button" onClick={onOpenLibreta} className={drawerItemClass}>
+                        <span
+                            className="h-12 w-12 rounded-2xl flex items-center justify-center shrink-0"
+                            style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
+                        >
+                            <NotebookText size={20} />
+                        </span>
+                        <span className="flex-1">
+                            <span className="block text-base font-semibold text-primary">Libreta</span>
+                            <span className="block text-xs text-secondary">Deudas de gente que te debe a ti</span>
                         </span>
                     </button>
 

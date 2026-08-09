@@ -13,8 +13,8 @@ import {
     UserRound,
 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
+import { API_URL } from '../config/api';
 
-const API_URL = 'https://expense-tracker-api-0762.onrender.com';
 const TOKEN_KEY = 'splitit_jwt';
 
 export const LoginView = ({ onAuth, loadData, theme = 'dark', onToggleTheme }) => {
@@ -130,7 +130,7 @@ export const LoginView = ({ onAuth, loadData, theme = 'dark', onToggleTheme }) =
             <div className="absolute inset-0 pointer-events-none">
                 <div
                     className="absolute top-[-8%] left-1/2 -translate-x-1/2 w-[60vw] h-[60vw] rounded-full blur-[130px]"
-                    style={{ background: 'rgba(139, 92, 246, 0.20)' }}
+                    style={{ background: 'rgba(212, 162, 78, 0.22)' }}
                 />
                 <div
                     className="absolute bottom-[-8%] right-[-10%] w-[40vw] h-[40vw] rounded-full blur-[130px]"
@@ -150,10 +150,10 @@ export const LoginView = ({ onAuth, loadData, theme = 'dark', onToggleTheme }) =
                                     className="h-14 w-14 rounded-2xl flex items-center justify-center shadow-2xl shrink-0"
                                     style={{
                                         background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
-                                        boxShadow: '0 18px 35px -18px rgba(139, 92, 246, 0.75)',
+                                        boxShadow: '0 18px 35px -18px rgba(212, 162, 78, 0.6)',
                                     }}
                                 >
-                                    <UserRound size={24} className="text-white" />
+                                    <UserRound size={24} style={{ color: 'var(--accent-contrast)' }} />
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-secondary">
@@ -330,10 +330,11 @@ export const LoginView = ({ onAuth, loadData, theme = 'dark', onToggleTheme }) =
 
                             <button
                                 disabled={loading}
-                                className="w-full rounded-[1.35rem] px-5 py-4 text-sm font-semibold text-white transition-all active:scale-[0.99] disabled:opacity-50 mt-2"
+                                className="w-full rounded-[1.35rem] px-5 py-4 text-sm font-semibold transition-all active:scale-[0.99] disabled:opacity-50 mt-2"
                                 style={{
                                     background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
-                                    boxShadow: '0 14px 30px -16px rgba(139, 92, 246, 0.95)',
+                                    boxShadow: '0 14px 30px -16px rgba(212, 162, 78, 0.75)',
+                                    color: 'var(--accent-contrast)',
                                 }}
                             >
                                 {loading ? (

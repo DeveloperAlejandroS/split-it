@@ -1,24 +1,38 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 :root {
-  --app-bg: #05070a;
-  --app-bg-2: #0b1220;
-  --surface: rgba(15, 23, 42, 0.6);
-  --surface-strong: rgba(15, 23, 42, 0.84);
-  --surface-soft: rgba(15, 23, 42, 0.36);
-  --surface-border: rgba(255, 255, 255, 0.08);
-  --surface-border-strong: rgba(255, 255, 255, 0.14);
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --accent: #8b5cf6;
-  --accent-strong: #7c3aed;
-  --accent-soft: rgba(139, 92, 246, 0.16);
-  --success: #34d399;
-  --danger: #fb7185;
+  /* Base — espresso, not pure black */
+  --app-bg: #0d0b08;
+  --app-bg-2: #16120c;
+  --app-bg-3: #1e1810;
+  --surface: rgba(30, 25, 17, 0.55);
+  --surface-strong: rgba(34, 28, 19, 0.8);
+  --surface-soft: rgba(30, 25, 17, 0.32);
+  --surface-border: rgba(224, 179, 104, 0.14);
+  --surface-border-strong: rgba(224, 179, 104, 0.28);
+  --text-primary: #f5f1e8;
+  --text-secondary: #a79a85;
+  --text-muted: #7a6f5d;
+
+  /* Brand accent — aged brass, not violet */
+  --accent: #d4a24e;
+  --accent-strong: #b8853a;
+  --accent-soft: rgba(212, 162, 78, 0.16);
+  --accent-contrast: #1b1305;
+
+  /* Semantic — kept distinct in hue from the accent so status never reads as "brand" */
+  --success: #6fcf97;
+  --success-soft: rgba(111, 207, 151, 0.14);
+  --info: #6fa8dc;
+  --info-soft: rgba(111, 168, 220, 0.14);
+  --danger: #e8637a;
+  --danger-soft: rgba(232, 99, 122, 0.14);
+  --neutral-chip: rgba(167, 154, 133, 0.16);
+
   --shadow:
-    rgba(0, 0, 0, 0.45) 0 16px 40px -18px,
-    rgba(139, 92, 246, 0.16) 0 12px 28px -18px;
+    rgba(0, 0, 0, 0.5) 0 16px 40px -18px,
+    rgba(212, 162, 78, 0.14) 0 12px 28px -18px;
 
   --sans: 'Inter', 'Geist Sans', 'Segoe UI', system-ui, sans-serif;
   --heading: 'Inter', 'Geist Sans', 'Segoe UI', system-ui, sans-serif;
@@ -29,8 +43,8 @@
   color-scheme: dark;
   color: var(--text-primary);
   background:
-    radial-gradient(circle at top, rgba(139, 92, 246, 0.18), transparent 34%),
-    radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.08), transparent 24%),
+    radial-gradient(circle at 15% -10%, rgba(212, 162, 78, 0.16), transparent 38%),
+    radial-gradient(circle at 88% 12%, rgba(111, 168, 220, 0.06), transparent 30%),
     var(--app-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -39,28 +53,39 @@
 }
 
 :root[data-theme='light'] {
-  --app-bg: #f1f5f9;
-  --app-bg-2: #e2e8f0;
-  --surface: rgba(255, 255, 255, 0.4);
-  --surface-strong: rgba(255, 255, 255, 0.72);
-  --surface-soft: rgba(255, 255, 255, 0.2);
-  --surface-border: rgba(255, 255, 255, 0.5);
-  --surface-border-strong: rgba(255, 255, 255, 0.8);
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --accent: #7c3aed;
-  --accent-strong: #6d28d9;
-  --accent-soft: rgba(124, 58, 237, 0.12);
-  --success: #059669;
-  --danger: #e11d48;
+  --app-bg: #faf6ee;
+  --app-bg-2: #f1ead9;
+  --app-bg-3: #e9dfc9;
+  --surface: rgba(255, 255, 255, 0.5);
+  --surface-strong: rgba(255, 255, 255, 0.78);
+  --surface-soft: rgba(255, 255, 255, 0.24);
+  --surface-border: rgba(150, 105, 42, 0.16);
+  --surface-border-strong: rgba(150, 105, 42, 0.3);
+  --text-primary: #241d12;
+  --text-secondary: #6b5f4c;
+  --text-muted: #948972;
+
+  --accent: #b8853a;
+  --accent-strong: #96692a;
+  --accent-soft: rgba(184, 133, 58, 0.12);
+  --accent-contrast: #fffaf0;
+
+  --success: #2f9e63;
+  --success-soft: rgba(47, 158, 99, 0.12);
+  --info: #3e72b0;
+  --info-soft: rgba(62, 114, 176, 0.1);
+  --danger: #c43f58;
+  --danger-soft: rgba(196, 63, 88, 0.1);
+  --neutral-chip: rgba(107, 95, 76, 0.1);
+
   --shadow:
-    rgba(15, 23, 42, 0.12) 0 16px 40px -20px,
-    rgba(124, 58, 237, 0.08) 0 14px 24px -18px;
+    rgba(90, 65, 20, 0.16) 0 16px 40px -20px,
+    rgba(184, 133, 58, 0.1) 0 14px 24px -18px;
 
   color-scheme: light;
   background:
-    radial-gradient(circle at top, rgba(124, 58, 237, 0.12), transparent 34%),
-    radial-gradient(circle at 80% 20%, rgba(14, 165, 233, 0.06), transparent 24%),
+    radial-gradient(circle at 15% -10%, rgba(184, 133, 58, 0.12), transparent 38%),
+    radial-gradient(circle at 88% 12%, rgba(62, 114, 176, 0.05), transparent 30%),
     var(--app-bg);
 }
 
@@ -79,7 +104,13 @@ body {
   box-sizing: border-box;
   color: var(--text-primary);
   background:
-    radial-gradient(circle at top, rgba(139, 92, 246, 0.12), transparent 30%),
+    radial-gradient(circle at 15% -10%, rgba(212, 162, 78, 0.1), transparent 32%),
+    var(--app-bg);
+}
+
+:root[data-theme='light'] #root {
+  background:
+    radial-gradient(circle at 15% -10%, rgba(184, 133, 58, 0.08), transparent 32%),
     var(--app-bg);
 }
 
@@ -90,7 +121,8 @@ h4,
 h5,
 h6 {
   font-family: var(--heading);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
@@ -121,6 +153,14 @@ code {
   color: var(--text-secondary);
 }
 
+.text-muted {
+  color: var(--text-muted);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
 .glass-shell {
   background: var(--surface);
   border: 1px solid var(--surface-border);
@@ -147,7 +187,7 @@ code {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(139, 92, 246, 0.4), rgba(255, 255, 255, 0.05));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(212, 162, 78, 0.38), rgba(255, 255, 255, 0.05));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -173,11 +213,11 @@ code {
 
 .input-underline:focus {
   border-bottom-color: var(--accent);
-  box-shadow: 0 10px 20px -16px rgba(139, 92, 246, 0.9);
+  box-shadow: 0 10px 20px -16px rgba(212, 162, 78, 0.85);
 }
 
 .surface-divider {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--surface-border);
 }
 
 .theme-switch {
@@ -220,7 +260,7 @@ code {
 }
 
 .animate-balance-float {
-  animation: fade-up 420ms ease-out both, balance-float 4.8s ease-in-out 500ms infinite;
+  animation: fade-up 420ms ease-out both;
 }
 
 @keyframes fade-in {
@@ -254,28 +294,105 @@ code {
   }
 }
 
-@keyframes balance-float {
-  0%,
-  100% {
+.animate-row-in {
+  animation: row-in 320ms cubic-bezier(0.2, 0.65, 0.2, 1) both;
+}
+
+.animate-row-out {
+  animation: row-out 200ms ease-in both;
+}
+
+.animate-pulse-save {
+  animation: pulse-save 900ms ease-out both;
+}
+
+.animate-pulse-error {
+  animation: pulse-error 700ms ease-out both;
+}
+
+.animate-month-in-forward {
+  animation: month-in-forward 260ms cubic-bezier(0.2, 0.65, 0.2, 1) both;
+}
+
+.animate-month-in-back {
+  animation: month-in-back 260ms cubic-bezier(0.2, 0.65, 0.2, 1) both;
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
     transform: translateY(0);
   }
-  50% {
-    transform: translateY(-3px);
+}
+
+@keyframes row-out {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    max-height: 60px;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(12px) scale(0.98);
+    max-height: 0;
   }
 }
 
-.animate-fade-in {
-  animation: fade-in 340ms ease-out both;
+@keyframes pulse-save {
+  0% {
+    background-color: rgba(111, 207, 151, 0.22);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
-.animate-fade-up {
-  animation: fade-up 480ms cubic-bezier(0.2, 0.65, 0.2, 1) both;
+@keyframes pulse-error {
+  0% {
+    background-color: rgba(232, 99, 122, 0.22);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
-.animate-island-in {
-  animation: island-in 520ms cubic-bezier(0.18, 0.88, 0.26, 1.16) both;
+@keyframes month-in-forward {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
-.animate-balance-float {
-  animation: fade-up 420ms ease-out both, balance-float 4.8s ease-in-out 500ms infinite;
+@keyframes month-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fade-up,
+  .animate-island-in,
+  .animate-balance-float,
+  .animate-row-in,
+  .animate-row-out,
+  .animate-pulse-save,
+  .animate-pulse-error,
+  .animate-month-in-forward,
+  .animate-month-in-back {
+    animation: none;
+  }
 }

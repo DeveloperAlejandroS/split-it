@@ -9,6 +9,8 @@ import { BottomIsland } from './components/BottomIsland';
 import { Sidebar } from './components/Sidebar';
 import { PersonalBudgetView } from './components/PersonalBudgetView';
 import { AddBudgetItemModal } from './components/AddBudgetItemModal';
+import { LibretaView } from './components/LibretaView';
+import { AddLibretaEntryModal } from './components/AddLibretaEntryModal';
 import { LoginView } from './components/LoginView';
 import { numberOrZero } from './utils/helpers';
 import { brandPalette } from './utils/brandPalette';
@@ -29,6 +31,8 @@ const App = () => {
     const [showCreateExpense, setShowCreateExpense] = useState(false);
     const [showAddBudgetItem, setShowAddBudgetItem] = useState(false);
     const [budgetRefreshKey, setBudgetRefreshKey] = useState(0);
+    const [showAddLibretaEntry, setShowAddLibretaEntry] = useState(false);
+    const [libretaRefreshKey, setLibretaRefreshKey] = useState(0);
     const [editingExpense, setEditingExpense] = useState(null);
     const [selectedExpenseId, setSelectedExpenseId] = useState(null);
     const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
@@ -222,10 +226,13 @@ const App = () => {
     };
 
     // Botón de agregar contextual: en "Gastos personales" abre el picker de
-    // categorías del presupuesto en vez del formulario de gasto compartido.
+    // categorías del presupuesto, en "Libreta" abre el formulario de deuda
+    // nueva, y en cualquier otro lado abre el formulario de gasto compartido.
     const handleContextualAdd = () => {
         if (activeTab === 'personal') {
             setShowAddBudgetItem(true);
+        } else if (activeTab === 'libreta') {
+            setShowAddLibretaEntry(true);
         } else {
             handleOpenCreateExpense();
         }
@@ -234,6 +241,11 @@ const App = () => {
     const handleBudgetItemCreated = () => {
         setShowAddBudgetItem(false);
         setBudgetRefreshKey((k) => k + 1);
+    };
+
+    const handleLibretaEntryCreated = () => {
+        setShowAddLibretaEntry(false);
+        setLibretaRefreshKey((k) => k + 1);
     };
 
     const handleCloseCreateExpense = useCallback(() => {
@@ -358,6 +370,7 @@ const App = () => {
                 onOpenExpenses={() => setActiveTab('expenses')}
                 onOpenFriends={() => setActiveTab('friends')}
                 onOpenPersonal={() => setActiveTab('personal')}
+                onOpenLibreta={() => setActiveTab('libreta')}
                 onCreateExpense={handleContextualAdd}
                 onOpenAccount={() => setIsHamburgerOpen(true)}
                 theme={theme}
@@ -409,6 +422,8 @@ const App = () => {
             }`}>
                 {activeTab === 'personal' ? (
                     <PersonalBudgetView key={budgetRefreshKey} theme={theme} onViewSyncedExpense={(expenseId) => handleOpenExpenseDetail({ id: expenseId })} />
+                ) : activeTab === 'libreta' ? (
+                    <LibretaView key={libretaRefreshKey} theme={theme} />
                 ) : (
                     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(340px,1fr)] items-start">
                         <section className="space-y-5 min-w-0">
@@ -494,6 +509,7 @@ const App = () => {
                 onOpenExpenses={() => setActiveTab('expenses')}
                 onOpenFriends={() => setActiveTab('friends')}
                 onOpenPersonal={() => setActiveTab('personal')}
+                onOpenLibreta={() => setActiveTab('libreta')}
             />
 
             {/* Create / Edit Expense Modal */}
@@ -512,6 +528,13 @@ const App = () => {
                 isOpen={showAddBudgetItem}
                 onClose={() => setShowAddBudgetItem(false)}
                 onCreated={handleBudgetItemCreated}
+                theme={theme}
+            />
+
+            <AddLibretaEntryModal
+                isOpen={showAddLibretaEntry}
+                onClose={() => setShowAddLibretaEntry(false)}
+                onCreated={handleLibretaEntryCreated}
                 theme={theme}
             />
 

@@ -58,11 +58,11 @@
   --app-bg: #faf6ee;
   --app-bg-2: #f1ead9;
   --app-bg-3: #e9dfc9;
-  --surface: rgba(255, 255, 255, 0.5);
-  --surface-strong: rgba(255, 255, 255, 0.78);
-  --surface-soft: rgba(255, 255, 255, 0.24);
-  --surface-border: rgba(150, 105, 42, 0.16);
-  --surface-border-strong: rgba(150, 105, 42, 0.3);
+  --surface: rgba(255, 255, 255, 0.66);
+  --surface-strong: rgba(255, 255, 255, 0.86);
+  --surface-soft: rgba(255, 255, 255, 0.32);
+  --surface-border: rgba(150, 105, 42, 0.2);
+  --surface-border-strong: rgba(150, 105, 42, 0.34);
   --text-primary: #241d12;
   --text-secondary: #6b5f4c;
   --text-muted: #948972;

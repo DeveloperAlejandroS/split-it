@@ -4,7 +4,7 @@ import { GlassCard } from './GlassCard';
 import { ConfirmDialog } from './ConfirmDialog';
 import { AnimatedNumber } from './AnimatedNumber';
 import { CurrencyInput } from './CurrencyInput';
-import { formatCurrency } from '../utils/helpers';
+import { formatCurrency, numberOrZero } from '../utils/helpers';
 import { SECTION_META, getVariance } from '../utils/budgetHelpers';
 
 // Ancho fijo de la columna de acciones (toggle Ahorro + borrar) en desktop.
@@ -368,6 +368,7 @@ export const BudgetSectionPanel = ({
     onDeleteItem,
     onContributeItem,
     onViewSyncedExpense,
+    openingCash,
     theme = 'dark',
 }) => {
     const meta = SECTION_META[section];
@@ -416,6 +417,20 @@ export const BudgetSectionPanel = ({
                     <span className="text-[9px] font-bold uppercase tracking-wider text-muted text-right">Presupuestado</span>
                     <span className="text-[9px] font-bold uppercase tracking-wider text-muted text-right">Actual</span>
                     <span />
+                </div>
+            )}
+
+            {/* Saldo que sobró el mes anterior — informativo nomás: ya está
+                incluido en Balance como "Saldo anterior" (ver Flujo de Caja),
+                así que NO se suma acá arriba para no contarlo dos veces. Se
+                muestra en Ingresos porque es, en la práctica, plata
+                disponible para gastar este mes. */}
+            {section === 'income' && numberOrZero(openingCash) !== 0 && (
+                <div className="flex items-center justify-between gap-2 rounded-xl bg-(--accent-soft) px-3 py-2 mb-1.5 mt-1">
+                    <span className="text-xs text-primary">Saldo del mes anterior</span>
+                    <span className="text-xs font-semibold text-(--accent-strong) tabular">
+                        {formatCurrency(openingCash)}
+                    </span>
                 </div>
             )}
 

@@ -63,8 +63,8 @@ export const Sidebar = ({
                     color: 'var(--accent-contrast)',
                     boxShadow: '0 14px 28px -12px rgba(212, 162, 78, 0.6)',
                 }}
-                aria-label="Nuevo gasto"
-                title="Nuevo gasto"
+                aria-label={activeTab === 'personal' ? 'Agregar al presupuesto' : 'Nuevo gasto'}
+                title={activeTab === 'personal' ? 'Agregar al presupuesto' : 'Nuevo gasto'}
             >
                 <Plus size={22} />
             </button>

@@ -5,6 +5,7 @@ const dockButtonClass =
     'relative h-11 w-11 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-primary hover:bg-white/10 transition-all active:scale-90';
 
 export const BottomIsland = ({
+    activeTab,
     onCreateExpense,
     userEmail,
     onLogout,
@@ -63,8 +64,8 @@ export const BottomIsland = ({
                                 color: 'var(--accent-contrast)',
                                 boxShadow: '0 18px 40px -14px rgba(212, 162, 78, 0.55)',
                             }}
-                            aria-label="Añadir gasto"
-                            title="Nuevo gasto"
+                            aria-label={activeTab === 'personal' ? 'Agregar al presupuesto' : 'Añadir gasto'}
+                            title={activeTab === 'personal' ? 'Agregar al presupuesto' : 'Nuevo gasto'}
                         >
                             <Plus size={20} />
                         </button>

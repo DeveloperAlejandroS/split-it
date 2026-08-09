@@ -1,8 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { CheckCircle2, Loader2, RefreshCw, Search, UserPlus, Users, X } from 'lucide-react';
 import { GlassCard } from './GlassCard';
-
-const API_URL = 'https://expense-tracker-api-0762.onrender.com';
+import { API_URL } from '../config/api';
 
 const getFriendUser = (friend) => friend?.user || friend?.friend || friend?.profile || friend || {};
 
@@ -23,7 +22,7 @@ const getRequestId = (request) => request?.request_id ?? request?.friendship_id 
 
 // FIX: was using hardcoded text-white/* classes which broke light theme.
 // Now uses text-primary / text-secondary CSS variables consistently.
-const FriendRow = ({ friend, theme }) => {
+const FriendRow = ({ friend }) => {
     const user = getFriendUser(friend);
     const status = getFriendStatus(friend);
     const subtitleParts = [user?.username, user?.email, user?.phone].filter(Boolean);
@@ -160,7 +159,7 @@ export const FriendsView = ({ friends = [], pendingRequests = [], token, onRefre
                         type="button"
                         onClick={openAddFriend}
                         className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95"
-                        style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', boxShadow: '0 8px 20px -8px rgba(139,92,246,0.55)' }}
+                        style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', boxShadow: '0 8px 20px -8px rgba(212,162,78,0.5)' }}
                     >
                         <UserPlus size={14} />
                         Añadir
@@ -214,7 +213,7 @@ export const FriendsView = ({ friends = [], pendingRequests = [], token, onRefre
                     <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-secondary px-2">Contactos</p>
                     <div className="space-y-2">
                         {friends.map((friend, index) => (
-                            <FriendRow key={getFriendKey(friend, index)} friend={friend} theme={theme} />
+                            <FriendRow key={getFriendKey(friend, index)} friend={friend} />
                         ))}
                     </div>
                 </section>
@@ -234,7 +233,7 @@ export const FriendsView = ({ friends = [], pendingRequests = [], token, onRefre
                         type="button"
                         onClick={openAddFriend}
                         className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
-                        style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', boxShadow: '0 10px 24px -10px rgba(139,92,246,0.55)' }}
+                        style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', boxShadow: '0 10px 24px -10px rgba(212,162,78,0.5)' }}
                     >
                         <UserPlus size={16} />
                         Añadir amigo
@@ -276,7 +275,7 @@ export const FriendsView = ({ friends = [], pendingRequests = [], token, onRefre
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     placeholder="Buscar usuario…"
-                                    className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-primary outline-none transition-all placeholder:text-secondary focus:border-violet-400/50"
+                                    className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-primary outline-none transition-all placeholder:text-secondary focus:border-(--accent)/50"
                                     autoFocus
                                 />
                             </div>

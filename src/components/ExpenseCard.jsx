@@ -1,14 +1,11 @@
-import { useCallback } from 'react';
-import { History, Crown, User as UserIcon, ChevronRight } from 'lucide-react';
+import { History, Crown, User as UserIcon, ChevronRight, Clock } from 'lucide-react';
 import { Amount } from './Amount';
-import { formatCurrency, getPersistentPaidStatus, numberOrZero } from '../utils/helpers';
+import { formatCurrency, getParticipantStatus, numberOrZero } from '../utils/helpers';
 
 export const ExpenseCard = ({
     expense,
     currentUserId,
-    onSettle,
     onOpenExpense,
-    isLoading,
     theme = 'dark',
     isFirst = false,
     isLast = false,
@@ -16,22 +13,9 @@ export const ExpenseCard = ({
     const isOwner = expense.paid_by_me;
     const ownerId = typeof expense.paid_by === 'object' ? expense.paid_by.id : expense.paid_by;
     const participants = expense.participants || [];
-    const paidCount = participants.filter((p) => getPersistentPaidStatus(p)).length;
-    const pendingCount = participants.length - paidCount;
-
-    const handleParticipantClick = useCallback(
-        (event, participant) => {
-            event.stopPropagation();
-            if (
-                isOwner &&
-                !getPersistentPaidStatus(participant) &&
-                numberOrZero(participant.user_id) !== currentUserId
-            ) {
-                onSettle(expense.id, participant);
-            }
-        },
-        [expense, isOwner, currentUserId, onSettle],
-    );
+    const paidCount = participants.filter((p) => getParticipantStatus(p) === 'paid').length;
+    const awaitingCount = participants.filter((p) => getParticipantStatus(p) === 'awaiting_confirmation').length;
+    const pendingCount = participants.length - paidCount - awaitingCount;
 
     return (
         <article
@@ -49,45 +33,49 @@ export const ExpenseCard = ({
                         <History size={18} style={{ color: 'var(--accent)' }} />
                     </div>
 
-                    <div className="min-w-0 space-y-2">
+                    <div className="min-w-0 space-y-1.5">
                         <div>
                             <h4 className="font-semibold text-primary leading-tight truncate">{expense.description}</h4>
-                            <p className="text-xs text-secondary mt-1">
-                                #{expense.id} · {participants.length} participante{participants.length !== 1 ? 's' : ''}
+                            <p className="text-xs text-muted mt-0.5">
+                                {participants.length} participante{participants.length !== 1 ? 's' : ''}
                             </p>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.22em] font-bold text-secondary">
+                        <div className="flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-[0.16em] font-bold">
                             <span
                                 className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 ${
-                                    isOwner ? 'bg-violet-500/15 text-(--accent)' : 'bg-white/5 text-secondary'
+                                    isOwner ? 'bg-(--accent-soft) text-(--accent)' : 'bg-white/5 text-secondary'
                                 }`}
                             >
                                 <UserIcon size={10} />
-                                {isOwner ? 'Tú pagaste' : 'Gasto compartido'}
+                                {isOwner ? 'Tú pagaste' : 'Compartido'}
                             </span>
-                            <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 bg-emerald-500/10 text-emerald-400">
-                                Pagado {paidCount}
-                            </span>
-                            <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 bg-rose-500/10 text-rose-400">
-                                Pendiente {pendingCount}
-                            </span>
+                            {paidCount > 0 && (
+                                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 bg-(--success-soft) text-(--success)">
+                                    {paidCount} pagado{paidCount !== 1 ? 's' : ''}
+                                </span>
+                            )}
+                            {awaitingCount > 0 && (
+                                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 bg-(--info-soft) text-(--info)">
+                                    <Clock size={10} />
+                                    {awaitingCount} esperando
+                                </span>
+                            )}
+                            {pendingCount > 0 && (
+                                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 bg-(--neutral-chip) text-secondary">
+                                    {pendingCount} pendiente{pendingCount !== 1 ? 's' : ''}
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
 
                 <div className="text-right shrink-0">
                     <Amount value={expense.amount} theme={theme} className="block text-2xl" />
-                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-secondary mt-1">Total</p>
                 </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-between gap-3">
-                {/*
-                  FIX: Added a fade mask on the right edge so the user can see
-                  there are more chips to scroll to. The mask is purely visual via
-                  CSS mask-image; no JS required.
-                */}
+            <div className="mt-3.5 flex items-center justify-between gap-3">
                 <div
                     className="relative flex-1 min-w-0 overflow-hidden"
                     style={{
@@ -97,36 +85,44 @@ export const ExpenseCard = ({
                 >
                     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                         {participants.slice(0, 6).map((participant) => {
-                            const isPaid = getPersistentPaidStatus(participant);
+                            const status = getParticipantStatus(participant);
                             const isThisParticipantMe = numberOrZero(participant.user_id) === currentUserId;
                             const isParticipantOwner = numberOrZero(participant.user_id) === numberOrZero(ownerId);
 
                             return (
                                 <div
                                     key={participant.user_id}
-                                    className="shrink-0 min-w-28 p-2 rounded-2xl border border-white/10 bg-white/5"
+                                    className="shrink-0 min-w-24 px-2.5 py-1.5 rounded-xl border border-white/10 bg-white/5 flex items-center gap-1.5"
+                                    title={formatCurrency(participant.amount_owed)}
                                 >
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <div
-                                            className={`w-6 h-6 rounded-lg flex items-center justify-center border ${
-                                                isParticipantOwner
-                                                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-500'
-                                                    : isThisParticipantMe
-                                                    ? 'bg-violet-500/15 border-violet-500/30 text-(--accent)'
-                                                    : 'bg-white/5 border-white/10 text-secondary'
-                                            }`}
-                                        >
-                                            {isParticipantOwner ? <Crown size={11} /> : <UserIcon size={11} />}
-                                        </div>
-                                        <span className="text-[10px] font-semibold text-primary truncate">
-                                            {isThisParticipantMe
-                                                ? 'Yo'
-                                                : participant.email?.split('@')[0] || 'User'}
-                                        </span>
+                                    <div
+                                        className={`w-5 h-5 rounded-full flex items-center justify-center border shrink-0 ${
+                                            isParticipantOwner
+                                                ? 'bg-(--accent-soft) border-(--accent)/30 text-(--accent)'
+                                                : isThisParticipantMe
+                                                ? 'bg-(--info-soft) border-(--info)/30 text-(--info)'
+                                                : 'bg-white/5 border-white/10 text-secondary'
+                                        }`}
+                                    >
+                                        {isParticipantOwner ? <Crown size={10} /> : <UserIcon size={10} />}
                                     </div>
-                                    <p className="text-[10px] font-semibold text-secondary">
-                                        {isParticipantOwner ? 'Owner' : isPaid ? 'Pagado' : 'Pendiente'}
-                                    </p>
+                                    <span className="text-[10px] font-semibold text-primary truncate">
+                                        {isThisParticipantMe
+                                            ? 'Yo'
+                                            : participant.email?.split('@')[0] || 'User'}
+                                    </span>
+                                    <span
+                                        className="ml-auto w-1.5 h-1.5 rounded-full shrink-0"
+                                        style={{
+                                            background:
+                                                status === 'paid'
+                                                    ? 'var(--success)'
+                                                    : status === 'awaiting_confirmation'
+                                                    ? 'var(--info)'
+                                                    : 'var(--text-muted)',
+                                        }}
+                                        aria-hidden="true"
+                                    />
                                 </div>
                             );
                         })}

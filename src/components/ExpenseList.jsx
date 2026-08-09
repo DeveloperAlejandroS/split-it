@@ -1,20 +1,47 @@
 import { Wallet, RefreshCw } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { ExpenseCard } from './ExpenseCard';
+import { getParticipantStatus } from '../utils/helpers';
 
 const isOwedToMe = (expense) => Boolean(expense?.paid_by_me);
 
 const isMyDebt = (expense, currentUserId) => {
     const participants = Array.isArray(expense?.participants) ? expense.participants : [];
     return participants.some(
-        (p) => Number(p?.user_id) === Number(currentUserId) && !p?.is_paid && !expense?.paid_by_me,
+        (p) => Number(p?.user_id) === Number(currentUserId) && getParticipantStatus(p) !== 'paid' && !expense?.paid_by_me,
     );
 };
+
+const ListHeader = ({ count, pendingCount, onRefresh, isLoading }) => (
+    <div className="flex items-center justify-between px-2">
+        <div>
+            <h3 className="text-lg font-bold text-primary">Actividad</h3>
+            {count > 0 && (
+                <p className="text-xs text-muted mt-0.5">
+                    {count} gasto{count !== 1 ? 's' : ''}
+                    {pendingCount > 0 ? ` · ${pendingCount} sin liquidar` : ''}
+                </p>
+            )}
+        </div>
+        <button
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="p-2 rounded-full transition-all duration-500 disabled:opacity-50"
+            style={{
+                background: 'var(--surface-soft)',
+                border: '1px solid var(--surface-border)',
+                color: 'var(--text-secondary)',
+            }}
+            aria-label="Refrescar gastos"
+        >
+            <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+        </button>
+    </div>
+);
 
 export const ExpenseList = ({
     expenses,
     currentUserId,
-    onSettle,
     onOpenExpense,
     onRefresh,
     isLoading,
@@ -27,52 +54,15 @@ export const ExpenseList = ({
         return true;
     });
 
-    const totals = filteredExpenses.reduce(
-        (acc, exp) => {
-            const participants = Array.isArray(exp.participants) ? exp.participants : [];
-            participants.forEach((p) => {
-                acc.participants += 1;
-                const paid =
-                    p?.is_paid === true ||
-                    p?.is_paid === 1 ||
-                    p?.is_paid === 'true' ||
-                    p?.is_paid === '1';
-                if (paid) acc.paid += 1;
-                else acc.pending += 1;
-            });
-            return acc;
-        },
-        { participants: 0, paid: 0, pending: 0 },
-    );
-
-    const Header = () => (
-        <div className="flex items-center justify-between px-2">
-            <div>
-                <h3 className="text-lg font-bold text-primary">Actividad</h3>
-                {filteredExpenses.length > 0 && (
-                    <p className="text-xs text-secondary">Lista unificada de gastos compartidos</p>
-                )}
-            </div>
-            <button
-                onClick={onRefresh}
-                disabled={isLoading}
-                className="p-2 rounded-full transition-all duration-500 disabled:opacity-50"
-                style={{
-                    background: 'var(--surface-soft)',
-                    border: '1px solid var(--surface-border)',
-                    color: 'var(--text-secondary)',
-                }}
-                aria-label="Refrescar gastos"
-            >
-                <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
-            </button>
-        </div>
-    );
+    const pendingCount = filteredExpenses.reduce((acc, exp) => {
+        const participants = Array.isArray(exp.participants) ? exp.participants : [];
+        return acc + participants.filter((p) => getParticipantStatus(p) !== 'paid').length;
+    }, 0);
 
     if (filteredExpenses.length === 0) {
         return (
-            <section className="space-y-6">
-                <Header />
+            <section className="space-y-5">
+                <ListHeader count={0} pendingCount={0} onRefresh={onRefresh} isLoading={isLoading} />
                 <GlassCard theme={theme} className="py-20 text-center">
                     <div
                         className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border"
@@ -91,26 +81,14 @@ export const ExpenseList = ({
     }
 
     return (
-        <section className="space-y-6">
-            <Header />
+        <section className="space-y-5">
+            <ListHeader
+                count={filteredExpenses.length}
+                pendingCount={pendingCount}
+                onRefresh={onRefresh}
+                isLoading={isLoading}
+            />
 
-            {/* Summary stats */}
-            <GlassCard theme={theme} className="grid grid-cols-3 gap-3 p-4">
-                <div>
-                    <p className="text-[10px] uppercase tracking-widest text-secondary">Gastos</p>
-                    <p className="text-xl font-bold text-primary">{filteredExpenses.length}</p>
-                </div>
-                <div>
-                    <p className="text-[10px] uppercase tracking-widest text-secondary">Participantes</p>
-                    <p className="text-xl font-bold text-primary">{totals.participants}</p>
-                </div>
-                <div>
-                    <p className="text-[10px] uppercase tracking-widest text-secondary">Pendientes</p>
-                    <p className="text-xl font-bold text-amber-400">{totals.pending}</p>
-                </div>
-            </GlassCard>
-
-            {/* Expense cards */}
             <GlassCard theme={theme} className="overflow-hidden">
                 <div className="divide-y divide-white/5">
                     {filteredExpenses.map((exp, index) => (
@@ -118,9 +96,7 @@ export const ExpenseList = ({
                             key={exp.id}
                             expense={exp}
                             currentUserId={currentUserId}
-                            onSettle={onSettle}
                             onOpenExpense={onOpenExpense}
-                            isLoading={isLoading}
                             theme={theme}
                             isFirst={index === 0}
                             isLast={index === filteredExpenses.length - 1}

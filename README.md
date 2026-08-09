@@ -130,7 +130,11 @@ Para más detalles, ver [DESIGN.md](DESIGN.md)
 ## 🔧 Configuración
 
 ### Variables de Entorno
-- API URL está configurada como constante en `App.jsx`: `https://expense-tracker-api-0762.onrender.com`
+- API URL centralizada en `src/config/api.js`, con default a `https://expense-tracker-api-0762.onrender.com`.
+- Para apuntar a un backend local, crea un `.env.local` (ya ignorado por git) con:
+  ```
+  VITE_API_URL=http://localhost:3000
+  ```
 
 ### Localización
 - Formatos de moneda: CLP (Pesos Chilenos)

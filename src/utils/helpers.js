@@ -1,6 +1,27 @@
-export const getPersistentPaidStatus = (participant) => {
-    const status = participant?.is_paid;
-    return (status === true || status === 1 || status === 'true' || status === '1');
+export const PARTICIPANT_STATUS = {
+    PENDING: 'pending',
+    AWAITING_CONFIRMATION: 'awaiting_confirmation',
+    PAID: 'paid',
+};
+
+// Normaliza el status de un participante desde la API (que puede venir como
+// `status: 'pending' | 'paid_pending_confirmation' | 'paid'`, o -en datos
+// viejos sin migrar- como el antiguo booleano `is_paid`).
+export const getParticipantStatus = (participant) => {
+    if (participant?.status === 'paid_pending_confirmation') return PARTICIPANT_STATUS.AWAITING_CONFIRMATION;
+    if (participant?.status === 'paid') return PARTICIPANT_STATUS.PAID;
+    if (participant?.status === 'pending') return PARTICIPANT_STATUS.PENDING;
+
+    // Fallback para datos legacy sin `status`.
+    const legacy = participant?.is_paid;
+    const wasPaid = legacy === true || legacy === 1 || legacy === 'true' || legacy === '1';
+    return wasPaid ? PARTICIPANT_STATUS.PAID : PARTICIPANT_STATUS.PENDING;
+};
+
+export const PARTICIPANT_STATUS_META = {
+    [PARTICIPANT_STATUS.PENDING]: { label: 'Pendiente', badgeClass: 'text-secondary', dotClass: 'bg-(--neutral-chip)' },
+    [PARTICIPANT_STATUS.AWAITING_CONFIRMATION]: { label: 'Esperando confirmación', badgeClass: 'text-(--info)', dotClass: 'bg-(--info-soft)' },
+    [PARTICIPANT_STATUS.PAID]: { label: 'Pagado', badgeClass: 'text-(--success)', dotClass: 'bg-(--success-soft)' },
 };
 
 export const numberOrZero = (v) => {

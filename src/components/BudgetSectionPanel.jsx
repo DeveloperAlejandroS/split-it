@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, CirclePlus, ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { ArrowRight, Check, CirclePlus, ExternalLink, Plus, Trash2, X as XIcon } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { ConfirmDialog } from './ConfirmDialog';
 import { AnimatedNumber } from './AnimatedNumber';
@@ -52,7 +52,89 @@ const AmountField = ({ label, value, onChange, onBlur, showVariance, section, it
     </label>
 );
 
-const RowActions = ({ item, allowSavingsLink, allowContribution, onToggleSavings, onToggleAbono, onRequestDelete }) => (
+// El botón "→ Ahorros" ya no prende/apaga un toggle que auto-creaba un
+// espejo — abre un mini picker con los ahorros que YA existen este mes,
+// para elegir a cuál de ellos se destina la plata (o quitar el vínculo).
+// No se puede "crear" un ahorro desde acá: si todavía no existe ninguno,
+// el picker lo deja clarísimo en vez de inventar uno solo.
+const SavingsLinkPicker = ({ item, savingsItems, onLink }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+        const handleClick = (e) => {
+            if (containerRef.current && !containerRef.current.contains(e.target)) setIsOpen(false);
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, [isOpen]);
+
+    const linkedItem = savingsItems.find((s) => s.id === item.linked_saving_item_id);
+
+    const handlePick = (targetId) => {
+        setIsOpen(false);
+        onLink(targetId);
+    };
+
+    return (
+        <div className="relative shrink-0" ref={containerRef}>
+            <button
+                type="button"
+                onClick={() => setIsOpen((v) => !v)}
+                title={linkedItem ? `Sumando a "${linkedItem.label}"` : 'Vincular a un ahorro que ya exista'}
+                className={`inline-flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full transition-all shrink-0 max-w-24 ${
+                    linkedItem ? 'bg-(--accent-soft) text-(--accent)' : 'bg-white/5 text-muted hover:text-secondary'
+                }`}
+            >
+                <ArrowRight size={9} className="shrink-0" />
+                <span className="truncate">{linkedItem ? linkedItem.label : 'Ahorros'}</span>
+            </button>
+
+            {isOpen && (
+                <div className="absolute right-0 top-7 z-40 w-52 rounded-2xl border border-white/10 bg-(--surface-strong) backdrop-blur-lg shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-150">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-muted px-1.5 pb-1.5">
+                        Sumar este monto a...
+                    </p>
+                    {savingsItems.length === 0 ? (
+                        <p className="text-[10px] text-muted px-1.5 pb-1 leading-snug">
+                            Todavía no tenés ningún ahorro creado este mes — creá uno primero en la sección Ahorros.
+                        </p>
+                    ) : (
+                        <div className="space-y-0.5 max-h-40 overflow-y-auto">
+                            {savingsItems.map((s) => (
+                                <button
+                                    key={s.id}
+                                    type="button"
+                                    onClick={() => handlePick(s.id)}
+                                    className={`w-full flex items-center justify-between gap-1.5 text-left px-1.5 py-1.5 rounded-lg text-[11px] transition-colors ${
+                                        s.id === item.linked_saving_item_id
+                                            ? 'bg-(--accent-soft) text-(--accent)'
+                                            : 'text-secondary hover:bg-white/5 hover:text-primary'
+                                    }`}
+                                >
+                                    <span className="truncate">{s.label}</span>
+                                    {s.id === item.linked_saving_item_id && <Check size={11} className="shrink-0" />}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    {item.linked_saving_item_id && (
+                        <button
+                            type="button"
+                            onClick={() => handlePick(null)}
+                            className="w-full flex items-center gap-1 mt-1 pt-1 border-t border-white/10 px-1.5 py-1 text-[10px] text-muted hover:text-(--danger) transition-colors"
+                        >
+                            <XIcon size={10} /> Quitar vínculo
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const RowActions = ({ item, allowSavingsLink, allowContribution, savingsItems, onLinkSavings, onToggleAbono, onRequestDelete }) => (
     <div className="flex items-center gap-1.5 shrink-0">
         {allowContribution && (
             <button
@@ -66,19 +148,7 @@ const RowActions = ({ item, allowSavingsLink, allowContribution, onToggleSavings
             </button>
         )}
         {allowSavingsLink && (
-            <button
-                type="button"
-                onClick={onToggleSavings}
-                title="Este monto también se suma en Ahorros, sin cargarlo dos veces"
-                className={`inline-flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full transition-all shrink-0 ${
-                    item.is_savings_link
-                        ? 'bg-(--accent-soft) text-(--accent)'
-                        : 'bg-white/5 text-muted hover:text-secondary'
-                }`}
-            >
-                <ArrowRight size={9} />
-                <span className="sm:hidden">Ahorros</span>
-            </button>
+            <SavingsLinkPicker item={item} savingsItems={savingsItems || []} onLink={onLinkSavings} />
         )}
         <button
             type="button"
@@ -130,7 +200,7 @@ const AbonoForm = ({ onSubmit, onCancel }) => {
     );
 };
 
-const BudgetRow = ({ item, section, allowSavingsLink, allowContribution, onUpdate, onDelete, onContribute, theme, compact }) => {
+const BudgetRow = ({ item, section, allowSavingsLink, allowContribution, savingsItems, onUpdate, onDelete, onContribute, theme, compact }) => {
     const [label, setLabel] = useState(item.label);
     const [budgeted, setBudgeted] = useState(String(item.budgeted_amount));
     const [actual, setActual] = useState(String(item.actual_amount));
@@ -157,12 +227,20 @@ const BudgetRow = ({ item, section, allowSavingsLink, allowContribution, onUpdat
         if (
             next.label === item.label &&
             next.budgeted_amount === item.budgeted_amount &&
-            next.actual_amount === item.actual_amount &&
-            (next.is_savings_link ?? item.is_savings_link) === item.is_savings_link
+            next.actual_amount === item.actual_amount
         ) {
             return;
         }
         const ok = await onUpdate(item.id, next);
+        setSaveState(ok ? 'saved' : 'error');
+        clearTimeout(pulseTimeout.current);
+        pulseTimeout.current = setTimeout(() => setSaveState('idle'), 900);
+    };
+
+    // El vínculo a un ahorro se aplica al toque (no espera a un blur de
+    // input) — es una acción propia, no parte del formulario de label/monto.
+    const handleLinkSavings = async (targetId) => {
+        const ok = await onUpdate(item.id, { link_to_saving_item_id: targetId });
         setSaveState(ok ? 'saved' : 'error');
         clearTimeout(pulseTimeout.current);
         pulseTimeout.current = setTimeout(() => setSaveState('idle'), 900);
@@ -200,7 +278,8 @@ const BudgetRow = ({ item, section, allowSavingsLink, allowContribution, onUpdat
                         item={item}
                         allowSavingsLink={allowSavingsLink}
                         allowContribution={allowContribution}
-                        onToggleSavings={() => onUpdate(item.id, { is_savings_link: !item.is_savings_link })}
+                        savingsItems={savingsItems}
+                        onLinkSavings={handleLinkSavings}
                         onToggleAbono={() => setShowAbonoForm((v) => !v)}
                         onRequestDelete={() => setShowDeleteConfirm(true)}
                     />
@@ -246,7 +325,8 @@ const BudgetRow = ({ item, section, allowSavingsLink, allowContribution, onUpdat
                         item={item}
                         allowSavingsLink={allowSavingsLink}
                         allowContribution={allowContribution}
-                        onToggleSavings={() => onUpdate(item.id, { is_savings_link: !item.is_savings_link })}
+                        savingsItems={savingsItems}
+                        onLinkSavings={handleLinkSavings}
                         onToggleAbono={() => setShowAbonoForm((v) => !v)}
                         onRequestDelete={() => setShowDeleteConfirm(true)}
                     />
@@ -372,6 +452,7 @@ export const BudgetSectionPanel = ({
     onContributeItem,
     onViewSyncedExpense,
     openingCash,
+    savingsItems = [],
     compact = false,
     theme = 'dark',
 }) => {
@@ -452,6 +533,7 @@ export const BudgetSectionPanel = ({
                             section={section}
                             allowSavingsLink={meta.allowSavingsLink}
                             allowContribution={allowContribution}
+                            savingsItems={savingsItems}
                             onUpdate={onUpdateItem}
                             onDelete={onDeleteItem}
                             onContribute={onContributeItem}

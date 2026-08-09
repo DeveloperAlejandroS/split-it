@@ -310,6 +310,11 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, theme = 'dark' }) => {
             onContributeItem={handleContributeItem}
             onViewSyncedExpense={splitSync ? onViewSyncedExpense : undefined}
             openingCash={section === 'income' ? opening.cash_balance : undefined}
+            savingsItems={
+                section === 'fixed_expense' || section === 'tracked_expense'
+                    ? sections.saving.items.filter((i) => !i.is_split_synced)
+                    : undefined
+            }
             compact={compact}
             theme={theme}
         />

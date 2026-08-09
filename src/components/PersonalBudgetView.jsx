@@ -9,8 +9,8 @@ import { API_URL } from '../config/api';
 
 const TOKEN_KEY = 'splitit_jwt';
 
-const HeroStat = ({ label, hint, budgeted, actual }) => (
-    <GlassCard className="p-5 flex-1 min-w-48">
+const HeroStat = ({ label, hint, budgeted, actual, theme }) => (
+    <GlassCard className="p-5 flex-1 min-w-48" theme={theme}>
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted mb-1">{label}</p>
         <p className="text-[11px] text-muted mb-2 leading-snug">{hint}</p>
         <p className="text-2xl font-black tabular text-primary">
@@ -98,7 +98,7 @@ const OpeningBalanceField = ({ label, hint, value, onSave }) => {
     );
 };
 
-export const PersonalBudgetView = ({ onViewSyncedExpense }) => {
+export const PersonalBudgetView = ({ onViewSyncedExpense, theme = 'dark' }) => {
     const [monthKey, setMonthKey] = useState(() => getCurrentMonthKey());
     const [navDirection, setNavDirection] = useState('forward');
     const [data, setData] = useState(null);
@@ -168,6 +168,10 @@ export const PersonalBudgetView = ({ onViewSyncedExpense }) => {
         (itemId) => performItemAction(`/budget/items/${itemId}`, 'DELETE'),
         [performItemAction],
     );
+    const handleContributeItem = useCallback(
+        (itemId, amount) => performItemAction(`/budget/items/${itemId}/contribute`, 'PATCH', { amount }),
+        [performItemAction],
+    );
     const handleUpdateOpening = useCallback(
         (patch) => performItemAction(`/budget/${monthKey}/opening`, 'PATCH', patch),
         [performItemAction, monthKey],
@@ -229,7 +233,7 @@ export const PersonalBudgetView = ({ onViewSyncedExpense }) => {
                 </div>
             )}
 
-            <GlassCard className="p-3 flex items-center justify-between">
+            <GlassCard className="p-3 flex items-center justify-between" theme={theme}>
                 <button
                     type="button"
                     onClick={() => goToMonth(-1)}
@@ -259,12 +263,14 @@ export const PersonalBudgetView = ({ onViewSyncedExpense }) => {
                         hint="Lo que te queda de Ingresos menos Gastos Fijos y Gastos, antes de Ahorros/Deudas."
                         budgeted={totals.budgeted_net}
                         actual={totals.actual_net}
+                        theme={theme}
                     />
                     <HeroStat
                         label="Saldo semanal"
                         hint="El presupuestado repartido en 4 semanas, para saber cuánto gastar por semana."
                         budgeted={totals.weekly_budgeted}
                         actual={totals.weekly_actual}
+                        theme={theme}
                     />
                 </div>
 
@@ -289,7 +295,9 @@ export const PersonalBudgetView = ({ onViewSyncedExpense }) => {
                                 onAddItem={handleAddItem}
                                 onUpdateItem={handleUpdateItem}
                                 onDeleteItem={handleDeleteItem}
+                                onContributeItem={handleContributeItem}
                                 onViewSyncedExpense={splitSync ? onViewSyncedExpense : undefined}
+                                theme={theme}
                             />
                         </div>
                     ))}
@@ -298,7 +306,7 @@ export const PersonalBudgetView = ({ onViewSyncedExpense }) => {
                 {/* Flujo de caja: la misma fórmula del Excel, desglosada línea por línea
                     para que se entienda de dónde sale el Balance final, en vez de
                     mostrar solo el número. */}
-                <GlassCard className="p-5">
+                <GlassCard className="p-5" theme={theme}>
                     <h4 className="text-sm font-bold text-primary mb-1">Flujo de Caja</h4>
                     <p className="text-[11px] text-muted mb-3 leading-snug">
                         Cómo se arma el balance final del mes, paso a paso.

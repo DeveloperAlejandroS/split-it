@@ -382,7 +382,7 @@ const App = () => {
             {/* Main Content */}
             <main className="mx-auto max-w-6xl px-4 sm:px-6 xl:pl-28 xl:pr-8 pb-40 xl:pb-16 pt-8 xl:pt-10 animate-fade-up">
                 {activeTab === 'personal' ? (
-                    <PersonalBudgetView onViewSyncedExpense={(expenseId) => handleOpenExpenseDetail({ id: expenseId })} />
+                    <PersonalBudgetView theme={theme} onViewSyncedExpense={(expenseId) => handleOpenExpenseDetail({ id: expenseId })} />
                 ) : (
                     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(340px,1fr)] items-start">
                         <section className="space-y-5 min-w-0">

@@ -13,6 +13,7 @@ export const ConfirmDialog = ({
     cancelLabel = 'Cancelar',
     tone = 'danger', // 'danger' | 'warning'
     isLoading = false,
+    theme = 'dark',
     onConfirm,
     onCancel,
 }) => {
@@ -34,7 +35,7 @@ export const ConfirmDialog = ({
             role="presentation"
         >
             <GlassCard
-                theme="dark"
+                theme={theme}
                 className="relative w-full max-w-sm rounded-4xl p-6 border border-white/10 animate-in fade-in zoom-in-95 duration-200"
             >
                 <div className="flex items-start gap-3 mb-4">

@@ -14,6 +14,7 @@ export const ExpenseDetailModal = ({
     onEdit,
     onDelete,
     isLoading,
+    theme = 'dark',
 }) => {
     const [pendingActionKey, setPendingActionKey] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -200,6 +201,7 @@ export const ExpenseDetailModal = ({
                 message="Esta acción no se puede deshacer. Se eliminará el gasto y el estado de pago de todos los participantes."
                 confirmLabel="Eliminar"
                 isLoading={isLoading}
+                theme={theme}
                 onConfirm={handleDeleteConfirm}
                 onCancel={() => setShowDeleteConfirm(false)}
             />

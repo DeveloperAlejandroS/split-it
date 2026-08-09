@@ -42,7 +42,7 @@ export const LoginView = ({ onAuth, loadData, theme = 'dark', onToggleTheme }) =
             const res = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ identifier: email.trim(), password }),
             });
             const d = await res.json();
             if (res.ok) {
@@ -203,14 +203,14 @@ export const LoginView = ({ onAuth, loadData, theme = 'dark', onToggleTheme }) =
 
                             <div className="space-y-3">
                                 <label className="block text-[10px] font-bold uppercase tracking-[0.28em] text-secondary">
-                                    Email
+                                    {mode === 'login' ? 'Email, usuario o teléfono' : 'Email'}
                                 </label>
                                 <div className="relative">
                                     <Mail size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-secondary" />
                                     <input
                                         className="input-underline"
-                                        placeholder="you@example.com"
-                                        type="email"
+                                        placeholder={mode === 'login' ? 'you@example.com, usuario o +56...' : 'you@example.com'}
+                                        type={mode === 'login' ? 'text' : 'email'}
                                         required
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}

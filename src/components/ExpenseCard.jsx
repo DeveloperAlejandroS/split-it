@@ -35,7 +35,7 @@ export const ExpenseCard = ({
 
                     <div className="min-w-0 space-y-1.5">
                         <div>
-                            <h4 className="font-semibold text-primary leading-tight truncate">{expense.description}</h4>
+                            <h4 className="font-semibold text-primary leading-tight truncate" title={expense.description}>{expense.description}</h4>
                             <p className="text-xs text-muted mt-0.5">
                                 {participants.length} participante{participants.length !== 1 ? 's' : ''}
                             </p>

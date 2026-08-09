@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { ArrowRight, CirclePlus, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { ConfirmDialog } from './ConfirmDialog';
 import { AnimatedNumber } from './AnimatedNumber';
+import { CurrencyInput } from './CurrencyInput';
 import { formatCurrency } from '../utils/helpers';
 import { SECTION_META, getVariance } from '../utils/budgetHelpers';
 
@@ -39,13 +40,11 @@ const VarianceHint = ({ section, budgetedAmount, actualAmount }) => {
 const AmountField = ({ label, value, onChange, onBlur, showVariance, section, itemBudgeted, itemActual }) => (
     <label className="block min-w-0">
         <span className="block text-[9px] font-bold uppercase tracking-wider text-muted mb-0.5 sm:hidden">{label}</span>
-        <input
-            type="number"
+        <CurrencyInput
             value={value}
             onChange={onChange}
             onBlur={onBlur}
             className="w-full bg-white/5 rounded-lg px-2 py-1.5 sm:py-1 text-sm sm:text-xs text-primary font-semibold sm:font-normal outline-none text-right tabular focus:bg-white/10 transition-colors"
-            placeholder="0"
         />
         {showVariance && (
             <VarianceHint section={section} budgetedAmount={itemBudgeted} actualAmount={itemActual} />
@@ -53,8 +52,19 @@ const AmountField = ({ label, value, onChange, onBlur, showVariance, section, it
     </label>
 );
 
-const RowActions = ({ item, allowSavingsLink, onToggleSavings, onRequestDelete }) => (
+const RowActions = ({ item, allowSavingsLink, allowContribution, onToggleSavings, onToggleAbono, onRequestDelete }) => (
     <div className="flex items-center gap-1.5 shrink-0">
+        {allowContribution && (
+            <button
+                type="button"
+                onClick={onToggleAbono}
+                title="Abonar — sumar plata a este ítem sin crear una fila nueva"
+                className="text-(--success) hover:brightness-90 transition-all p-1.5 sm:p-1 shrink-0"
+                aria-label={`Abonar a ${item.label}`}
+            >
+                <CirclePlus size={14} />
+            </button>
+        )}
         {allowSavingsLink && (
             <button
                 type="button"
@@ -81,13 +91,53 @@ const RowActions = ({ item, allowSavingsLink, onToggleSavings, onRequestDelete }
     </div>
 );
 
-const BudgetRow = ({ item, section, allowSavingsLink, onUpdate, onDelete }) => {
+const AbonoForm = ({ onSubmit, onCancel }) => {
+    const [amount, setAmount] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const n = Number(amount);
+        if (!Number.isFinite(n) || n <= 0) return;
+        setIsSubmitting(true);
+        const ok = await onSubmit(n);
+        setIsSubmitting(false);
+        if (ok) onCancel();
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="flex items-center gap-2 py-2 px-2 sm:px-1 -mt-1 mb-1 rounded-lg bg-(--success-soft)">
+            <span className="text-[11px] font-semibold text-(--success) shrink-0">Abonar</span>
+            <CurrencyInput
+                value={amount}
+                onChange={setAmount}
+                autoFocus
+                placeholder="$0"
+                className="flex-1 min-w-0 bg-white/10 rounded-lg px-2 py-1 text-sm text-primary outline-none text-right tabular"
+            />
+            <button
+                type="submit"
+                disabled={isSubmitting || !amount}
+                className="text-(--success) disabled:opacity-40 p-1 shrink-0"
+                aria-label="Confirmar abono"
+            >
+                <CirclePlus size={16} />
+            </button>
+            <button type="button" onClick={onCancel} className="text-muted hover:text-secondary p-1 shrink-0 text-sm" aria-label="Cancelar abono">
+                ✕
+            </button>
+        </form>
+    );
+};
+
+const BudgetRow = ({ item, section, allowSavingsLink, allowContribution, onUpdate, onDelete, onContribute, theme }) => {
     const [label, setLabel] = useState(item.label);
     const [budgeted, setBudgeted] = useState(String(item.budgeted_amount));
     const [actual, setActual] = useState(String(item.actual_amount));
     const [saveState, setSaveState] = useState('idle'); // 'idle' | 'saved' | 'error'
     const [isRemoving, setIsRemoving] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showAbonoForm, setShowAbonoForm] = useState(false);
     const pulseTimeout = useRef(null);
 
     // Sincroniza los inputs locales cuando el ítem cambia desde el servidor
@@ -143,20 +193,23 @@ const BudgetRow = ({ item, section, allowSavingsLink, onUpdate, onDelete }) => {
                         onBlur={() => commit({})}
                         className="flex-1 min-w-0 bg-transparent text-sm font-medium text-primary outline-none focus:text-(--accent) truncate"
                         placeholder="Descripción"
+                        title={label}
                     />
                     <RowActions
                         item={item}
                         allowSavingsLink={allowSavingsLink}
+                        allowContribution={allowContribution}
                         onToggleSavings={() => onUpdate(item.id, { is_savings_link: !item.is_savings_link })}
+                        onToggleAbono={() => setShowAbonoForm((v) => !v)}
                         onRequestDelete={() => setShowDeleteConfirm(true)}
                     />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                    <AmountField label="Presupuestado" value={budgeted} onChange={(e) => setBudgeted(e.target.value)} onBlur={() => commit({})} />
+                    <AmountField label="Presupuestado" value={budgeted} onChange={setBudgeted} onBlur={() => commit({})} />
                     <AmountField
                         label="Actual"
                         value={actual}
-                        onChange={(e) => setActual(e.target.value)}
+                        onChange={setActual}
                         onBlur={() => commit({})}
                         showVariance
                         section={section}
@@ -175,10 +228,10 @@ const BudgetRow = ({ item, section, allowSavingsLink, onUpdate, onDelete }) => {
                     className="bg-transparent text-sm text-primary outline-none focus:text-(--accent) min-w-0 truncate self-center h-7"
                     placeholder="Descripción"
                 />
-                <AmountField value={budgeted} onChange={(e) => setBudgeted(e.target.value)} onBlur={() => commit({})} />
+                <AmountField value={budgeted} onChange={setBudgeted} onBlur={() => commit({})} />
                 <AmountField
                     value={actual}
-                    onChange={(e) => setActual(e.target.value)}
+                    onChange={setActual}
                     onBlur={() => commit({})}
                     showVariance
                     section={section}
@@ -189,11 +242,20 @@ const BudgetRow = ({ item, section, allowSavingsLink, onUpdate, onDelete }) => {
                     <RowActions
                         item={item}
                         allowSavingsLink={allowSavingsLink}
+                        allowContribution={allowContribution}
                         onToggleSavings={() => onUpdate(item.id, { is_savings_link: !item.is_savings_link })}
+                        onToggleAbono={() => setShowAbonoForm((v) => !v)}
                         onRequestDelete={() => setShowDeleteConfirm(true)}
                     />
                 </div>
             </div>
+
+            {showAbonoForm && (
+                <AbonoForm
+                    onSubmit={(amount) => onContribute(item.id, amount)}
+                    onCancel={() => setShowAbonoForm(false)}
+                />
+            )}
 
             <ConfirmDialog
                 isOpen={showDeleteConfirm}
@@ -201,6 +263,7 @@ const BudgetRow = ({ item, section, allowSavingsLink, onUpdate, onDelete }) => {
                 title={`¿Eliminar "${item.label}"?`}
                 message="Esta acción no se puede deshacer."
                 confirmLabel="Eliminar"
+                theme={theme}
                 onConfirm={handleConfirmDelete}
                 onCancel={() => setShowDeleteConfirm(false)}
             />
@@ -257,17 +320,15 @@ const AddRowForm = ({ section, onAdd }) => {
                     {submitButton}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                    <input
-                        type="number"
+                    <CurrencyInput
                         value={budgeted}
-                        onChange={(e) => setBudgeted(e.target.value)}
+                        onChange={setBudgeted}
                         placeholder="Presupuestado"
                         className="bg-white/5 rounded-lg px-2 py-1.5 text-sm text-secondary outline-none text-right tabular"
                     />
-                    <input
-                        type="number"
+                    <CurrencyInput
                         value={actual}
-                        onChange={(e) => setActual(e.target.value)}
+                        onChange={setActual}
                         placeholder="Actual"
                         className="bg-white/5 rounded-lg px-2 py-1.5 text-sm text-secondary outline-none text-right tabular"
                     />
@@ -282,18 +343,14 @@ const AddRowForm = ({ section, onAdd }) => {
                     placeholder={SECTION_META[section]?.addLabel || 'Nueva fila'}
                     className="bg-white/5 rounded-lg px-2 py-1.5 text-sm text-primary outline-none focus:border-(--accent)/50 border border-transparent min-w-0"
                 />
-                <input
-                    type="number"
+                <CurrencyInput
                     value={budgeted}
-                    onChange={(e) => setBudgeted(e.target.value)}
-                    placeholder="$0"
+                    onChange={setBudgeted}
                     className="bg-white/5 rounded-lg px-2 py-1.5 text-xs text-secondary outline-none text-right tabular"
                 />
-                <input
-                    type="number"
+                <CurrencyInput
                     value={actual}
-                    onChange={(e) => setActual(e.target.value)}
-                    placeholder="$0"
+                    onChange={setActual}
                     className="bg-white/5 rounded-lg px-2 py-1.5 text-xs text-secondary outline-none text-right tabular"
                 />
                 {submitButton}
@@ -309,16 +366,19 @@ export const BudgetSectionPanel = ({
     onAddItem,
     onUpdateItem,
     onDeleteItem,
+    onContributeItem,
     onViewSyncedExpense,
+    theme = 'dark',
 }) => {
     const meta = SECTION_META[section];
+    const allowContribution = section === 'saving' || section === 'debt';
     const manualItems = items.filter((item) => !item.is_split_synced);
     const budgetedTotal = items.reduce((sum, i) => sum + i.budgeted_amount, 0);
     const actualTotal = items.reduce((sum, i) => sum + i.actual_amount, 0);
     const totalVariance = getVariance(section, budgetedTotal, actualTotal);
 
     return (
-        <GlassCard className="p-4 sm:p-5">
+        <GlassCard className="p-4 sm:p-5" theme={theme}>
             <div className="flex items-start justify-between mb-1 gap-3">
                 <div className="min-w-0">
                     <h4 className="text-sm font-bold text-primary">{meta.label}</h4>
@@ -366,8 +426,11 @@ export const BudgetSectionPanel = ({
                             item={item}
                             section={section}
                             allowSavingsLink={meta.allowSavingsLink}
+                            allowContribution={allowContribution}
                             onUpdate={onUpdateItem}
                             onDelete={onDeleteItem}
+                            onContribute={onContributeItem}
+                            theme={theme}
                         />
                     ))}
                 </div>
@@ -397,7 +460,7 @@ export const BudgetSectionPanel = ({
                                     className="w-full flex items-center justify-between gap-2 rounded-xl bg-(--info-soft) px-3 py-2 text-left hover:brightness-95 transition-all animate-row-in"
                                 >
                                     <span className="text-xs text-primary truncate flex items-center gap-1.5 min-w-0">
-                                        <span className="truncate">{item.label}</span>
+                                        <span className="truncate" title={item.label}>{item.label}</span>
                                         <ExternalLink size={11} className="text-(--info) shrink-0" />
                                     </span>
                                     <span className="text-right shrink-0">

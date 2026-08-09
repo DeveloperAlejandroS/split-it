@@ -27,7 +27,7 @@ export const SECTION_META = {
     income: {
         label: 'Ingresos',
         addLabel: 'Nombre del ingreso (ej. Sueldo)',
-        description: 'Plata que entra este mes: sueldo, pagos extra, préstamos que te hacen.',
+        description: 'Dinero que entra este mes: sueldo, pagos extra, préstamos que te hacen.',
         higherActualIsGood: true,
     },
     fixed_expense: {
@@ -47,7 +47,7 @@ export const SECTION_META = {
     saving: {
         label: 'Ahorros',
         addLabel: 'Nombre del ahorro (ej. Fondo emergencia)',
-        description: 'Plata apartada este mes. Se completa sola con las filas marcadas "→ Ahorros" en Gastos Fijos o Seguimiento.',
+        description: 'Dinero apartado este mes. Se completa sola con las filas marcadas "→ Ahorros" en Gastos Fijos o Seguimiento.',
         higherActualIsGood: true,
     },
     debt: {

@@ -8,6 +8,7 @@ import { ExpenseDetailModal } from './components/ExpenseDetailModal';
 import { BottomIsland } from './components/BottomIsland';
 import { Sidebar } from './components/Sidebar';
 import { PersonalBudgetView } from './components/PersonalBudgetView';
+import { AddBudgetItemModal } from './components/AddBudgetItemModal';
 import { LoginView } from './components/LoginView';
 import { numberOrZero } from './utils/helpers';
 import { brandPalette } from './utils/brandPalette';
@@ -26,6 +27,8 @@ const App = () => {
     const [pendingFriendRequests, setPendingFriendRequests] = useState([]);
     const [error, setError] = useState('');
     const [showCreateExpense, setShowCreateExpense] = useState(false);
+    const [showAddBudgetItem, setShowAddBudgetItem] = useState(false);
+    const [budgetRefreshKey, setBudgetRefreshKey] = useState(0);
     const [editingExpense, setEditingExpense] = useState(null);
     const [selectedExpenseId, setSelectedExpenseId] = useState(null);
     const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
@@ -132,7 +135,7 @@ const App = () => {
     // Wrapper compartido por las acciones de liquidación/edición/borrado de
     // gastos: hace el fetch autenticado, refresca los datos si sale bien, y
     // deja el error visible en el banner si falla.
-    const performExpenseAction = useCallback(async (path, method = 'PATCH') => {
+    const performExpenseAction = useCallback(async (path, method = 'PATCH', body = null) => {
         const token = localStorage.getItem(TOKEN_KEY);
         setIsLoading(true);
         try {
@@ -140,8 +143,10 @@ const App = () => {
                 method,
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
+                    'Accept': 'application/json',
+                    ...(body ? { 'Content-Type': 'application/json' } : {}),
+                },
+                ...(body ? { body: JSON.stringify(body) } : {}),
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || `Error ${response.status}`);
@@ -157,12 +162,12 @@ const App = () => {
     }, [loadData]);
 
     const handleClaimPaid = useCallback(
-        (expenseId) => performExpenseAction(`/expenses/${expenseId}/claim`).catch(() => {}),
+        (expenseId, amount) => performExpenseAction(`/expenses/${expenseId}/claim`, 'PATCH', amount ? { amount } : null).catch(() => {}),
         [performExpenseAction],
     );
 
     const handleMarkPaid = useCallback(
-        (expenseId, userId) => performExpenseAction(`/expenses/${expenseId}/participants/${userId}/mark-paid`).catch(() => {}),
+        (expenseId, userId, amount) => performExpenseAction(`/expenses/${expenseId}/participants/${userId}/mark-paid`, 'PATCH', amount ? { amount } : null).catch(() => {}),
         [performExpenseAction],
     );
 
@@ -214,6 +219,21 @@ const App = () => {
         setIsHamburgerOpen(false);
         setEditingExpense(null);
         setShowCreateExpense(true);
+    };
+
+    // Botón de agregar contextual: en "Gastos personales" abre el picker de
+    // categorías del presupuesto en vez del formulario de gasto compartido.
+    const handleContextualAdd = () => {
+        if (activeTab === 'personal') {
+            setShowAddBudgetItem(true);
+        } else {
+            handleOpenCreateExpense();
+        }
+    };
+
+    const handleBudgetItemCreated = () => {
+        setShowAddBudgetItem(false);
+        setBudgetRefreshKey((k) => k + 1);
     };
 
     const handleCloseCreateExpense = useCallback(() => {
@@ -338,7 +358,7 @@ const App = () => {
                 onOpenExpenses={() => setActiveTab('expenses')}
                 onOpenFriends={() => setActiveTab('friends')}
                 onOpenPersonal={() => setActiveTab('personal')}
-                onCreateExpense={handleOpenCreateExpense}
+                onCreateExpense={handleContextualAdd}
                 onOpenAccount={() => setIsHamburgerOpen(true)}
                 theme={theme}
                 onToggleTheme={toggleTheme}
@@ -380,9 +400,15 @@ const App = () => {
             </nav>
 
             {/* Main Content */}
-            <main className="mx-auto max-w-6xl px-4 sm:px-6 xl:pl-28 xl:pr-8 pb-40 xl:pb-16 pt-8 xl:pt-10 animate-fade-up">
+            {/* Gastos personales tiene 3 columnas de tablas (Ingresos/Deudas/
+                Ahorros + Gastos Fijos + Seguimiento) — con el mismo ancho que
+                el resto de la app quedaban tan angostas que los montos se
+                veían apretados/cortados. Le damos más aire ahí solamente. */}
+            <main className={`mx-auto px-4 sm:px-6 xl:pl-28 xl:pr-8 pb-40 xl:pb-16 pt-8 xl:pt-10 animate-fade-up ${
+                activeTab === 'personal' ? 'max-w-[105rem]' : 'max-w-6xl'
+            }`}>
                 {activeTab === 'personal' ? (
-                    <PersonalBudgetView onViewSyncedExpense={(expenseId) => handleOpenExpenseDetail({ id: expenseId })} />
+                    <PersonalBudgetView key={budgetRefreshKey} theme={theme} onViewSyncedExpense={(expenseId) => handleOpenExpenseDetail({ id: expenseId })} />
                 ) : (
                     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(340px,1fr)] items-start">
                         <section className="space-y-5 min-w-0">
@@ -456,7 +482,8 @@ const App = () => {
             </main>
 
             <BottomIsland
-                onCreateExpense={handleOpenCreateExpense}
+                activeTab={activeTab}
+                onCreateExpense={handleContextualAdd}
                 userEmail={currentUser?.email || 'User'}
                 onLogout={handleLogout}
                 isHamburgerOpen={isHamburgerOpen}
@@ -478,6 +505,13 @@ const App = () => {
                 onSuccess={() => loadData(localStorage.getItem(TOKEN_KEY))}
                 knownUsers={knownUsers}
                 currentUserId={currentUserId}
+                theme={theme}
+            />
+
+            <AddBudgetItemModal
+                isOpen={showAddBudgetItem}
+                onClose={() => setShowAddBudgetItem(false)}
+                onCreated={handleBudgetItemCreated}
                 theme={theme}
             />
 

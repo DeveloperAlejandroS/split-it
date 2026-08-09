@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback, useEffect } from 'react';
 import { Plus, X, Loader2, Search, UserPlus, SlidersHorizontal } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { ConfirmDialog } from './ConfirmDialog';
+import { CurrencyInput } from './CurrencyInput';
 import { API_URL } from '../config/api';
 import { formatCurrency, getParticipantStatus, numberOrZero } from '../utils/helpers';
 import { previewEqualSplit, sumCustomAmounts } from '../utils/splitPreview';
@@ -16,6 +17,7 @@ export const CreateExpenseForm = ({
     currentUserId,
     mode = 'create', // 'create' | 'edit'
     initialExpense = null,
+    theme = 'dark',
 }) => {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
@@ -246,7 +248,7 @@ export const CreateExpenseForm = ({
         >
             <GlassCard
                 className="relative w-full max-w-2xl rounded-4xl p-6 sm:p-7 border border-white/10 animate-in fade-in zoom-in-95 duration-200 overflow-hidden max-h-[90vh] overflow-y-auto"
-                theme="dark"
+                theme={theme}
             >
                 <div className="absolute inset-0 bg-linear-to-br from-white/8 via-transparent to-transparent pointer-events-none" />
 
@@ -322,15 +324,11 @@ export const CreateExpenseForm = ({
                                 División personalizada
                             </button>
                         </div>
-                        <input
-                            type="number"
+                        <CurrencyInput
                             value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            placeholder="0.00"
+                            onChange={setAmount}
+                            placeholder="$0"
                             className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-primary outline-none focus:border-(--accent)/50 transition-all text-sm placeholder:text-secondary"
-                            required
-                            min="0"
-                            step="0.01"
                         />
 
                         {splitType === 'equal' && equalPreview && participants.length > 0 && (
@@ -441,12 +439,9 @@ export const CreateExpenseForm = ({
                                             className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-3 py-2"
                                         >
                                             <span className="flex-1 text-sm text-primary truncate">{participant.displayName}</span>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
+                                            <CurrencyInput
                                                 value={customAmounts[participant.id] ?? ''}
-                                                onChange={(e) => setCustomAmountFor(participant.id, e.target.value)}
+                                                onChange={(val) => setCustomAmountFor(participant.id, val)}
                                                 placeholder="Monto"
                                                 className="w-28 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-primary outline-none focus:border-(--accent)/50"
                                             />
@@ -510,6 +505,7 @@ export const CreateExpenseForm = ({
                 confirmLabel="Confirmar y reiniciar pagos"
                 cancelLabel="Volver"
                 isLoading={isLoading}
+                theme={theme}
                 onConfirm={doSubmit}
                 onCancel={() => setShowResetWarning(false)}
             />

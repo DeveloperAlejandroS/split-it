@@ -4,7 +4,7 @@ import { formatCurrency } from '../utils/helpers';
 const prefersReducedMotion = () =>
     typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-// Anima un monto de plata cuando cambia (ej. el Balance sube o baja al
+// Anima un monto de dinero cuando cambia (ej. el Balance sube o baja al
 // guardar un ítem), en vez de que el número simplemente "salte" al valor
 // nuevo.
 //

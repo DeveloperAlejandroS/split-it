@@ -33,8 +33,8 @@ const FriendRow = ({ friend }) => {
             style={{ background: 'var(--surface-soft)' }}
         >
             <div className="min-w-0">
-                <p className="text-sm font-semibold text-primary truncate">{getDisplayName(user)}</p>
-                <p className="text-xs text-secondary truncate">{subtitleParts.join(' · ')}</p>
+                <p className="text-sm font-semibold text-primary line-clamp-2" title={getDisplayName(user)}>{getDisplayName(user)}</p>
+                <p className="text-xs text-secondary line-clamp-2" title={subtitleParts.join(' · ')}>{subtitleParts.join(' · ')}</p>
             </div>
             <span className="shrink-0 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
                 {status}
@@ -181,8 +181,8 @@ export const FriendsView = ({ friends = [], pendingRequests = [], token, onRefre
                         return (
                             <GlassCard key={requestId ?? index} theme={theme} className="p-4 flex items-center justify-between gap-4">
                                 <div className="min-w-0">
-                                    <p className="text-sm font-semibold text-primary truncate">{getDisplayName(user)}</p>
-                                    <p className="text-xs text-secondary truncate">
+                                    <p className="text-sm font-semibold text-primary line-clamp-2" title={getDisplayName(user)}>{getDisplayName(user)}</p>
+                                    <p className="text-xs text-secondary line-clamp-2" title={[user?.username, user?.email, user?.phone].filter(Boolean).join(' · ')}>
                                         {[user?.username, user?.email, user?.phone].filter(Boolean).join(' · ')}
                                     </p>
                                 </div>
@@ -314,8 +314,8 @@ export const FriendsView = ({ friends = [], pendingRequests = [], token, onRefre
                                             style={{ background: 'var(--surface-soft)' }}
                                         >
                                             <div className="min-w-0">
-                                                <p className="text-sm font-semibold text-primary truncate">{getDisplayName(user)}</p>
-                                                <p className="text-xs text-secondary truncate">
+                                                <p className="text-sm font-semibold text-primary line-clamp-2" title={getDisplayName(user)}>{getDisplayName(user)}</p>
+                                                <p className="text-xs text-secondary line-clamp-2" title={[user?.username, user?.email, user?.phone].filter(Boolean).join(' · ')}>
                                                     {[user?.username, user?.email, user?.phone].filter(Boolean).join(' · ')}
                                                 </p>
                                                 {user?.friendship_status && user.friendship_status !== 'none' && (

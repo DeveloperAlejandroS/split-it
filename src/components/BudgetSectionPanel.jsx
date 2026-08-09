@@ -373,8 +373,13 @@ export const BudgetSectionPanel = ({
     const meta = SECTION_META[section];
     const allowContribution = section === 'saving' || section === 'debt';
     const manualItems = items.filter((item) => !item.is_split_synced);
-    const budgetedTotal = items.reduce((sum, i) => sum + i.budgeted_amount, 0);
-    const actualTotal = items.reduce((sum, i) => sum + i.actual_amount, 0);
+    // Los ítems `is_pending` (obligación de un gasto compartido que todavía
+    // no se pagó de verdad) se listan igual en `items`, pero no cuentan acá
+    // — mismo criterio que `computeMonthTotals` en el backend, así el total
+    // del encabezado no incluye plata que todavía no se movió de verdad.
+    const confirmedItems = items.filter((item) => !item.is_pending);
+    const budgetedTotal = confirmedItems.reduce((sum, i) => sum + i.budgeted_amount, 0);
+    const actualTotal = confirmedItems.reduce((sum, i) => sum + i.actual_amount, 0);
     const totalVariance = getVariance(section, budgetedTotal, actualTotal);
 
     return (
@@ -452,26 +457,40 @@ export const BudgetSectionPanel = ({
                             // actual_amount baja con cada liquidación de un participante.
                             // La diferencia es exactamente lo que ya te devolvieron.
                             const alreadyReturned = item.budgeted_amount - item.actual_amount;
+                            // is_pending = todavía no pagaste de verdad tu parte, así que
+                            // esto no cuenta en tu Balance — se marca distinto (ámbar) para
+                            // que se note que es una obligación visible, no plata movida.
+                            const isPending = item.is_pending;
                             return (
                                 <button
                                     key={item.id}
                                     type="button"
                                     onClick={() => onViewSyncedExpense?.(item.split_expense_id)}
-                                    className="w-full flex items-center justify-between gap-2 rounded-xl bg-(--info-soft) px-3 py-2 text-left hover:brightness-95 transition-all animate-row-in"
+                                    className={`w-full flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-left hover:brightness-95 transition-all animate-row-in ${
+                                        isPending ? 'bg-(--warning-soft)' : 'bg-(--info-soft)'
+                                    }`}
                                 >
                                     <span className="text-xs text-primary truncate flex items-center gap-1.5 min-w-0">
-                                        <span className="truncate" title={item.label}>{item.label}</span>
-                                        <ExternalLink size={11} className="text-(--info) shrink-0" />
+                                        <span className="line-clamp-2" title={item.label}>{item.label}</span>
+                                        <ExternalLink size={11} className={isPending ? 'text-(--warning) shrink-0' : 'text-(--info) shrink-0'} />
                                     </span>
                                     <span className="text-right shrink-0">
-                                        <span className="block text-xs font-semibold text-(--info) tabular">
+                                        <span className={`block text-xs font-semibold tabular ${isPending ? 'text-(--warning)' : 'text-(--info)'}`}>
                                             {formatCurrency(item.actual_amount)}
                                         </span>
-                                        {alreadyReturned > 0 && (
+                                        {isPending ? (
+                                            <span className="block text-[9px] text-(--warning) font-bold uppercase tracking-wide">
+                                                Pendiente de pago
+                                            </span>
+                                        ) : alreadyReturned > 0 ? (
                                             <span className="block text-[9px] text-(--success) tabular">
                                                 ya te devolvieron {formatCurrency(alreadyReturned)}
                                             </span>
-                                        )}
+                                        ) : item.split_role === 'participant' ? (
+                                            <span className="block text-[9px] text-(--success) font-bold uppercase tracking-wide">
+                                                Ya pagado
+                                            </span>
+                                        ) : null}
                                     </span>
                                 </button>
                             );

@@ -28,6 +28,8 @@
   --info-soft: rgba(111, 168, 220, 0.14);
   --danger: #e8637a;
   --danger-soft: rgba(232, 99, 122, 0.14);
+  --warning: #e0a95a;
+  --warning-soft: rgba(224, 169, 90, 0.14);
   --neutral-chip: rgba(167, 154, 133, 0.16);
 
   --shadow:
@@ -76,6 +78,8 @@
   --info-soft: rgba(62, 114, 176, 0.1);
   --danger: #c43f58;
   --danger-soft: rgba(196, 63, 88, 0.1);
+  --warning: #a8722f;
+  --warning-soft: rgba(168, 114, 47, 0.12);
   --neutral-chip: rgba(107, 95, 76, 0.1);
 
   --shadow:

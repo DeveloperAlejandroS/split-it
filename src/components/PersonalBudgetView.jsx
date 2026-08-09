@@ -275,7 +275,12 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, theme = 'dark' }) => {
                 </div>
 
                 {/* Sections grid */}
-                <div className="grid gap-4 lg:grid-cols-2">
+                {/* items-start: sin esto, CSS Grid estira cada card para
+                    igualar la altura de su par en la misma fila — cuando una
+                    sección crece con más ítems, la de al lado se estira con
+                    espacio vacío y todo el resto de la grilla se corre hacia
+                    abajo de forma rara. */}
+                <div className="grid gap-4 lg:grid-cols-2 items-start">
                     {[
                         { section: 'income', splitSync: false },
                         { section: 'fixed_expense', splitSync: false },

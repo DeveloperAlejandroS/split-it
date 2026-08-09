@@ -132,7 +132,7 @@ const App = () => {
     // Wrapper compartido por las acciones de liquidación/edición/borrado de
     // gastos: hace el fetch autenticado, refresca los datos si sale bien, y
     // deja el error visible en el banner si falla.
-    const performExpenseAction = useCallback(async (path, method = 'PATCH') => {
+    const performExpenseAction = useCallback(async (path, method = 'PATCH', body = null) => {
         const token = localStorage.getItem(TOKEN_KEY);
         setIsLoading(true);
         try {
@@ -140,8 +140,10 @@ const App = () => {
                 method,
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
+                    'Accept': 'application/json',
+                    ...(body ? { 'Content-Type': 'application/json' } : {}),
+                },
+                ...(body ? { body: JSON.stringify(body) } : {}),
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || `Error ${response.status}`);
@@ -157,12 +159,12 @@ const App = () => {
     }, [loadData]);
 
     const handleClaimPaid = useCallback(
-        (expenseId) => performExpenseAction(`/expenses/${expenseId}/claim`).catch(() => {}),
+        (expenseId, amount) => performExpenseAction(`/expenses/${expenseId}/claim`, 'PATCH', amount ? { amount } : null).catch(() => {}),
         [performExpenseAction],
     );
 
     const handleMarkPaid = useCallback(
-        (expenseId, userId) => performExpenseAction(`/expenses/${expenseId}/participants/${userId}/mark-paid`).catch(() => {}),
+        (expenseId, userId, amount) => performExpenseAction(`/expenses/${expenseId}/participants/${userId}/mark-paid`, 'PATCH', amount ? { amount } : null).catch(() => {}),
         [performExpenseAction],
     );
 

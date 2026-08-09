@@ -54,8 +54,8 @@ const AmountField = ({ label, value, onChange, onBlur, showVariance, section, it
 
 // El botón "→ Ahorros" ya no prende/apaga un toggle que auto-creaba un
 // espejo — abre un mini picker con los ahorros que YA existen este mes,
-// para elegir a cuál de ellos se destina la plata (o quitar el vínculo).
-// No se puede "crear" un ahorro desde acá: si todavía no existe ninguno,
+// para elegir a cuál de ellos se destina el dinero (o quitar el vínculo).
+// No se puede "crear" un ahorro desde aquí: si todavía no existe ninguno,
 // el picker lo deja clarísimo en vez de inventar uno solo.
 const SavingsLinkPicker = ({ item, savingsItems, onLink }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -98,7 +98,7 @@ const SavingsLinkPicker = ({ item, savingsItems, onLink }) => {
                     </p>
                     {savingsItems.length === 0 ? (
                         <p className="text-[10px] text-muted px-1.5 pb-1 leading-snug">
-                            Todavía no tenés ningún ahorro creado este mes — creá uno primero en la sección Ahorros.
+                            Todavía no tienes ningún ahorro creado este mes — crea uno primero en la sección Ahorros.
                         </p>
                     ) : (
                         <div className="space-y-0.5 max-h-40 overflow-y-auto">
@@ -140,7 +140,7 @@ const RowActions = ({ item, allowSavingsLink, allowContribution, savingsItems, o
             <button
                 type="button"
                 onClick={onToggleAbono}
-                title="Abonar — sumar plata a este ítem sin crear una fila nueva"
+                title="Abonar — sumar dinero a este ítem sin crear una fila nueva"
                 className="text-(--success) hover:brightness-90 transition-all p-1.5 sm:p-1 shrink-0"
                 aria-label={`Abonar a ${item.label}`}
             >
@@ -462,7 +462,7 @@ export const BudgetSectionPanel = ({
     // Los ítems `is_pending` (obligación de un gasto compartido que todavía
     // no se pagó de verdad) se listan igual en `items`, pero no cuentan acá
     // — mismo criterio que `computeMonthTotals` en el backend, así el total
-    // del encabezado no incluye plata que todavía no se movió de verdad.
+    // del encabezado no incluye dinero que todavía no se movió de verdad.
     const confirmedItems = items.filter((item) => !item.is_pending);
     const budgetedTotal = confirmedItems.reduce((sum, i) => sum + i.budgeted_amount, 0);
     const actualTotal = confirmedItems.reduce((sum, i) => sum + i.actual_amount, 0);
@@ -509,7 +509,7 @@ export const BudgetSectionPanel = ({
             {/* Saldo que sobró el mes anterior — informativo nomás: ya está
                 incluido en Balance como "Saldo anterior" (ver Flujo de Caja),
                 así que NO se suma acá arriba para no contarlo dos veces. Se
-                muestra en Ingresos porque es, en la práctica, plata
+                muestra en Ingresos porque es, en la práctica, dinero
                 disponible para gastar este mes. */}
             {section === 'income' && numberOrZero(openingCash) !== 0 && (
                 <div className="flex items-center justify-between gap-2 rounded-xl bg-(--accent-soft) px-3 py-2 mb-1.5 mt-1">
@@ -522,7 +522,7 @@ export const BudgetSectionPanel = ({
 
             {manualItems.length === 0 && splitSyncItems.length === 0 ? (
                 <p className="text-xs text-muted py-3">
-                    Sin ítems todavía — agregá el primero con el formulario de abajo.
+                    Sin ítems todavía — agrega el primero con el formulario de abajo.
                 </p>
             ) : (
                 <div className="mt-1">
@@ -553,14 +553,14 @@ export const BudgetSectionPanel = ({
                     </p>
                     <p className="text-[10px] text-muted mb-2 leading-snug">
                         {section === 'income'
-                            ? 'Reembolsos de gastos que le adelantaste a alguien — no se editan acá, tocá para ver el gasto.'
-                            : 'Se agregan solos cuando pagás o te toca pagar un gasto compartido — no se editan acá, tocá para ver el gasto.'}
+                            ? 'Reembolsos de gastos que le adelantaste a alguien — no se editan aquí, toca ver el gasto.'
+                            : 'Se agregan solos cuando pagas o te toca pagar un gasto compartido — no se editan aquí, toca ver el gasto.'}
                     </p>
                     <div className="space-y-1.5">
                         {splitSyncItems.map((item) => {
                             // is_pending = todavía no pagaste de verdad tu parte, así que
                             // esto no cuenta en tu Balance — se marca distinto (ámbar) para
-                            // que se note que es una obligación visible, no plata movida.
+                            // que se note que es una obligación visible, no dinero movido.
                             const isPending = item.is_pending;
                             const isIncomeRefund = item.split_role === 'payer_income';
                             return (

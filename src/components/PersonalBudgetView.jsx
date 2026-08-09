@@ -28,7 +28,7 @@ const HealthBar = ({ label, amount, max, color }) => {
 };
 
 // Botón + menú contextual flotante con un vistazo rápido a la "salud
-// financiera" del mes: de dónde sale la plata, hacia dónde se va, y qué
+// financiera" del mes: de dónde sale el dinero, hacia dónde se va, y qué
 // tan sano es el ritmo de ahorro — sin tener que sumar las 5 secciones a
 // mano para entenderlo.
 const FinancialHealthButton = ({ totals, sections, theme }) => {
@@ -141,7 +141,7 @@ const FormulaLine = ({ label, amount, sign }) => (
 
 // Input inline para corregir un saldo inicial (saldo de banco, ahorros ya
 // juntados, o deuda total pendiente). Sin esto, "Balance Deudas pendiente"
-// nunca tiene de dónde arrancar: si nunca sembrás cuánto debés hoy, el
+// nunca tiene de dónde arrancar: si nunca defines cuánto debes hoy, el
 // número solo se va poniendo negativo con cada pago en vez de acercarse a
 // cero — este control es lo que lo arregla.
 const OpeningBalanceField = ({ label, hint, value, onSave }) => {
@@ -418,7 +418,7 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, theme = 'dark' }) => {
                         <div className="mb-2 pb-2 border-b border-white/5">
                             <OpeningBalanceField
                                 label="+ Saldo anterior (banco/efectivo)"
-                                hint="Corregí este número si no coincide con lo que realmente tenés — es el punto de partida de todo el cálculo"
+                                hint="Corregí este número si no coincide con lo que realmente tienes — es el punto de partida de todo el cálculo"
                                 value={opening.cash_balance}
                                 onSave={(n) => handleUpdateOpening({ cash_balance: n })}
                             />
@@ -451,7 +451,7 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, theme = 'dark' }) => {
                             />
                             <OpeningBalanceField
                                 label="Deuda total pendiente (saldo inicial)"
-                                hint="Cuánto debés hoy en total, antes de los pagos de este mes — sin esto, el balance de deudas no tiene de dónde arrancar"
+                                hint="Cuánto debes hoy en total, antes de los pagos de este mes — sin esto, el balance de deudas no tiene de dónde arrancar"
                                 value={opening.debt_balance}
                                 onSave={(n) => handleUpdateOpening({ debt_balance: n })}
                             />

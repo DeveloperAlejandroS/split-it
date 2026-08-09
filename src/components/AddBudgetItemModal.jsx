@@ -14,8 +14,8 @@ const TOKEN_KEY = 'splitit_jwt';
 // sección correcta a mano cada vez.
 const CATEGORIES = [
     { section: 'income', label: 'Ingreso', hint: 'Sueldo, pago extra, préstamo que te hacen', icon: Banknote },
-    { section: 'saving', label: 'Ahorro', hint: 'Sumale a un fondo que ya tenés, o creá uno nuevo', icon: PiggyBank },
-    { section: 'debt', label: 'Deuda', hint: 'Registrá una deuda nueva', icon: HandCoins },
+    { section: 'saving', label: 'Ahorro', hint: 'Súmale a un fondo que ya tienes, o crea uno nuevo', icon: PiggyBank },
+    { section: 'debt', label: 'Deuda', hint: 'Registra una deuda nueva', icon: HandCoins },
     { section: 'fixed_expense', label: 'Gasto fijo', hint: 'Arriendo, servicios, cuotas — se repite cada mes', icon: Receipt },
     { section: 'tracked_expense', label: 'Gasto ocasional', hint: 'Comida, salidas, transporte del día a día', icon: CircleDollarSign },
 ];
@@ -92,7 +92,7 @@ export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, theme = 'dark' 
     const submitContribution = async (itemId) => {
         const value = Number(contributeAmount);
         if (!Number.isFinite(value) || value <= 0) {
-            setError('Ingresá un monto válido');
+            setError('Ingresa un monto válido');
             return;
         }
         setIsSaving(true);
@@ -117,18 +117,18 @@ export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, theme = 'dark' 
     // La sección `debt` del presupuesto representa PAGOS hechos este mes a
     // una deuda que ya existía (así lo usa `debt_balance = saldo inicial −
     // pagos del mes` — ver budgetSyncService). Una deuda NUEVA es lo
-    // contrario: aumenta cuánto debés, no lo baja. Si la creáramos como un
+    // contrario: aumenta cuánto debes, no lo baja. Si la creáramos como un
     // ítem más de esa sección, el monto entraría restando en vez de sumando
     // y el balance de deudas quedaría invertido. Por eso una deuda nueva no
     // crea un ítem — sube directamente el saldo inicial de deuda del mes.
     const submitNewItem = async () => {
         if (!label.trim()) {
-            setError('Ponele un nombre');
+            setError('Ponle un nombre');
             return;
         }
         const value = Number(amount);
         if (!Number.isFinite(value) || value <= 0) {
-            setError('Ingresá un monto válido');
+            setError('Ingresa un monto válido');
             return;
         }
         setIsSaving(true);
@@ -306,7 +306,7 @@ export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, theme = 'dark' 
                     <div className="space-y-3">
                         {category?.section === 'debt' && (
                             <p className="text-[10px] text-muted leading-snug bg-white/5 rounded-xl p-2.5">
-                                Esto suma al total que debés (Balance Deudas pendiente). El nombre es solo para que te acuerdes de qué se trata — el presupuesto no lleva un listado separado por deuda todavía.
+                                Esto suma al total que debes (Balance Deudas pendiente). El nombre es solo para que te acuerdes de qué se trata — el presupuesto no lleva un listado separado por deuda todavía.
                             </p>
                         )}
                         <label className="block">

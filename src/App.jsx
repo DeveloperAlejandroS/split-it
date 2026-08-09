@@ -400,7 +400,13 @@ const App = () => {
             </nav>
 
             {/* Main Content */}
-            <main className="mx-auto max-w-6xl px-4 sm:px-6 xl:pl-28 xl:pr-8 pb-40 xl:pb-16 pt-8 xl:pt-10 animate-fade-up">
+            {/* Gastos personales tiene 3 columnas de tablas (Ingresos/Deudas/
+                Ahorros + Gastos Fijos + Seguimiento) — con el mismo ancho que
+                el resto de la app quedaban tan angostas que los montos se
+                veían apretados/cortados. Le damos más aire ahí solamente. */}
+            <main className={`mx-auto px-4 sm:px-6 xl:pl-28 xl:pr-8 pb-40 xl:pb-16 pt-8 xl:pt-10 animate-fade-up ${
+                activeTab === 'personal' ? 'max-w-[105rem]' : 'max-w-6xl'
+            }`}>
                 {activeTab === 'personal' ? (
                     <PersonalBudgetView key={budgetRefreshKey} theme={theme} onViewSyncedExpense={(expenseId) => handleOpenExpenseDetail({ id: expenseId })} />
                 ) : (

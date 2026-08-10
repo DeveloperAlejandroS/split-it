@@ -117,10 +117,10 @@ export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, theme = 'dark' 
     // La sección `debt` del presupuesto representa PAGOS hechos este mes a
     // una deuda que ya existía (así lo usa `debt_balance = saldo inicial −
     // pagos del mes` — ver budgetSyncService). Una deuda NUEVA es lo
-    // contrario: aumenta cuánto debes, no lo baja. Si la creáramos como un
-    // ítem más de esa sección, el monto entraría restando en vez de sumando
-    // y el balance de deudas quedaría invertido. Por eso una deuda nueva no
-    // crea un ítem — sube directamente el saldo inicial de deuda del mes.
+    // contrario: aumenta cuánto debes, no lo baja. Por eso no se crea como
+    // un ítem más de esa sección (invertiría el signo) — se registra en el
+    // submayor de deudas (`POST /debts`), que además de subir el agregado
+    // le da rastro individual: a quién le debes, cuánto, y sus abonos.
     const submitNewItem = async () => {
         if (!label.trim()) {
             setError('Ponle un nombre');
@@ -137,15 +137,10 @@ export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, theme = 'dark' 
             const token = localStorage.getItem(TOKEN_KEY);
 
             if (category.section === 'debt') {
-                const monthRes = await fetch(`${API_URL}/budget/${monthKey}`, { headers: authHeaders(token) });
-                const monthJson = await monthRes.json();
-                if (!monthRes.ok) throw new Error(monthJson.message || `Error ${monthRes.status}`);
-                const nextDebtBalance = Number(monthJson.opening.debt_balance) + value;
-
-                const res = await fetch(`${API_URL}/budget/${monthKey}/opening`, {
-                    method: 'PATCH',
+                const res = await fetch(`${API_URL}/debts`, {
+                    method: 'POST',
                     headers: authHeaders(token, true),
-                    body: JSON.stringify({ debt_balance: nextDebtBalance }),
+                    body: JSON.stringify({ creditor_name: label.trim(), amount_owed: value }),
                 });
                 const json = await res.json();
                 if (!res.ok) throw new Error(json.message || `Error ${res.status}`);
@@ -306,7 +301,7 @@ export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, theme = 'dark' 
                     <div className="space-y-3">
                         {category?.section === 'debt' && (
                             <p className="text-[10px] text-muted leading-snug bg-white/5 rounded-xl p-2.5">
-                                Esto suma al total que debes (Balance Deudas pendiente). El nombre es solo para que te acuerdes de qué se trata — el presupuesto no lleva un listado separado por deuda todavía.
+                                Esto suma al total que debes (Balance Deudas pendiente) y queda registrado en tu Libreta de deudas — vas a poder abonarle de a poco desde ahí.
                             </p>
                         )}
                         <label className="block">

@@ -252,6 +252,7 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [libretaPending, setLibretaPending] = useState(0);
+    const [debtEntries, setDebtEntries] = useState([]);
 
     const fetchMonth = useCallback(async (key) => {
         setIsLoading(true);
@@ -294,6 +295,25 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
             }
         })();
     }, []);
+
+    // Igual que Libreta: el submayor de deudas tampoco es por mes, es un
+    // saldo vivo por acreedor.
+    const fetchDebts = useCallback(async () => {
+        try {
+            const token = localStorage.getItem(TOKEN_KEY);
+            const res = await fetch(`${API_URL}/debts`, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } });
+            const json = await res.json();
+            if (res.ok) setDebtEntries(json.entries || []);
+        } catch {
+            // Silencioso: no debería bloquear el resto del presupuesto.
+        }
+    }, []);
+
+    /* eslint-disable react-hooks/set-state-in-effect */
+    useEffect(() => {
+        fetchDebts();
+    }, [fetchDebts]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const performItemAction = useCallback(
         async (url, method, body) => {
@@ -342,6 +362,44 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
         [performItemAction, monthKey],
     );
 
+    // Un abono/borrado a una deuda cambia tanto el submayor (debtEntries)
+    // como los ítems del presupuesto de este mes (el pago que se genera) —
+    // hay que refrescar los dos.
+    const performDebtAction = useCallback(
+        async (url, method, body) => {
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                const response = await fetch(`${API_URL}${url}`, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                        Accept: 'application/json',
+                    },
+                    ...(body ? { body: JSON.stringify(body) } : {}),
+                });
+                const json = await response.json();
+                if (!response.ok) throw new Error(json.message || `Error ${response.status}`);
+                await Promise.all([fetchDebts(), fetchMonth(monthKey)]);
+                return true;
+            } catch (err) {
+                setError(err.message);
+                setTimeout(() => setError(''), 5000);
+                return false;
+            }
+        },
+        [fetchDebts, fetchMonth, monthKey],
+    );
+
+    const handleContributeDebtEntry = useCallback(
+        (entryId, amount) => performDebtAction(`/debts/${entryId}/contribute`, 'PATCH', { amount }),
+        [performDebtAction],
+    );
+    const handleDeleteDebtEntry = useCallback(
+        (entryId) => performDebtAction(`/debts/${entryId}`, 'DELETE'),
+        [performDebtAction],
+    );
+
     const goToMonth = (delta) => {
         setNavDirection(delta > 0 ? 'forward' : 'back');
         setMonthKey((k) => shiftMonthKey(k, delta));
@@ -366,12 +424,15 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
             items={sections[section].items}
             splitSyncItems={splitSync ? sections[section].items.filter((i) => i.is_split_synced) : []}
             libretaSyncItems={section === 'income' ? sections.income.items.filter((i) => i.libreta_entry_id) : []}
+            debtEntries={section === 'debt' ? debtEntries : []}
             onAddItem={handleAddItem}
             onUpdateItem={handleUpdateItem}
             onDeleteItem={handleDeleteItem}
             onContributeItem={handleContributeItem}
             onViewSyncedExpense={splitSync ? onViewSyncedExpense : undefined}
             onViewLibreta={section === 'income' ? onViewLibreta : undefined}
+            onContributeDebtEntry={section === 'debt' ? handleContributeDebtEntry : undefined}
+            onDeleteDebtEntry={section === 'debt' ? handleDeleteDebtEntry : undefined}
             openingCash={section === 'income' ? opening.cash_balance : undefined}
             savingsItems={
                 section === 'fixed_expense' || section === 'tracked_expense'

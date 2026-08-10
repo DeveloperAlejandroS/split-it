@@ -31,9 +31,9 @@ export const numberOrZero = (v) => {
 
 export const formatCurrency = (amount, showSign = false) => {
     const value = numberOrZero(amount);
-    const formatted = new Intl.NumberFormat('es-CL', {
+    const formatted = new Intl.NumberFormat('es-CO', {
         style: 'currency',
-        currency: 'CLP',
+        currency: 'COP',
         maximumFractionDigits: 0
     }).format(Math.abs(value));
 
@@ -43,7 +43,7 @@ export const formatCurrency = (amount, showSign = false) => {
 };
 
 export const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('es-CL', {
+    return new Date(dateString).toLocaleDateString('es-CO', {
         year: 'numeric',
         month: 'short',
         day: 'numeric'

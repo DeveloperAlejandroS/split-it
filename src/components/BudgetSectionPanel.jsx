@@ -200,6 +200,72 @@ const AbonoForm = ({ onSubmit, onCancel }) => {
     );
 };
 
+// Submayor de deudas: una fila por acreedor, con lo que le debes y un botón
+// para abonarle — espejo exacto de las tarjetas de Libreta, pero para lo
+// que TÚ debes en vez de lo que te deben a ti. Vive dentro de la sección
+// Deudas del presupuesto (no aparte, como Libreta), porque aquí el agregado
+// (Balance Deudas) ya vive en esta misma pantalla.
+const DebtEntryRow = ({ entry, onContribute, onDelete }) => {
+    const [showAbonoForm, setShowAbonoForm] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    const handleConfirmDelete = async () => {
+        setIsDeleting(true);
+        await onDelete(entry.id);
+        setIsDeleting(false);
+        setShowDeleteConfirm(false);
+    };
+
+    return (
+        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
+            <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                    <p className="text-xs font-semibold text-primary truncate">{entry.creditor_name}</p>
+                    <p className="text-[10px] text-muted tabular">
+                        Debes {formatCurrency(entry.remaining)} de {formatCurrency(entry.amount_owed)}
+                    </p>
+                </div>
+                {!showAbonoForm && (
+                    <div className="flex items-center gap-1 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setShowAbonoForm(true)}
+                            className="text-(--success) hover:brightness-90 p-1"
+                            aria-label={`Abonar a ${entry.creditor_name}`}
+                        >
+                            <CirclePlus size={15} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowDeleteConfirm(true)}
+                            className="text-muted hover:text-(--danger) p-1"
+                            aria-label={`Eliminar deuda con ${entry.creditor_name}`}
+                        >
+                            <Trash2 size={13} />
+                        </button>
+                    </div>
+                )}
+            </div>
+            {showAbonoForm && (
+                <div className="mt-2">
+                    <AbonoForm onSubmit={(amount) => onContribute(entry.id, amount)} onCancel={() => setShowAbonoForm(false)} />
+                </div>
+            )}
+            <ConfirmDialog
+                isOpen={showDeleteConfirm}
+                tone="danger"
+                title={`¿Eliminar la deuda con "${entry.creditor_name}"?`}
+                message="Esta acción no se puede deshacer. Los pagos que ya hiciste siguen contando en tu presupuesto — esto solo borra el registro de la deuda."
+                confirmLabel="Eliminar"
+                isLoading={isDeleting}
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setShowDeleteConfirm(false)}
+            />
+        </div>
+    );
+};
+
 const BudgetRow = ({ item, section, allowSavingsLink, allowContribution, savingsItems, onUpdate, onDelete, onContribute, theme, compact }) => {
     const [label, setLabel] = useState(item.label);
     const [budgeted, setBudgeted] = useState(String(item.budgeted_amount));
@@ -447,12 +513,15 @@ export const BudgetSectionPanel = ({
     items,
     splitSyncItems = [],
     libretaSyncItems = [],
+    debtEntries = [],
     onAddItem,
     onUpdateItem,
     onDeleteItem,
     onContributeItem,
     onViewSyncedExpense,
     onViewLibreta,
+    onContributeDebtEntry,
+    onDeleteDebtEntry,
     openingCash,
     savingsItems = [],
     compact = false,
@@ -460,11 +529,13 @@ export const BudgetSectionPanel = ({
 }) => {
     const meta = SECTION_META[section];
     const allowContribution = section === 'saving' || section === 'debt';
-    // Ni los sincronizados con Split.it ni los que vienen de un abono de la
-    // Libreta se editan aquí — ambos se muestran aparte, de solo lectura, en
-    // vez de aparecer como una fila editable que en realidad va a rechazar
-    // cualquier cambio que le hagas.
-    const manualItems = items.filter((item) => !item.is_split_synced && !item.libreta_entry_id);
+    // Ni los sincronizados con Split.it, ni los que vienen de un abono de la
+    // Libreta, ni los que vienen de un pago a una deuda se editan aquí —
+    // los tres se muestran aparte, de solo lectura, en vez de aparecer como
+    // una fila editable que en realidad va a rechazar cualquier cambio.
+    const manualItems = items.filter((item) => !item.is_split_synced && !item.libreta_entry_id && !item.debt_entry_id);
+    const debtPaymentItems = items.filter((item) => item.debt_entry_id);
+    const pendingDebtEntries = debtEntries.filter((e) => e.status !== 'paid');
     // Los ítems `is_pending` (obligación de un gasto compartido que todavía
     // no se pagó de verdad) se listan igual en `items`, pero no cuentan aquí
     // — mismo criterio que `computeMonthTotals` en el backend, así el total
@@ -503,12 +574,23 @@ export const BudgetSectionPanel = ({
             {/* Header de columnas — solo tiene sentido en la vista de grid;
                 en mobile o en columna angosta (`compact`) cada input ya trae
                 su propia etiqueta arriba. */}
-            {!compact && (manualItems.length > 0 || splitSyncItems.length > 0 || libretaSyncItems.length > 0) && (
+            {!compact && (manualItems.length > 0 || splitSyncItems.length > 0 || libretaSyncItems.length > 0 || debtPaymentItems.length > 0) && (
                 <div className={`hidden sm:grid ${DESKTOP_GRID} gap-2 mt-3 mb-1 px-1`}>
                     <span className="text-[9px] font-bold uppercase tracking-wider text-muted">Descripción</span>
                     <span className="text-[9px] font-bold uppercase tracking-wider text-muted text-right">Presupuestado</span>
                     <span className="text-[9px] font-bold uppercase tracking-wider text-muted text-right">Actual</span>
                     <span />
+                </div>
+            )}
+
+            {/* Submayor de deudas: a quién le debes y cuánto, con abono
+                directo — la razón de ser de esta sección. Los ítems manuales
+                de abajo quedan para gastos sueltos que no quieras itemizar. */}
+            {section === 'debt' && pendingDebtEntries.length > 0 && (
+                <div className="space-y-1.5 mb-3">
+                    {pendingDebtEntries.map((entry) => (
+                        <DebtEntryRow key={entry.id} entry={entry} onContribute={onContributeDebtEntry} onDelete={onDeleteDebtEntry} />
+                    ))}
                 </div>
             )}
 
@@ -526,7 +608,7 @@ export const BudgetSectionPanel = ({
                 </div>
             )}
 
-            {manualItems.length === 0 && splitSyncItems.length === 0 && libretaSyncItems.length === 0 ? (
+            {manualItems.length === 0 && splitSyncItems.length === 0 && libretaSyncItems.length === 0 && debtPaymentItems.length === 0 ? (
                 <p className="text-xs text-muted py-3">
                     Sin ítems todavía — agrega el primero con el formulario de abajo.
                 </p>
@@ -640,6 +722,30 @@ export const BudgetSectionPanel = ({
                                     </span>
                                 </span>
                             </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {debtPaymentItems.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-white/10">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted mb-1">
+                        Pagos a tus deudas
+                    </p>
+                    <p className="text-[10px] text-muted mb-2 leading-snug">
+                        Se agregan solos cuando le abonas a una deuda de arriba — no se editan aquí.
+                    </p>
+                    <div className="space-y-1.5">
+                        {debtPaymentItems.map((item) => (
+                            <div
+                                key={item.id}
+                                className="w-full flex items-center justify-between gap-2 rounded-xl px-3 py-2 bg-(--danger-soft) animate-row-in"
+                            >
+                                <span className="text-xs text-primary line-clamp-2 min-w-0" title={item.label}>{item.label}</span>
+                                <span className="block text-xs font-semibold tabular text-(--danger) shrink-0">
+                                    {formatCurrency(item.actual_amount)}
+                                </span>
+                            </div>
                         ))}
                     </div>
                 </div>

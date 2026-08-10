@@ -421,7 +421,12 @@ const App = () => {
                 activeTab === 'personal' ? 'max-w-[105rem]' : 'max-w-6xl'
             }`}>
                 {activeTab === 'personal' ? (
-                    <PersonalBudgetView key={budgetRefreshKey} theme={theme} onViewSyncedExpense={(expenseId) => handleOpenExpenseDetail({ id: expenseId })} />
+                    <PersonalBudgetView
+                        key={budgetRefreshKey}
+                        theme={theme}
+                        onViewSyncedExpense={(expenseId) => handleOpenExpenseDetail({ id: expenseId })}
+                        onViewLibreta={() => setActiveTab('libreta')}
+                    />
                 ) : activeTab === 'libreta' ? (
                     <LibretaView key={libretaRefreshKey} theme={theme} />
                 ) : (

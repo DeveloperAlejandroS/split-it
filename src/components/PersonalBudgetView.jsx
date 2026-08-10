@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Activity, ChevronLeft, ChevronRight, Loader2, Pencil, PiggyBank, RefreshCw } from 'lucide-react';
+import { Activity, ChevronLeft, ChevronRight, Loader2, Pencil, PiggyBank, RefreshCw, Wallet } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { BudgetSectionPanel } from './BudgetSectionPanel';
 import { AnimatedNumber } from './AnimatedNumber';
@@ -8,6 +8,48 @@ import { getCurrentMonthKey, monthKeyToLabel, shiftMonthKey } from '../utils/bud
 import { API_URL } from '../config/api';
 
 const TOKEN_KEY = 'splitit_jwt';
+
+// Patrimonio neto = todo lo que tienes (caja + ahorros + lo que te deben en
+// la Libreta) menos todo lo que debes. Antes había que sumar esto a mano
+// visitando dos pantallas distintas — aquí queda como un solo número, bien
+// arriba, que es la primera pregunta que cualquiera se hace: "¿cuánto
+// tengo en total, de verdad?".
+const NetWorthCard = ({ cash, savings, debt, libretaPending, theme, onViewLibreta }) => {
+    const netWorth = cash + savings + libretaPending - debt;
+
+    return (
+        <GlassCard theme={theme} className="p-5">
+            <div className="flex items-center gap-2 mb-1">
+                <Wallet size={14} className="text-(--accent)" />
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">Patrimonio neto</p>
+            </div>
+            <p className="text-[11px] text-muted mb-3 leading-snug">
+                Caja + Ahorros + lo que te deben en la Libreta − lo que debes. Todo junto, en un solo número.
+            </p>
+            <p className="text-3xl font-black tabular text-primary mb-4">
+                <AnimatedNumber value={netWorth} showSign />
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-3 border-t border-white/10">
+                <div>
+                    <p className="text-muted text-[10px] uppercase tracking-wide mb-0.5">Caja</p>
+                    <p className="font-semibold text-primary tabular"><AnimatedNumber value={cash} /></p>
+                </div>
+                <div>
+                    <p className="text-muted text-[10px] uppercase tracking-wide mb-0.5">Ahorros</p>
+                    <p className="font-semibold text-(--success) tabular"><AnimatedNumber value={savings} /></p>
+                </div>
+                <button type="button" onClick={onViewLibreta} className="text-left hover:opacity-80 transition-opacity">
+                    <p className="text-muted text-[10px] uppercase tracking-wide mb-0.5">Te deben (Libreta)</p>
+                    <p className="font-semibold text-(--success) tabular"><AnimatedNumber value={libretaPending} /></p>
+                </button>
+                <div>
+                    <p className="text-muted text-[10px] uppercase tracking-wide mb-0.5">Debes</p>
+                    <p className="font-semibold text-(--danger) tabular"><AnimatedNumber value={debt} /></p>
+                </div>
+            </div>
+        </GlassCard>
+    );
+};
 
 // Barrita horizontal de un renglón del mini-gráfico de salud financiera —
 // el largo es proporcional al mayor de los 4 montos, así siempre hay al
@@ -79,12 +121,13 @@ const FinancialHealthButton = ({ totals, sections, theme }) => {
             <button
                 type="button"
                 onClick={() => setIsOpen((v) => !v)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90"
+                className="h-8 pl-2 pr-2.5 rounded-xl flex items-center gap-1.5 transition-all active:scale-90"
                 style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
                 aria-label="Ver salud financiera del mes"
                 title="Salud financiera"
             >
                 <Activity size={14} />
+                <span className="text-[10px] font-bold uppercase tracking-wide hidden sm:inline">Salud</span>
             </button>
 
             {isOpen && (
@@ -202,12 +245,13 @@ const OpeningBalanceField = ({ label, hint, value, onSave }) => {
     );
 };
 
-export const PersonalBudgetView = ({ onViewSyncedExpense, theme = 'dark' }) => {
+export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme = 'dark' }) => {
     const [monthKey, setMonthKey] = useState(() => getCurrentMonthKey());
     const [navDirection, setNavDirection] = useState('forward');
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [libretaPending, setLibretaPending] = useState(0);
 
     const fetchMonth = useCallback(async (key) => {
         setIsLoading(true);
@@ -233,6 +277,23 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, theme = 'dark' }) => {
         fetchMonth(monthKey);
     }, [monthKey, fetchMonth]);
     /* eslint-enable react-hooks/set-state-in-effect */
+
+    // El total pendiente de Libreta no depende del mes (es un saldo vivo,
+    // no algo que se cierre mensualmente) — se trae una sola vez al entrar
+    // a la vista, solo para armar el Patrimonio neto de arriba.
+    useEffect(() => {
+        (async () => {
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                const res = await fetch(`${API_URL}/libreta`, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } });
+                const json = await res.json();
+                if (res.ok) setLibretaPending(json.total_pending || 0);
+            } catch {
+                // Silencioso: si falla, el Patrimonio neto simplemente no suma
+                // Libreta — no debería bloquear el resto del presupuesto.
+            }
+        })();
+    }, []);
 
     const performItemAction = useCallback(
         async (url, method, body) => {
@@ -304,11 +365,13 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, theme = 'dark' }) => {
             section={section}
             items={sections[section].items}
             splitSyncItems={splitSync ? sections[section].items.filter((i) => i.is_split_synced) : []}
+            libretaSyncItems={section === 'income' ? sections.income.items.filter((i) => i.libreta_entry_id) : []}
             onAddItem={handleAddItem}
             onUpdateItem={handleUpdateItem}
             onDeleteItem={handleDeleteItem}
             onContributeItem={handleContributeItem}
             onViewSyncedExpense={splitSync ? onViewSyncedExpense : undefined}
+            onViewLibreta={section === 'income' ? onViewLibreta : undefined}
             openingCash={section === 'income' ? opening.cash_balance : undefined}
             savingsItems={
                 section === 'fixed_expense' || section === 'tracked_expense'
@@ -379,6 +442,17 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, theme = 'dark' }) => {
                     <ChevronRight size={18} />
                 </button>
             </GlassCard>
+
+            <div key={`${monthKey}-networth`} className={monthAnimClass}>
+                <NetWorthCard
+                    cash={totals.balance}
+                    savings={totals.savings_balance}
+                    debt={totals.debt_balance}
+                    libretaPending={libretaPending}
+                    theme={theme}
+                    onViewLibreta={onViewLibreta}
+                />
+            </div>
 
             <div key={`${monthKey}-content`} className={`space-y-4 ${monthAnimClass}`}>
                 {/* Fila superior: presupuestado/saldo semanal a la izquierda,

@@ -446,11 +446,13 @@ export const BudgetSectionPanel = ({
     section,
     items,
     splitSyncItems = [],
+    libretaSyncItems = [],
     onAddItem,
     onUpdateItem,
     onDeleteItem,
     onContributeItem,
     onViewSyncedExpense,
+    onViewLibreta,
     openingCash,
     savingsItems = [],
     compact = false,
@@ -458,9 +460,13 @@ export const BudgetSectionPanel = ({
 }) => {
     const meta = SECTION_META[section];
     const allowContribution = section === 'saving' || section === 'debt';
-    const manualItems = items.filter((item) => !item.is_split_synced);
+    // Ni los sincronizados con Split.it ni los que vienen de un abono de la
+    // Libreta se editan aquí — ambos se muestran aparte, de solo lectura, en
+    // vez de aparecer como una fila editable que en realidad va a rechazar
+    // cualquier cambio que le hagas.
+    const manualItems = items.filter((item) => !item.is_split_synced && !item.libreta_entry_id);
     // Los ítems `is_pending` (obligación de un gasto compartido que todavía
-    // no se pagó de verdad) se listan igual en `items`, pero no cuentan acá
+    // no se pagó de verdad) se listan igual en `items`, pero no cuentan aquí
     // — mismo criterio que `computeMonthTotals` en el backend, así el total
     // del encabezado no incluye dinero que todavía no se movió de verdad.
     const confirmedItems = items.filter((item) => !item.is_pending);
@@ -497,7 +503,7 @@ export const BudgetSectionPanel = ({
             {/* Header de columnas — solo tiene sentido en la vista de grid;
                 en mobile o en columna angosta (`compact`) cada input ya trae
                 su propia etiqueta arriba. */}
-            {!compact && (manualItems.length > 0 || splitSyncItems.length > 0) && (
+            {!compact && (manualItems.length > 0 || splitSyncItems.length > 0 || libretaSyncItems.length > 0) && (
                 <div className={`hidden sm:grid ${DESKTOP_GRID} gap-2 mt-3 mb-1 px-1`}>
                     <span className="text-[9px] font-bold uppercase tracking-wider text-muted">Descripción</span>
                     <span className="text-[9px] font-bold uppercase tracking-wider text-muted text-right">Presupuestado</span>
@@ -508,7 +514,7 @@ export const BudgetSectionPanel = ({
 
             {/* Saldo que sobró el mes anterior — informativo nomás: ya está
                 incluido en Balance como "Saldo anterior" (ver Flujo de Caja),
-                así que NO se suma acá arriba para no contarlo dos veces. Se
+                así que NO se suma aquí arriba para no contarlo dos veces. Se
                 muestra en Ingresos porque es, en la práctica, dinero
                 disponible para gastar este mes. */}
             {section === 'income' && numberOrZero(openingCash) !== 0 && (
@@ -520,7 +526,7 @@ export const BudgetSectionPanel = ({
                 </div>
             )}
 
-            {manualItems.length === 0 && splitSyncItems.length === 0 ? (
+            {manualItems.length === 0 && splitSyncItems.length === 0 && libretaSyncItems.length === 0 ? (
                 <p className="text-xs text-muted py-3">
                     Sin ítems todavía — agrega el primero con el formulario de abajo.
                 </p>
@@ -601,6 +607,40 @@ export const BudgetSectionPanel = ({
                                 </button>
                             );
                         })}
+                    </div>
+                </div>
+            )}
+
+            {libretaSyncItems.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-white/10">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted mb-1">
+                        Abonos de tu Libreta
+                    </p>
+                    <p className="text-[10px] text-muted mb-2 leading-snug">
+                        Se agregan solos cuando registras un abono en la Libreta — no se editan aquí, toca ver la deuda.
+                    </p>
+                    <div className="space-y-1.5">
+                        {libretaSyncItems.map((item) => (
+                            <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => onViewLibreta?.()}
+                                className="w-full flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-left hover:brightness-95 transition-all animate-row-in bg-(--success-soft)"
+                            >
+                                <span className="text-xs text-primary truncate flex items-center gap-1.5 min-w-0">
+                                    <span className="line-clamp-2" title={item.label}>{item.label}</span>
+                                    <ExternalLink size={11} className="text-(--success) shrink-0" />
+                                </span>
+                                <span className="text-right shrink-0">
+                                    <span className="block text-xs font-semibold tabular text-(--success)">
+                                        {formatCurrency(item.actual_amount)}
+                                    </span>
+                                    <span className="block text-[9px] text-(--success) font-bold uppercase tracking-wide">
+                                        Abono recibido
+                                    </span>
+                                </span>
+                            </button>
+                        ))}
                     </div>
                 </div>
             )}

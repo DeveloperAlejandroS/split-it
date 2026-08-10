@@ -1,4 +1,4 @@
-import { LayoutGrid, PiggyBank, Plus, UserCircle2 } from 'lucide-react';
+import { LayoutGrid, NotebookText, PiggyBank, Plus, UserCircle2 } from 'lucide-react';
 import { SideDrawer } from './SideDrawer';
 
 const dockButtonClass =
@@ -55,6 +55,16 @@ export const BottomIsland = ({
                             title="Gastos personales"
                         >
                             <PiggyBank size={17} />
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={onOpenLibreta}
+                            className={dockButtonClass}
+                            aria-label="Libreta"
+                            title="Libreta"
+                        >
+                            <NotebookText size={17} />
                         </button>
 
                         <button

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, Loader2, NotebookText, RefreshCw, Trash2 } from 'lucide-react';
+import { CheckCircle2, Loader2, NotebookText, Pencil, RefreshCw, Trash2, X } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { ConfirmDialog } from './ConfirmDialog';
 import { CurrencyInput } from './CurrencyInput';
@@ -27,13 +27,20 @@ const STATUS_META = {
     paid: { label: 'Pagada', className: 'text-(--success)' },
 };
 
-const LibretaEntryCard = ({ entry, theme, onContribute, onDelete }) => {
+const LibretaEntryCard = ({ entry, theme, onContribute, onDelete, onUpdate }) => {
     const [showAbonoForm, setShowAbonoForm] = useState(false);
     const [amount, setAmount] = useState(String(entry.remaining));
     const [isSaving, setIsSaving] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState('');
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState(entry.debtor_name);
+    const [editDescription, setEditDescription] = useState(entry.description || '');
+    const [editAmountOwed, setEditAmountOwed] = useState(String(entry.amount_owed));
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
+    const [editError, setEditError] = useState('');
 
     const meta = STATUS_META[entry.status] || STATUS_META.pending;
 
@@ -64,6 +71,81 @@ const LibretaEntryCard = ({ entry, theme, onContribute, onDelete }) => {
         setShowDeleteConfirm(false);
     };
 
+    const handleOpenEdit = () => {
+        setEditName(entry.debtor_name);
+        setEditDescription(entry.description || '');
+        setEditAmountOwed(String(entry.amount_owed));
+        setEditError('');
+        setIsEditing(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editName.trim()) {
+            setEditError('Ponle un nombre');
+            return;
+        }
+        const value = Number(editAmountOwed);
+        if (!Number.isFinite(value) || value <= 0) {
+            setEditError('Monto inválido');
+            return;
+        }
+        if (value < entry.amount_paid) {
+            setEditError(`No puedes bajar la deuda por debajo de lo ya pagado (${formatCurrency(entry.amount_paid)})`);
+            return;
+        }
+        setIsSavingEdit(true);
+        setEditError('');
+        const ok = await onUpdate(entry.id, {
+            debtor_name: editName.trim(),
+            description: editDescription.trim() || null,
+            amount_owed: value,
+        });
+        setIsSavingEdit(false);
+        if (ok) setIsEditing(false);
+        else setEditError('No se pudo guardar');
+    };
+
+    if (isEditing) {
+        return (
+            <GlassCard theme={theme} className="p-4 space-y-2.5">
+                <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted">Editar deuda</p>
+                    <button type="button" onClick={() => setIsEditing(false)} className="text-muted hover:text-primary p-1" aria-label="Cancelar edición">
+                        <X size={14} />
+                    </button>
+                </div>
+                {editError && <p className="text-[10px] text-(--danger)">{editError}</p>}
+                <input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Nombre"
+                    className="w-full bg-white/5 rounded-lg px-2.5 py-1.5 text-sm text-primary outline-none border border-transparent focus:border-(--accent)/50"
+                />
+                <input
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Motivo (opcional)"
+                    className="w-full bg-white/5 rounded-lg px-2.5 py-1.5 text-sm text-primary outline-none border border-transparent focus:border-(--accent)/50"
+                />
+                <CurrencyInput
+                    value={editAmountOwed}
+                    onChange={setEditAmountOwed}
+                    className="w-full bg-white/5 rounded-lg px-2.5 py-1.5 text-sm text-primary outline-none border border-transparent focus:border-(--accent)/50 tabular"
+                />
+                <button
+                    type="button"
+                    disabled={isSavingEdit}
+                    onClick={handleSaveEdit}
+                    className="w-full py-2.5 rounded-xl font-bold text-xs transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', color: 'var(--accent-contrast)' }}
+                >
+                    {isSavingEdit ? <Loader2 size={14} className="animate-spin" /> : null}
+                    Guardar
+                </button>
+            </GlassCard>
+        );
+    }
+
     return (
         <GlassCard theme={theme} className="p-4 space-y-2.5">
             <div className="flex items-start justify-between gap-3">
@@ -73,14 +155,24 @@ const LibretaEntryCard = ({ entry, theme, onContribute, onDelete }) => {
                         <p className="text-xs text-muted mt-0.5 line-clamp-2">{entry.description}</p>
                     )}
                 </div>
-                <button
-                    type="button"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="text-muted hover:text-(--danger) transition-colors p-1 shrink-0"
-                    aria-label={`Eliminar deuda de ${entry.debtor_name}`}
-                >
-                    <Trash2 size={14} />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                    <button
+                        type="button"
+                        onClick={handleOpenEdit}
+                        className="text-muted hover:text-primary transition-colors p-1"
+                        aria-label={`Editar deuda de ${entry.debtor_name}`}
+                    >
+                        <Pencil size={14} />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="text-muted hover:text-(--danger) transition-colors p-1"
+                        aria-label={`Eliminar deuda de ${entry.debtor_name}`}
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                </div>
             </div>
 
             <div className="flex items-center justify-between text-xs">
@@ -204,6 +296,25 @@ export const LibretaView = ({ theme = 'dark' }) => {
         }
     };
 
+    const handleUpdate = async (entryId, patch) => {
+        try {
+            const token = localStorage.getItem(TOKEN_KEY);
+            const res = await fetch(`${API_URL}/libreta/${entryId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, Accept: 'application/json' },
+                body: JSON.stringify(patch),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.message || `Error ${res.status}`);
+            await fetchEntries();
+            return true;
+        } catch (err) {
+            setError(err.message);
+            setTimeout(() => setError(''), 5000);
+            return false;
+        }
+    };
+
     const handleDelete = async (entryId) => {
         try {
             const token = localStorage.getItem(TOKEN_KEY);
@@ -279,7 +390,7 @@ export const LibretaView = ({ theme = 'dark' }) => {
             {pendingEntries.length > 0 && (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {pendingEntries.map((entry) => (
-                        <LibretaEntryCard key={entry.id} entry={entry} theme={theme} onContribute={handleContribute} onDelete={handleDelete} />
+                        <LibretaEntryCard key={entry.id} entry={entry} theme={theme} onContribute={handleContribute} onDelete={handleDelete} onUpdate={handleUpdate} />
                     ))}
                 </div>
             )}
@@ -289,7 +400,7 @@ export const LibretaView = ({ theme = 'dark' }) => {
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted mb-2 px-1">Saldadas</p>
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 opacity-70">
                         {paidEntries.map((entry) => (
-                            <LibretaEntryCard key={entry.id} entry={entry} theme={theme} onContribute={handleContribute} onDelete={handleDelete} />
+                            <LibretaEntryCard key={entry.id} entry={entry} theme={theme} onContribute={handleContribute} onDelete={handleDelete} onUpdate={handleUpdate} />
                         ))}
                     </div>
                 </div>

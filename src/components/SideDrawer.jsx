@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { LayoutGrid, MoonStar, NotebookText, PiggyBank, Plus, Settings2, SunMedium, UserCircle2, X } from 'lucide-react';
+import { Home, LayoutGrid, MoonStar, NotebookText, PiggyBank, Plus, Settings2, SunMedium, UserCircle2, X } from 'lucide-react';
 
 const drawerItemClass =
     'w-full flex items-center gap-4 rounded-3xl px-4 py-4 text-left transition-all duration-200 hover:bg-white/5 active:scale-[0.98]';
@@ -10,6 +10,7 @@ export const SideDrawer = ({
     theme,
     onToggleTheme,
     onLogout,
+    onOpenHome,
     onOpenExpenses,
     onOpenFriends,
     onOpenPersonal,
@@ -72,6 +73,19 @@ export const SideDrawer = ({
 
                 {/* Nav items */}
                 <div className="space-y-1">
+                    <button type="button" onClick={onOpenHome} className={drawerItemClass}>
+                        <span
+                            className="h-12 w-12 rounded-2xl flex items-center justify-center shrink-0"
+                            style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
+                        >
+                            <Home size={20} />
+                        </span>
+                        <span className="flex-1">
+                            <span className="block text-base font-semibold text-primary">Inicio</span>
+                            <span className="block text-xs text-secondary">Todo junto: patrimonio y movimientos</span>
+                        </span>
+                    </button>
+
                     <button type="button" onClick={onOpenExpenses} className={drawerItemClass}>
                         <span
                             className="h-12 w-12 rounded-2xl flex items-center justify-center shrink-0"

@@ -9,13 +9,16 @@ import { API_URL } from '../config/api';
 
 const TOKEN_KEY = 'splitit_jwt';
 
-// Patrimonio neto = todo lo que tienes (caja + ahorros + lo que te deben en
-// la Libreta) menos todo lo que debes. Antes había que sumar esto a mano
-// visitando dos pantallas distintas — aquí queda como un solo número, bien
-// arriba, que es la primera pregunta que cualquiera se hace: "¿cuánto
-// tengo en total, de verdad?".
-const NetWorthCard = ({ cash, savings, debt, libretaPending, theme, onViewLibreta }) => {
-    const netWorth = cash + savings + libretaPending - debt;
+// Patrimonio neto = todo lo que tienes (caja + ahorros + lo que te deben,
+// sea en la Libreta o en un gasto compartido sin liquidar) menos todo lo
+// que debes. `splitNetBalance` es económicamente lo mismo que un ítem de
+// Libreta pendiente -- plata que ya es tuya pero no se ha movido -- así que
+// tiene que sumar acá igual, o nada queda de verdad interconectado: antes
+// se podía tener un Patrimonio Neto "sano" mientras un amigo te debía
+// $200.000 sin liquidar, porque esa plata simplemente no se contaba en
+// ningún lado.
+const NetWorthCard = ({ cash, savings, debt, libretaPending, splitNetBalance, theme, onViewLibreta, onViewSplit }) => {
+    const netWorth = cash + savings + libretaPending + splitNetBalance - debt;
 
     return (
         <GlassCard theme={theme} className="p-5">
@@ -24,12 +27,17 @@ const NetWorthCard = ({ cash, savings, debt, libretaPending, theme, onViewLibret
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">Patrimonio neto</p>
             </div>
             <p className="text-[11px] text-muted mb-3 leading-snug">
-                Caja + Ahorros + lo que te deben en la Libreta − lo que debes. Todo junto, en un solo número.
+                Caja + Ahorros + lo que te deben (Libreta y Split) − lo que debes. Todo junto, en un solo número.
             </p>
-            <p className="text-3xl font-black tabular text-primary mb-4">
-                <AnimatedNumber value={netWorth} showSign />
+            {/* Sin el signo +/− — el color ya dice si es positivo o negativo,
+                no hace falta el símbolo encima. */}
+            <p
+                className="text-3xl font-black tabular mb-4"
+                style={{ color: netWorth >= 0 ? 'var(--success)' : 'var(--danger)' }}
+            >
+                <AnimatedNumber value={netWorth} />
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-3 border-t border-white/10">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs pt-3 border-t border-white/10">
                 <div>
                     <p className="text-muted text-[10px] uppercase tracking-wide mb-0.5">Caja</p>
                     <p className="font-semibold text-primary tabular"><AnimatedNumber value={cash} /></p>
@@ -38,6 +46,15 @@ const NetWorthCard = ({ cash, savings, debt, libretaPending, theme, onViewLibret
                     <p className="text-muted text-[10px] uppercase tracking-wide mb-0.5">Ahorros</p>
                     <p className="font-semibold text-(--success) tabular"><AnimatedNumber value={savings} /></p>
                 </div>
+                <button type="button" onClick={onViewSplit} className="text-left hover:opacity-80 transition-opacity">
+                    <p className="text-muted text-[10px] uppercase tracking-wide mb-0.5">Split (neto)</p>
+                    <p
+                        className="font-semibold tabular"
+                        style={{ color: splitNetBalance >= 0 ? 'var(--success)' : 'var(--danger)' }}
+                    >
+                        <AnimatedNumber value={splitNetBalance} />
+                    </p>
+                </button>
                 <button type="button" onClick={onViewLibreta} className="text-left hover:opacity-80 transition-opacity">
                     <p className="text-muted text-[10px] uppercase tracking-wide mb-0.5">Te deben (Libreta)</p>
                     <p className="font-semibold text-(--success) tabular"><AnimatedNumber value={libretaPending} /></p>
@@ -245,7 +262,7 @@ const OpeningBalanceField = ({ label, hint, value, onSave }) => {
     );
 };
 
-export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme = 'dark' }) => {
+export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, onViewSplit, splitBalance, theme = 'dark' }) => {
     const [monthKey, setMonthKey] = useState(() => getCurrentMonthKey());
     const [navDirection, setNavDirection] = useState('forward');
     const [data, setData] = useState(null);
@@ -510,8 +527,10 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
                     savings={totals.savings_balance}
                     debt={totals.debt_balance}
                     libretaPending={libretaPending}
+                    splitNetBalance={numberOrZero(splitBalance?.net_balance)}
                     theme={theme}
                     onViewLibreta={onViewLibreta}
+                    onViewSplit={onViewSplit}
                 />
             </div>
 
@@ -520,18 +539,27 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
                     flujo de caja a la derecha — son los dos "resúmenes" del
                     mes, tiene sentido verlos juntos antes de bajar al detalle
                     fila por fila de cada sección. */}
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] items-start">
+                <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] items-start">
                     <div className="flex flex-col gap-3 h-full">
+                        {/* OJO: esto NO es tu saldo real -- es un margen de
+                            planeación (Ingresos - Gastos Fijos - Gastos de
+                            ESTE mes solo), sin sumar el saldo anterior ni
+                            restar/sumar Ahorros y Deudas. Para tu plata real
+                            de verdad, mirá "Caja" arriba en Patrimonio Neto
+                            o "Balance" en Flujo de Caja -- esos dos sí
+                            arrastran todo. Antes este número competía visual
+                            y numéricamente con esos otros dos sin dejar
+                            claro que mide otra cosa. */}
                         <HeroStat
-                            label="Presupuestado"
-                            hint="Lo que te queda de Ingresos menos Gastos Fijos y Gastos, antes de Ahorros/Deudas."
+                            label="Margen antes de Ahorros/Deudas"
+                            hint="Ingresos − Gastos Fijos − Gastos de este mes. No es tu saldo real: no incluye el saldo anterior ni Ahorros/Deudas — para eso mirá Caja o Balance."
                             budgeted={totals.budgeted_net}
                             actual={totals.actual_net}
                             theme={theme}
                         />
                         <HeroStat
                             label="Saldo semanal"
-                            hint="El presupuestado repartido en 4 semanas, para saber cuánto gastar por semana."
+                            hint="Ese margen repartido en 4 semanas, para saber cuánto podés gastar por semana sin tocar Ahorros/Deudas."
                             budgeted={totals.weekly_budgeted}
                             actual={totals.weekly_actual}
                             theme={theme}
@@ -601,11 +629,14 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
                             </div>
                             <div>
                                 <p className="text-muted">Balance Deudas pendiente</p>
-                                <p className="font-semibold text-(--danger) tabular mt-0.5">
-                                    {/* Se muestra en negativo a propósito: es una deuda, resta a tu
-                                        patrimonio. Cada abono lo acerca a cero (el número "sube"),
-                                        en vez de mostrar un monto positivo que "sube" cuanto más debes. */}
-                                    <AnimatedNumber value={-totals.debt_balance} showSign />
+                                <p
+                                    className="font-semibold tabular mt-0.5"
+                                    style={{ color: totals.debt_balance > 0 ? 'var(--danger)' : 'var(--success)' }}
+                                >
+                                    {/* Internamente es negativo a propósito (es una deuda, resta a tu
+                                        patrimonio: cada abono lo acerca a cero, "sube") pero sin el
+                                        signo +/− encima — el color ya dice si todavía debés o no. */}
+                                    <AnimatedNumber value={-totals.debt_balance} />
                                 </p>
                             </div>
                         </div>
@@ -615,18 +646,34 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
                 {/* Fila inferior: Ingresos/Deudas/Ahorros son listas cortas —
                     van apiladas en una columna angosta a la izquierda. Gastos
                     Fijos y Seguimiento suelen tener más filas — cada una se
-                    lleva su propia columna ancha. items-start: sin esto, CSS
-                    Grid estira cada card para igualar la altura de su par en
-                    la misma fila, y todo se corre hacia abajo de forma rara
-                    cuando una sección crece más que las otras. */}
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1.4fr)] items-start">
+                    lleva su propia columna ancha, pero solo cuando hay
+                    espacio real para las dos lado a lado. items-start: sin
+                    esto, CSS Grid estira cada card para igualar la altura de
+                    su par en la misma fila, y todo se corre hacia abajo de
+                    forma rara cuando una sección crece más que las otras.
+
+                    Grilla anidada a propósito: en vez de saltar de 1 columna
+                    (mobile) a 3 (desktop) en un solo breakpoint, hay un paso
+                    intermedio en tablet (md, ≥768px) con 2 columnas —
+                    Ingresos/Deudas/Ahorros a la izquierda, Gastos Fijos y
+                    Seguimiento apilados a la derecha (todavía en una sola
+                    columna interna, con su ancho de sobra). Recién en xl
+                    (≥1280px, cuando además aparece el rail lateral) esa
+                    columna derecha se separa en sus propias 2 columnas. Sin
+                    este paso intermedio, un iPad en portrait (1024px) caía
+                    justo en el breakpoint de 3 columnas con tan poco ancho
+                    por panel que la columna de descripción de cada fila
+                    quedaba comprimida a ~64px, casi ilegible. */}
+                <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.8fr)] items-start">
                     <div className="flex flex-col gap-4">
                         <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>{renderSection('income', true, true)}</div>
                         <div className="animate-fade-up" style={{ animationDelay: '60ms' }}>{renderSection('debt', false, true)}</div>
                         <div className="animate-fade-up" style={{ animationDelay: '120ms' }}>{renderSection('saving', false, true)}</div>
                     </div>
-                    <div className="animate-fade-up" style={{ animationDelay: '180ms' }}>{renderSection('fixed_expense', false)}</div>
-                    <div className="animate-fade-up" style={{ animationDelay: '240ms' }}>{renderSection('tracked_expense', true)}</div>
+                    <div className="grid gap-4 xl:grid-cols-2 items-start">
+                        <div className="animate-fade-up" style={{ animationDelay: '180ms' }}>{renderSection('fixed_expense', false)}</div>
+                        <div className="animate-fade-up" style={{ animationDelay: '240ms' }}>{renderSection('tracked_expense', true)}</div>
+                    </div>
                 </div>
             </div>
         </section>

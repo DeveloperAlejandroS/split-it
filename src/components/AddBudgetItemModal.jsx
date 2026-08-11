@@ -181,7 +181,7 @@ export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, theme = 'dark' 
             onClick={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
             role="presentation"
         >
-            <GlassCard theme={theme} className="relative w-full max-w-md rounded-4xl p-6 border border-white/10 animate-in fade-in zoom-in-95 duration-200">
+            <GlassCard theme={theme} strong className="relative w-full max-w-md rounded-4xl p-6 border border-white/10 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2 min-w-0">
                         {step !== 'category' && (

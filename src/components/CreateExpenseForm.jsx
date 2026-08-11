@@ -249,6 +249,7 @@ export const CreateExpenseForm = ({
             <GlassCard
                 className="relative w-full max-w-2xl rounded-4xl p-6 sm:p-7 border border-white/10 animate-in fade-in zoom-in-95 duration-200 overflow-hidden max-h-[90vh] overflow-y-auto"
                 theme={theme}
+                strong
             >
                 <div className="absolute inset-0 bg-linear-to-br from-white/8 via-transparent to-transparent pointer-events-none" />
 

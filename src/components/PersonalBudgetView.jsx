@@ -9,13 +9,16 @@ import { API_URL } from '../config/api';
 
 const TOKEN_KEY = 'splitit_jwt';
 
-// Patrimonio neto = todo lo que tienes (caja + ahorros + lo que te deben en
-// la Libreta) menos todo lo que debes. Antes había que sumar esto a mano
-// visitando dos pantallas distintas — aquí queda como un solo número, bien
-// arriba, que es la primera pregunta que cualquiera se hace: "¿cuánto
-// tengo en total, de verdad?".
-const NetWorthCard = ({ cash, savings, debt, libretaPending, theme, onViewLibreta }) => {
-    const netWorth = cash + savings + libretaPending - debt;
+// Patrimonio neto = todo lo que tienes (caja + ahorros + lo que te deben,
+// sea en la Libreta o en un gasto compartido sin liquidar) menos todo lo
+// que debes. `splitNetBalance` es económicamente lo mismo que un ítem de
+// Libreta pendiente -- plata que ya es tuya pero no se ha movido -- así que
+// tiene que sumar acá igual, o nada queda de verdad interconectado: antes
+// se podía tener un Patrimonio Neto "sano" mientras un amigo te debía
+// $200.000 sin liquidar, porque esa plata simplemente no se contaba en
+// ningún lado.
+const NetWorthCard = ({ cash, savings, debt, libretaPending, splitNetBalance, theme, onViewLibreta, onViewSplit }) => {
+    const netWorth = cash + savings + libretaPending + splitNetBalance - debt;
 
     return (
         <GlassCard theme={theme} className="p-5">
@@ -24,7 +27,7 @@ const NetWorthCard = ({ cash, savings, debt, libretaPending, theme, onViewLibret
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">Patrimonio neto</p>
             </div>
             <p className="text-[11px] text-muted mb-3 leading-snug">
-                Caja + Ahorros + lo que te deben en la Libreta − lo que debes. Todo junto, en un solo número.
+                Caja + Ahorros + lo que te deben (Libreta y Split) − lo que debes. Todo junto, en un solo número.
             </p>
             {/* Sin el signo +/− — el color ya dice si es positivo o negativo,
                 no hace falta el símbolo encima. */}
@@ -34,7 +37,7 @@ const NetWorthCard = ({ cash, savings, debt, libretaPending, theme, onViewLibret
             >
                 <AnimatedNumber value={netWorth} />
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-3 border-t border-white/10">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs pt-3 border-t border-white/10">
                 <div>
                     <p className="text-muted text-[10px] uppercase tracking-wide mb-0.5">Caja</p>
                     <p className="font-semibold text-primary tabular"><AnimatedNumber value={cash} /></p>
@@ -43,6 +46,15 @@ const NetWorthCard = ({ cash, savings, debt, libretaPending, theme, onViewLibret
                     <p className="text-muted text-[10px] uppercase tracking-wide mb-0.5">Ahorros</p>
                     <p className="font-semibold text-(--success) tabular"><AnimatedNumber value={savings} /></p>
                 </div>
+                <button type="button" onClick={onViewSplit} className="text-left hover:opacity-80 transition-opacity">
+                    <p className="text-muted text-[10px] uppercase tracking-wide mb-0.5">Split (neto)</p>
+                    <p
+                        className="font-semibold tabular"
+                        style={{ color: splitNetBalance >= 0 ? 'var(--success)' : 'var(--danger)' }}
+                    >
+                        <AnimatedNumber value={splitNetBalance} />
+                    </p>
+                </button>
                 <button type="button" onClick={onViewLibreta} className="text-left hover:opacity-80 transition-opacity">
                     <p className="text-muted text-[10px] uppercase tracking-wide mb-0.5">Te deben (Libreta)</p>
                     <p className="font-semibold text-(--success) tabular"><AnimatedNumber value={libretaPending} /></p>
@@ -250,7 +262,7 @@ const OpeningBalanceField = ({ label, hint, value, onSave }) => {
     );
 };
 
-export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme = 'dark' }) => {
+export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, onViewSplit, splitBalance, theme = 'dark' }) => {
     const [monthKey, setMonthKey] = useState(() => getCurrentMonthKey());
     const [navDirection, setNavDirection] = useState('forward');
     const [data, setData] = useState(null);
@@ -515,8 +527,10 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
                     savings={totals.savings_balance}
                     debt={totals.debt_balance}
                     libretaPending={libretaPending}
+                    splitNetBalance={numberOrZero(splitBalance?.net_balance)}
                     theme={theme}
                     onViewLibreta={onViewLibreta}
+                    onViewSplit={onViewSplit}
                 />
             </div>
 
@@ -527,16 +541,25 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
                     fila por fila de cada sección. */}
                 <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] items-start">
                     <div className="flex flex-col gap-3 h-full">
+                        {/* OJO: esto NO es tu saldo real -- es un margen de
+                            planeación (Ingresos - Gastos Fijos - Gastos de
+                            ESTE mes solo), sin sumar el saldo anterior ni
+                            restar/sumar Ahorros y Deudas. Para tu plata real
+                            de verdad, mirá "Caja" arriba en Patrimonio Neto
+                            o "Balance" en Flujo de Caja -- esos dos sí
+                            arrastran todo. Antes este número competía visual
+                            y numéricamente con esos otros dos sin dejar
+                            claro que mide otra cosa. */}
                         <HeroStat
-                            label="Presupuestado"
-                            hint="Lo que te queda de Ingresos menos Gastos Fijos y Gastos, antes de Ahorros/Deudas."
+                            label="Margen antes de Ahorros/Deudas"
+                            hint="Ingresos − Gastos Fijos − Gastos de este mes. No es tu saldo real: no incluye el saldo anterior ni Ahorros/Deudas — para eso mirá Caja o Balance."
                             budgeted={totals.budgeted_net}
                             actual={totals.actual_net}
                             theme={theme}
                         />
                         <HeroStat
                             label="Saldo semanal"
-                            hint="El presupuestado repartido en 4 semanas, para saber cuánto gastar por semana."
+                            hint="Ese margen repartido en 4 semanas, para saber cuánto podés gastar por semana sin tocar Ahorros/Deudas."
                             budgeted={totals.weekly_budgeted}
                             actual={totals.weekly_actual}
                             theme={theme}

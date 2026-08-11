@@ -1,4 +1,4 @@
-import { Coins, LayoutGrid, MoonStar, NotebookText, PiggyBank, Plus, SunMedium, UserCircle2, Users } from 'lucide-react';
+import { Coins, Home, LayoutGrid, MoonStar, NotebookText, PiggyBank, SunMedium, UserCircle2, Users } from 'lucide-react';
 
 // Rail de navegación persistente para desktop. Reemplaza al dock flotante
 // inferior (BottomIsland, que queda solo para mobile) — en pantallas anchas
@@ -6,11 +6,11 @@ import { Coins, LayoutGrid, MoonStar, NotebookText, PiggyBank, Plus, SunMedium, 
 // aprovecha el espacio vertical y deja el contenido principal más ancho.
 export const Sidebar = ({
     activeTab,
+    onOpenHome,
     onOpenExpenses,
     onOpenFriends,
     onOpenPersonal,
     onOpenLibreta,
-    onCreateExpense,
     onOpenAccount,
     theme = 'dark',
     onToggleTheme,
@@ -31,12 +31,15 @@ export const Sidebar = ({
         >
             <div
                 className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
-                style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', boxShadow: '0 8px 20px -10px rgba(212, 162, 78, 0.55)' }}
+                style={{ background: 'linear-gradient(135deg, var(--brand), var(--brand-strong))', boxShadow: '0 8px 20px -10px rgba(156, 77, 244, 0.5)' }}
             >
                 <Coins size={18} style={{ color: 'var(--accent-contrast)' }} />
             </div>
 
             <nav className="flex flex-col items-center gap-2">
+                <button type="button" onClick={onOpenHome} className={navItemClass('home')} aria-label="Inicio" title="Inicio">
+                    <Home size={19} />
+                </button>
                 <button type="button" onClick={onOpenExpenses} className={navItemClass('expenses')} aria-label="Gastos" title="Gastos">
                     <LayoutGrid size={19} />
                 </button>
@@ -64,21 +67,6 @@ export const Sidebar = ({
                     <NotebookText size={19} />
                 </button>
             </nav>
-
-            <button
-                type="button"
-                onClick={onCreateExpense}
-                className="mt-1 h-12 w-12 rounded-2xl flex items-center justify-center font-bold transition-all active:scale-95"
-                style={{
-                    background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
-                    color: 'var(--accent-contrast)',
-                    boxShadow: '0 14px 28px -12px rgba(212, 162, 78, 0.6)',
-                }}
-                aria-label={activeTab === 'personal' ? 'Agregar al presupuesto' : activeTab === 'libreta' ? 'Nueva deuda' : 'Nuevo gasto'}
-                title={activeTab === 'personal' ? 'Agregar al presupuesto' : activeTab === 'libreta' ? 'Nueva deuda' : 'Nuevo gasto'}
-            >
-                <Plus size={22} />
-            </button>
 
             <div className="mt-auto flex flex-col items-center gap-2">
                 <button

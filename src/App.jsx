@@ -3,6 +3,8 @@ import { Coins, ShieldAlert, XCircle } from 'lucide-react';
 import { BalanceCard } from './components/BalanceCard';
 import { ExpenseList } from './components/ExpenseList';
 import { FriendsView } from './components/FriendsView';
+import { HomeView } from './components/HomeView';
+import { FloatingAddButton } from './components/FloatingAddButton';
 import { CreateExpenseForm } from './components/CreateExpenseForm';
 import { ExpenseDetailModal } from './components/ExpenseDetailModal';
 import { BottomIsland } from './components/BottomIsland';
@@ -36,7 +38,7 @@ const App = () => {
     const [editingExpense, setEditingExpense] = useState(null);
     const [selectedExpenseId, setSelectedExpenseId] = useState(null);
     const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('expenses');
+    const [activeTab, setActiveTab] = useState('home');
     const [expenseFilter, setExpenseFilter] = useState('all');
     const [theme, setTheme] = useState(() => localStorage.getItem('splitit_theme') || 'light');
     const [isDockCompact, setIsDockCompact] = useState(false);
@@ -276,14 +278,6 @@ const App = () => {
         setIsHamburgerOpen(nextOpen);
     };
 
-    const tabButtonClass = (tabName) => (
-        `flex-1 rounded-full px-4 py-3 text-sm font-semibold transition-all duration-300 ${
-            activeTab === tabName
-                ? 'bg-white text-slate-950 shadow-lg shadow-(--accent)/20'
-                : 'text-white/55 hover:text-white hover:bg-white/5'
-        }`
-    );
-
     const knownUsers = useMemo(() => {
         const usersById = new Map();
 
@@ -344,9 +338,9 @@ const App = () => {
     if (isBooting) return (
         <div className="min-h-screen flex flex-col items-center justify-center gap-6 animate-fade-in text-primary" style={{ background: 'var(--app-bg)' }}>
             <div className="relative">
-                <div className="w-16 h-16 rounded-full animate-spin" style={{ border: '2px solid var(--surface-border)', borderTopColor: 'var(--accent)' }} />
+                <div className="w-16 h-16 rounded-full animate-spin" style={{ border: '2px solid var(--surface-border)', borderTopColor: 'var(--brand)' }} />
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <Coins size={20} style={{ color: 'var(--accent)' }} />
+                    <Coins size={20} style={{ color: 'var(--brand)' }} />
                 </div>
             </div>
             <span className="text-secondary font-bold tracking-[0.22em] text-[10px] uppercase">Split.it</span>
@@ -361,21 +355,23 @@ const App = () => {
         <div className={`min-h-screen text-slate-100 font-sans ${brandPalette.selection} overflow-x-hidden transition-colors duration-500 animate-fade-in`} style={{ background: 'var(--app-bg)' }}>
             {/* Background Orbs */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[40%] rounded-full blur-[120px]" style={{ background: 'rgba(212, 162, 78, 0.16)' }} />
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[40%] rounded-full blur-[120px]" style={{ background: 'rgba(232, 24, 156, 0.16)' }} />
                 <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[120px]" style={{ background: 'rgba(111, 168, 220, 0.08)' }} />
             </div>
 
             <Sidebar
                 activeTab={activeTab}
+                onOpenHome={() => setActiveTab('home')}
                 onOpenExpenses={() => setActiveTab('expenses')}
                 onOpenFriends={() => setActiveTab('friends')}
                 onOpenPersonal={() => setActiveTab('personal')}
                 onOpenLibreta={() => setActiveTab('libreta')}
-                onCreateExpense={handleContextualAdd}
                 onOpenAccount={() => setIsHamburgerOpen(true)}
                 theme={theme}
                 onToggleTheme={toggleTheme}
             />
+
+            <FloatingAddButton activeTab={activeTab} onClick={handleContextualAdd} />
 
             {isHamburgerOpen && (
                 <button
@@ -404,7 +400,7 @@ const App = () => {
             <nav className="xl:hidden sticky top-0 z-50 px-4 py-4 backdrop-blur-xl border-b border-white/5" style={{ background: 'color-mix(in srgb, var(--app-bg) 58%, transparent)' }}>
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', boxShadow: '0 0 20px rgba(212, 162, 78, 0.25)' }}>
+                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--brand), var(--brand-strong))', boxShadow: '0 0 20px rgba(156, 77, 244, 0.3)' }}>
                             <Coins size={20} style={{ color: 'var(--accent-contrast)' }} />
                         </div>
                         <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>Split.it</h1>
@@ -418,86 +414,58 @@ const App = () => {
                 el resto de la app quedaban tan angostas que los montos se
                 veían apretados/cortados. Le damos más aire ahí solamente. */}
             <main className={`mx-auto px-4 sm:px-6 xl:pl-28 xl:pr-8 pb-40 xl:pb-16 pt-8 xl:pt-10 animate-fade-up ${
-                activeTab === 'personal' ? 'max-w-[105rem]' : 'max-w-6xl'
+                activeTab === 'personal' ? 'max-w-[105rem]' : activeTab === 'home' ? 'max-w-4xl' : 'max-w-6xl'
             }`}>
-                {activeTab === 'personal' ? (
+                {activeTab === 'home' ? (
+                    <HomeView
+                        theme={theme}
+                        currentUser={currentUser}
+                        expenses={expenses}
+                        friends={friends}
+                        pendingFriendRequests={pendingFriendRequests}
+                        balance={balance}
+                        onOpenSplit={() => setActiveTab('expenses')}
+                        onOpenBudget={() => setActiveTab('personal')}
+                        onOpenAccounts={() => setActiveTab('libreta')}
+                        onOpenFriends={() => setActiveTab('friends')}
+                    />
+                ) : activeTab === 'personal' ? (
                     <PersonalBudgetView
                         key={budgetRefreshKey}
                         theme={theme}
+                        splitBalance={balance}
                         onViewSyncedExpense={(expenseId) => handleOpenExpenseDetail({ id: expenseId })}
                         onViewLibreta={() => setActiveTab('libreta')}
+                        onViewSplit={() => setActiveTab('expenses')}
                     />
                 ) : activeTab === 'libreta' ? (
                     <LibretaView key={libretaRefreshKey} theme={theme} />
+                ) : activeTab === 'friends' ? (
+                    // Amigos es su propia pantalla, igual que Personal/Libreta -- ya
+                    // no vive como panel lateral pegado a Gastos. Gestionar contactos
+                    // y ver el split de un gasto son dos tareas distintas.
+                    <FriendsView
+                        friends={friends}
+                        pendingRequests={pendingFriendRequests}
+                        token={localStorage.getItem(TOKEN_KEY)}
+                        onRefresh={() => loadData(localStorage.getItem(TOKEN_KEY))}
+                        isLoading={isLoading}
+                        theme={theme}
+                        onViewExpenses={() => setActiveTab('expenses')}
+                    />
                 ) : (
-                    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(340px,1fr)] items-start">
-                        <section className="space-y-5 min-w-0">
-                            <BalanceCard balance={balance} theme={theme} filter={expenseFilter} onFilterChange={setExpenseFilter} />
-
-                            <section className="xl:hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md p-2 flex gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab('expenses')}
-                                    className={tabButtonClass('expenses')}
-                                >
-                                    Gastos
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab('friends')}
-                                    className={tabButtonClass('friends')}
-                                >
-                                    Amigos
-                                </button>
-                            </section>
-
-                            <div className="xl:hidden">
-                                {activeTab === 'expenses' ? (
-                                    <ExpenseList
-                                        expenses={expenses}
-                                        currentUserId={currentUserId}
-                                        onOpenExpense={handleOpenExpenseDetail}
-                                        onRefresh={() => loadData(localStorage.getItem(TOKEN_KEY))}
-                                        isLoading={isLoading}
-                                        filter={expenseFilter}
-                                        theme={theme}
-                                    />
-                                ) : (
-                                    <FriendsView
-                                        friends={friends}
-                                        pendingRequests={pendingFriendRequests}
-                                        token={localStorage.getItem(TOKEN_KEY)}
-                                        onRefresh={() => loadData(localStorage.getItem(TOKEN_KEY))}
-                                        isLoading={isLoading}
-                                        theme={theme}
-                                    />
-                                )}
-                            </div>
-
-                            <div className="hidden xl:block min-w-0">
-                                <ExpenseList
-                                    expenses={expenses}
-                                    currentUserId={currentUserId}
-                                    onOpenExpense={handleOpenExpenseDetail}
-                                    onRefresh={() => loadData(localStorage.getItem(TOKEN_KEY))}
-                                    isLoading={isLoading}
-                                    filter={expenseFilter}
-                                    theme={theme}
-                                />
-                            </div>
-                        </section>
-
-                        <aside className="hidden xl:block min-w-0 xl:sticky xl:top-10">
-                            <FriendsView
-                                friends={friends}
-                                pendingRequests={pendingFriendRequests}
-                                token={localStorage.getItem(TOKEN_KEY)}
-                                onRefresh={() => loadData(localStorage.getItem(TOKEN_KEY))}
-                                isLoading={isLoading}
-                                theme={theme}
-                            />
-                        </aside>
-                    </div>
+                    <section className="space-y-5 min-w-0 max-w-3xl mx-auto xl:mx-0">
+                        <BalanceCard balance={balance} theme={theme} filter={expenseFilter} onFilterChange={setExpenseFilter} />
+                        <ExpenseList
+                            expenses={expenses}
+                            currentUserId={currentUserId}
+                            onOpenExpense={handleOpenExpenseDetail}
+                            onRefresh={() => loadData(localStorage.getItem(TOKEN_KEY))}
+                            isLoading={isLoading}
+                            filter={expenseFilter}
+                            theme={theme}
+                        />
+                    </section>
                 )}
             </main>
 
@@ -511,6 +479,7 @@ const App = () => {
                 compact={isDockCompact}
                 theme={theme}
                 onToggleTheme={toggleTheme}
+                onOpenHome={() => setActiveTab('home')}
                 onOpenExpenses={() => setActiveTab('expenses')}
                 onOpenFriends={() => setActiveTab('friends')}
                 onOpenPersonal={() => setActiveTab('personal')}

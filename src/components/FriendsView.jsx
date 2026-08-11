@@ -43,7 +43,7 @@ const FriendRow = ({ friend }) => {
     );
 };
 
-export const FriendsView = ({ friends = [], pendingRequests = [], token, onRefresh, isLoading, theme = 'dark' }) => {
+export const FriendsView = ({ friends = [], pendingRequests = [], token, onRefresh, isLoading, theme = 'dark', onViewExpenses }) => {
     const [isAddFriendOpen, setIsAddFriendOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -145,6 +145,16 @@ export const FriendsView = ({ friends = [], pendingRequests = [], token, onRefre
                 </div>
                 <div className="flex items-center gap-2">
                     {isLoading && <Loader2 size={16} className="animate-spin text-secondary" />}
+                    {onViewExpenses && (
+                        <button
+                            type="button"
+                            onClick={onViewExpenses}
+                            className="hidden sm:inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition-all hover:opacity-90 active:scale-95"
+                            style={{ background: 'var(--surface-soft)', border: '1px solid var(--surface-border)', color: 'var(--text-secondary)' }}
+                        >
+                            Ver Split.it
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={onRefresh}
@@ -159,7 +169,7 @@ export const FriendsView = ({ friends = [], pendingRequests = [], token, onRefre
                         type="button"
                         onClick={openAddFriend}
                         className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95"
-                        style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', boxShadow: '0 8px 20px -8px rgba(212,162,78,0.5)' }}
+                        style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', boxShadow: '0 8px 20px -8px rgba(232, 24, 156,0.5)' }}
                     >
                         <UserPlus size={14} />
                         Añadir
@@ -233,7 +243,7 @@ export const FriendsView = ({ friends = [], pendingRequests = [], token, onRefre
                         type="button"
                         onClick={openAddFriend}
                         className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
-                        style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', boxShadow: '0 10px 24px -10px rgba(212,162,78,0.5)' }}
+                        style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', boxShadow: '0 10px 24px -10px rgba(232, 24, 156,0.5)' }}
                     >
                         <UserPlus size={16} />
                         Añadir amigo

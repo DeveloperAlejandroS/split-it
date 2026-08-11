@@ -1,8 +1,12 @@
-import { LayoutGrid, NotebookText, PiggyBank, Plus, UserCircle2 } from 'lucide-react';
+import { Home, LayoutGrid, NotebookText, PiggyBank, UserCircle2 } from 'lucide-react';
 import { SideDrawer } from './SideDrawer';
 
-const dockButtonClass =
-    'relative h-11 w-11 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-primary hover:bg-white/10 transition-all active:scale-90';
+const dockButtonClass = (isActive) =>
+    `relative h-11 w-11 rounded-full border flex items-center justify-center transition-all active:scale-90 ${
+        isActive
+            ? 'border-transparent text-(--accent-contrast)'
+            : 'border-white/10 bg-white/5 text-primary hover:bg-white/10'
+    }`;
 
 export const BottomIsland = ({
     activeTab,
@@ -14,6 +18,7 @@ export const BottomIsland = ({
     compact = false,
     theme = 'dark',
     onToggleTheme,
+    onOpenHome,
     onOpenExpenses,
     onOpenFriends,
     onOpenPersonal,
@@ -36,11 +41,15 @@ export const BottomIsland = ({
                     }`}
                     style={{ background: 'var(--surface)', borderColor: 'var(--surface-border)' }}
                 >
+                    {/* Simétrica alrededor de Inicio: 2 destinos a cada lado
+                        + perfil. El botón de agregar ya no vive acá -- es
+                        el FloatingAddButton, flotante y separado. */}
                     <div className="flex items-center gap-1.5">
                         <button
                             type="button"
                             onClick={handleExpensesShortcut}
-                            className={dockButtonClass}
+                            className={dockButtonClass(activeTab === 'expenses')}
+                            style={activeTab === 'expenses' ? { background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' } : undefined}
                             aria-label="Ir a gastos"
                             title="Gastos"
                         >
@@ -50,7 +59,8 @@ export const BottomIsland = ({
                         <button
                             type="button"
                             onClick={onOpenPersonal}
-                            className={dockButtonClass}
+                            className={dockButtonClass(activeTab === 'personal')}
+                            style={activeTab === 'personal' ? { background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' } : undefined}
                             aria-label="Gastos personales"
                             title="Gastos personales"
                         >
@@ -59,8 +69,24 @@ export const BottomIsland = ({
 
                         <button
                             type="button"
+                            onClick={onOpenHome}
+                            className="h-13 w-13 rounded-full flex items-center justify-center transition-all active:scale-90"
+                            style={{
+                                background: 'linear-gradient(135deg, var(--brand), var(--brand-strong))',
+                                color: 'var(--accent-contrast)',
+                                boxShadow: '0 10px 24px -10px rgba(156, 77, 244, 0.6)',
+                            }}
+                            aria-label="Inicio"
+                            title="Inicio"
+                        >
+                            <Home size={19} />
+                        </button>
+
+                        <button
+                            type="button"
                             onClick={onOpenLibreta}
-                            className={dockButtonClass}
+                            className={dockButtonClass(activeTab === 'libreta')}
+                            style={activeTab === 'libreta' ? { background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))' } : undefined}
                             aria-label="Libreta"
                             title="Libreta"
                         >
@@ -68,23 +94,9 @@ export const BottomIsland = ({
                         </button>
 
                         <button
-                            onClick={onCreateExpense}
-                            className="h-12 w-12 rounded-full flex items-center justify-center font-extrabold transition-all active:scale-95 shadow-2xl"
-                            style={{
-                                background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
-                                color: 'var(--accent-contrast)',
-                                boxShadow: '0 18px 40px -14px rgba(212, 162, 78, 0.55)',
-                            }}
-                            aria-label={activeTab === 'personal' ? 'Agregar al presupuesto' : activeTab === 'libreta' ? 'Nueva deuda' : 'Añadir gasto'}
-                            title={activeTab === 'personal' ? 'Agregar al presupuesto' : activeTab === 'libreta' ? 'Nueva deuda' : 'Nuevo gasto'}
-                        >
-                            <Plus size={20} />
-                        </button>
-
-                        <button
                             type="button"
                             onClick={handleProfileMenu}
-                            className={dockButtonClass}
+                            className={dockButtonClass(false)}
                             aria-label="Abrir menú de cuenta"
                             title="Perfil y navegación"
                         >
@@ -100,6 +112,10 @@ export const BottomIsland = ({
                 theme={theme}
                 onToggleTheme={onToggleTheme}
                 onLogout={onLogout}
+                onOpenHome={() => {
+                    onHamburgerOpenChange(false);
+                    onOpenHome?.();
+                }}
                 onOpenExpenses={() => {
                     onHamburgerOpenChange(false);
                     onOpenExpenses?.();

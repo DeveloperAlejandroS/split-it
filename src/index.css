@@ -400,3 +400,37 @@ code {
     animation: none;
   }
 }
+
+/* Scrollbar propia — delgada, con el color de acento en vez del gris
+   genérico del navegador, coherente con el resto del look glass. Firefox
+   usa scrollbar-width/-color (nativo); WebKit/Chromium/Safari usan los
+   pseudo-elementos ::-webkit-scrollbar*, que no tienen equivalente estándar
+   así que van por separado. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-border-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--surface-border-strong);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

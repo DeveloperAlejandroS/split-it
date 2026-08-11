@@ -11,8 +11,12 @@ import { SECTION_META, getVariance } from '../utils/budgetHelpers';
 // Clave para que las columnas queden alineadas entre el header, cada fila
 // y el formulario de agregar: si esta columna fuera `auto`, su ancho
 // dependería de si esa fila en particular tiene el botón "Ahorros" o no, y
-// todo el grid se desalinearía fila por fila.
-const DESKTOP_GRID = 'sm:grid-cols-[1fr_108px_108px_84px]';
+// todo el grid se desalinearía fila por fila. Los tres anchos se recortaron
+// (108/108/84 → 88/88/64) para que la grilla siga entrando sin aplastar la
+// columna de descripción en anchos de tablet donde el layout de 3 columnas
+// de PersonalBudgetView deja menos espacio por panel (ver el rediseño de
+// esa grilla — antes 342px de columna dejaba la descripción en ~64px).
+const DESKTOP_GRID = 'sm:grid-cols-[1fr_88px_88px_64px]';
 
 const numberFromInput = (value) => {
     const n = Number(value);
@@ -577,9 +581,9 @@ export const BudgetSectionPanel = ({
                 su propia etiqueta arriba. */}
             {!compact && (manualItems.length > 0 || splitSyncItems.length > 0 || libretaSyncItems.length > 0 || debtPaymentItems.length > 0) && (
                 <div className={`hidden sm:grid ${DESKTOP_GRID} gap-2 mt-3 mb-1 px-1`}>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted">Descripción</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted text-right">Presupuestado</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted text-right">Actual</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted truncate">Descripción</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted text-right truncate">Presup.</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted text-right truncate">Actual</span>
                     <span />
                 </div>
             )}

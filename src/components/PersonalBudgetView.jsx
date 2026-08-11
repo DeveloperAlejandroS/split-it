@@ -26,8 +26,13 @@ const NetWorthCard = ({ cash, savings, debt, libretaPending, theme, onViewLibret
             <p className="text-[11px] text-muted mb-3 leading-snug">
                 Caja + Ahorros + lo que te deben en la Libreta − lo que debes. Todo junto, en un solo número.
             </p>
-            <p className="text-3xl font-black tabular text-primary mb-4">
-                <AnimatedNumber value={netWorth} showSign />
+            {/* Sin el signo +/− — el color ya dice si es positivo o negativo,
+                no hace falta el símbolo encima. */}
+            <p
+                className="text-3xl font-black tabular mb-4"
+                style={{ color: netWorth >= 0 ? 'var(--success)' : 'var(--danger)' }}
+            >
+                <AnimatedNumber value={netWorth} />
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-3 border-t border-white/10">
                 <div>
@@ -520,7 +525,7 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
                     flujo de caja a la derecha — son los dos "resúmenes" del
                     mes, tiene sentido verlos juntos antes de bajar al detalle
                     fila por fila de cada sección. */}
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] items-start">
+                <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] items-start">
                     <div className="flex flex-col gap-3 h-full">
                         <HeroStat
                             label="Presupuestado"
@@ -601,11 +606,14 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
                             </div>
                             <div>
                                 <p className="text-muted">Balance Deudas pendiente</p>
-                                <p className="font-semibold text-(--danger) tabular mt-0.5">
-                                    {/* Se muestra en negativo a propósito: es una deuda, resta a tu
-                                        patrimonio. Cada abono lo acerca a cero (el número "sube"),
-                                        en vez de mostrar un monto positivo que "sube" cuanto más debes. */}
-                                    <AnimatedNumber value={-totals.debt_balance} showSign />
+                                <p
+                                    className="font-semibold tabular mt-0.5"
+                                    style={{ color: totals.debt_balance > 0 ? 'var(--danger)' : 'var(--success)' }}
+                                >
+                                    {/* Internamente es negativo a propósito (es una deuda, resta a tu
+                                        patrimonio: cada abono lo acerca a cero, "sube") pero sin el
+                                        signo +/− encima — el color ya dice si todavía debés o no. */}
+                                    <AnimatedNumber value={-totals.debt_balance} />
                                 </p>
                             </div>
                         </div>
@@ -615,18 +623,34 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
                 {/* Fila inferior: Ingresos/Deudas/Ahorros son listas cortas —
                     van apiladas en una columna angosta a la izquierda. Gastos
                     Fijos y Seguimiento suelen tener más filas — cada una se
-                    lleva su propia columna ancha. items-start: sin esto, CSS
-                    Grid estira cada card para igualar la altura de su par en
-                    la misma fila, y todo se corre hacia abajo de forma rara
-                    cuando una sección crece más que las otras. */}
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1.4fr)] items-start">
+                    lleva su propia columna ancha, pero solo cuando hay
+                    espacio real para las dos lado a lado. items-start: sin
+                    esto, CSS Grid estira cada card para igualar la altura de
+                    su par en la misma fila, y todo se corre hacia abajo de
+                    forma rara cuando una sección crece más que las otras.
+
+                    Grilla anidada a propósito: en vez de saltar de 1 columna
+                    (mobile) a 3 (desktop) en un solo breakpoint, hay un paso
+                    intermedio en tablet (md, ≥768px) con 2 columnas —
+                    Ingresos/Deudas/Ahorros a la izquierda, Gastos Fijos y
+                    Seguimiento apilados a la derecha (todavía en una sola
+                    columna interna, con su ancho de sobra). Recién en xl
+                    (≥1280px, cuando además aparece el rail lateral) esa
+                    columna derecha se separa en sus propias 2 columnas. Sin
+                    este paso intermedio, un iPad en portrait (1024px) caía
+                    justo en el breakpoint de 3 columnas con tan poco ancho
+                    por panel que la columna de descripción de cada fila
+                    quedaba comprimida a ~64px, casi ilegible. */}
+                <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.8fr)] items-start">
                     <div className="flex flex-col gap-4">
                         <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>{renderSection('income', true, true)}</div>
                         <div className="animate-fade-up" style={{ animationDelay: '60ms' }}>{renderSection('debt', false, true)}</div>
                         <div className="animate-fade-up" style={{ animationDelay: '120ms' }}>{renderSection('saving', false, true)}</div>
                     </div>
-                    <div className="animate-fade-up" style={{ animationDelay: '180ms' }}>{renderSection('fixed_expense', false)}</div>
-                    <div className="animate-fade-up" style={{ animationDelay: '240ms' }}>{renderSection('tracked_expense', true)}</div>
+                    <div className="grid gap-4 xl:grid-cols-2 items-start">
+                        <div className="animate-fade-up" style={{ animationDelay: '180ms' }}>{renderSection('fixed_expense', false)}</div>
+                        <div className="animate-fade-up" style={{ animationDelay: '240ms' }}>{renderSection('tracked_expense', true)}</div>
+                    </div>
                 </div>
             </div>
         </section>

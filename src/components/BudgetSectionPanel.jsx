@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Check, CirclePlus, ExternalLink, Plus, Trash2, X as XIcon } from 'lucide-react';
+import { ArrowRight, Check, CirclePlus, ExternalLink, PiggyBank, Plus, Trash2, X as XIcon } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { ConfirmDialog } from './ConfirmDialog';
 import { AnimatedNumber } from './AnimatedNumber';
@@ -83,16 +83,17 @@ const SavingsLinkPicker = ({ item, savingsItems, onLink }) => {
                 type="button"
                 onClick={() => setIsOpen((v) => !v)}
                 title={linkedItem ? `Sumando a "${linkedItem.label}"` : 'Vincular a un ahorro que ya exista'}
-                className={`inline-flex items-center gap-0.5 text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-full transition-all shrink-0 max-w-24 ${
+                aria-label={linkedItem ? `Sumando a ${linkedItem.label}` : 'Vincular a un ahorro'}
+                className={`inline-flex items-center gap-0.5 p-1.5 rounded-full transition-all shrink-0 ${
                     linkedItem ? 'bg-(--accent-soft) text-(--accent)' : 'bg-white/5 text-muted hover:text-secondary'
                 }`}
             >
-                <ArrowRight size={9} className="shrink-0" />
-                <span className="truncate">{linkedItem ? linkedItem.label : 'Ahorros'}</span>
+                <ArrowRight size={11} className="shrink-0" />
+                <PiggyBank size={13} className="shrink-0" />
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-7 z-40 w-52 rounded-2xl border border-white/10 bg-(--surface-strong) backdrop-blur-lg shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute right-0 top-7 z-70 w-52 rounded-2xl border border-white/10 bg-(--surface-strong) backdrop-blur-lg shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-150">
                     <p className="text-[9px] font-bold uppercase tracking-wider text-muted px-1.5 pb-1.5">
                         Sumar este monto a...
                     </p>

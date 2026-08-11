@@ -396,8 +396,16 @@ const App = () => {
                 </div>
             )}
 
-            {/* Header — only on mobile/tablet; the sidebar carries the identity on desktop */}
-            <nav className="xl:hidden sticky top-0 z-50 px-4 py-4 backdrop-blur-xl border-b border-white/5" style={{ background: 'color-mix(in srgb, var(--app-bg) 58%, transparent)' }}>
+            {/* Header — only on mobile/tablet; the sidebar carries the identity on desktop.
+                paddingTop suma env(safe-area-inset-top) -- como PWA instalada en iPhone
+                (status-bar-style: black-translucent + viewport-fit=cover) el contenido
+                dibuja por debajo de la status bar/notch; sin este espacio el logo quedaba
+                tapado por ella. En navegador normal (sin safe-area) el env() da 0 y no
+                cambia nada. */}
+            <nav
+                className="xl:hidden sticky top-0 z-50 px-4 pb-4 backdrop-blur-xl border-b border-white/5"
+                style={{ background: 'color-mix(in srgb, var(--app-bg) 58%, transparent)', paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
+            >
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--brand), var(--brand-strong))', boxShadow: '0 0 20px rgba(156, 77, 244, 0.3)' }}>

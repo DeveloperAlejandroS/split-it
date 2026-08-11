@@ -48,10 +48,11 @@ export const SideDrawer = ({
               a manual style fallback that always works.
             */}
             <aside
-                className="absolute right-0 top-0 h-full w-[min(100vw,420px)] glass-shell-strong border-l-0 rounded-l-[2.5rem] p-5 sm:p-6 flex flex-col gap-5"
+                className="absolute right-0 top-0 h-full w-[min(100vw,420px)] glass-shell-strong border-l-0 rounded-l-[2.5rem] px-5 sm:px-6 pb-5 sm:pb-6 flex flex-col gap-5"
                 style={{
                     background: 'var(--surface-strong)',
                     animation: 'slideInFromRight 0.22s cubic-bezier(0.32, 0.72, 0, 1) both',
+                    paddingTop: 'calc(1.25rem + env(safe-area-inset-top))',
                 }}
             >
                 {/* Header */}

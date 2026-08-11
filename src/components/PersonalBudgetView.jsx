@@ -131,7 +131,7 @@ const FinancialHealthButton = ({ totals, sections, theme }) => {
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-10 z-30 w-72 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute right-0 top-10 z-70 w-72 animate-in fade-in zoom-in-95 duration-150">
                     <GlassCard theme={theme} className="p-4 border border-white/10 shadow-2xl">
                         <p className="text-xs font-bold text-primary mb-3">Salud financiera del mes</p>
                         <div className="space-y-2.5">
@@ -602,7 +602,10 @@ export const PersonalBudgetView = ({ onViewSyncedExpense, onViewLibreta, theme =
                             <div>
                                 <p className="text-muted">Balance Deudas pendiente</p>
                                 <p className="font-semibold text-(--danger) tabular mt-0.5">
-                                    <AnimatedNumber value={totals.debt_balance} />
+                                    {/* Se muestra en negativo a propósito: es una deuda, resta a tu
+                                        patrimonio. Cada abono lo acerca a cero (el número "sube"),
+                                        en vez de mostrar un monto positivo que "sube" cuanto más debes. */}
+                                    <AnimatedNumber value={-totals.debt_balance} showSign />
                                 </p>
                             </div>
                         </div>

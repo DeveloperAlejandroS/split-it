@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Home, LayoutGrid, MoonStar, NotebookText, PiggyBank, Plus, Settings2, SunMedium, UserCircle2, X } from 'lucide-react';
+import { Home, LayoutGrid, MoonStar, NotebookText, PiggyBank, Plus, SunMedium, UserCircle2, X } from 'lucide-react';
 
 const drawerItemClass =
     'w-full flex items-center gap-4 rounded-3xl px-4 py-4 text-left transition-all duration-200 hover:bg-white/5 active:scale-[0.98]';
@@ -172,18 +172,10 @@ export const SideDrawer = ({
                     </button>
                 </div>
 
-                {/* Footer */}
-                <div className="mt-auto space-y-3">
-                    <div className="rounded-3xl p-4 border border-white/10 bg-white/5">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-secondary mb-2">
-                            Acciones rápidas
-                        </p>
-                        <div className="flex items-center gap-3 text-sm text-secondary">
-                            <Settings2 size={16} />
-                            <span>Diseño glass, navegación compacta y temas.</span>
-                        </div>
-                    </div>
-
+                {/* Footer -- antes tenía una card de "Acciones rápidas" acá
+                    arriba que no hacía nada (solo texto decorativo), y
+                    empujaba Cerrar sesión más abajo sin necesidad. */}
+                <div className="mt-auto">
                     <button
                         type="button"
                         onClick={() => {

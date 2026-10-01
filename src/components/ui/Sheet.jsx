@@ -75,6 +75,9 @@ export const Sheet = ({
 
     const onPointerDown = useCallback((e) => {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
+        // Los botones del encabezado (Cancelar, acción) no inician arrastre:
+        // capturar el puntero redirigiría su clic al contenedor.
+        if (e.target.closest('button')) return;
         e.currentTarget.setPointerCapture(e.pointerId);
         const panel = panelRef.current;
         if (!panel) return;

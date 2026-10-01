@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Airplane, CaretLeft, CaretRight, Check, CircleNotch, Money, PiggyBank, Plus, Repeat, ShoppingBag } from '@phosphor-icons/react';
-import { ScreenHeader } from './ui/ScreenHeader';
+import { Airplane, CaretLeft, CaretRight, Check, CircleNotch, Money, PiggyBank, Plus, Repeat, ShoppingBag, UsersThree } from '@phosphor-icons/react';
+import { ScreenHeader, NavAction } from './ui/ScreenHeader';
 import { Sheet } from './ui/Sheet';
 import { ProgressBar } from './ui/ProgressBar';
 import { useHeldValue } from './ui/useHeldValue';
@@ -258,7 +258,7 @@ const Line = ({ label, value, sign, strong, onClick, hint }) => {
     );
 };
 
-export const BudgetView = ({ onAddToSection, onViewSyncedExpense, onViewAccounts, refreshKey }) => {
+export const BudgetView = ({ onAddToSection, onViewSyncedExpense, onViewAccounts, refreshKey, onOpenFriends, friendBadge }) => {
     const [monthKey, setMonthKey] = useState(() => getCurrentMonthKey());
     const [direction, setDirection] = useState('forward');
     const [data, setData] = useState(null);
@@ -288,7 +288,7 @@ export const BudgetView = ({ onAddToSection, onViewSyncedExpense, onViewAccounts
 
     return (
         <section>
-            <ScreenHeader title="Presupuesto" subtitle="Lo planeado contra lo que de verdad pasó" />
+            <ScreenHeader title="Presupuesto" subtitle="Lo planeado contra lo que de verdad pasó" actions={<NavAction label="Amigos" badge={friendBadge} onClick={onOpenFriends}><UsersThree size={22} weight="bold" /></NavAction>} />
 
             <div className="card flex items-center justify-between p-1.5">
                 <button type="button" onClick={() => go(-1)} className="btn btn-icon" aria-label="Mes anterior" style={{ boxShadow: 'none', background: 'var(--card-soft)' }}><CaretLeft size={20} weight="bold" /></button>

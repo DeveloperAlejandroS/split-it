@@ -16,12 +16,13 @@ const EXIT_MS = 260;
 
 let scrollLocks = 0;
 const lockScroll = () => {
-    if (scrollLocks++ === 0) document.documentElement.style.overflow = 'hidden';
+    if (scrollLocks++ === 0) { document.documentElement.style.overflow = 'hidden'; document.documentElement.classList.add('scroll-locked'); }
 };
 const unlockScroll = () => {
     if (--scrollLocks <= 0) {
         scrollLocks = 0;
         document.documentElement.style.overflow = '';
+        document.documentElement.classList.remove('scroll-locked');
     }
 };
 

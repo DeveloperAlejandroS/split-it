@@ -134,6 +134,21 @@ export const FriendsView = ({ friends, pendingRequests, balance, token, onRefres
         return map;
     }, [balance]);
 
+    const decline = async (requestId) => {
+        setAcceptingId(requestId);
+        setError('');
+        try {
+            const res = await fetch(`${API_URL}/friends/${requestId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || 'No se pudo rechazar');
+            await onRefresh?.();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setAcceptingId(null);
+        }
+    };
+
     const accept = async (requestId) => {
         setAcceptingId(requestId);
         setError('');
@@ -173,6 +188,9 @@ export const FriendsView = ({ friends, pendingRequests, balance, token, onRefres
                                         <span className="body block truncate font-medium">{displayNameOf(user)}</span>
                                         <span className="small block text-secondary">Quiere ser tu amigo</span>
                                     </span>
+                                    <button type="button" className="btn btn-gray btn-sm" disabled={acceptingId === id} onClick={() => decline(id)} aria-label={`Rechazar a ${displayNameOf(user)}`}>
+                                        Rechazar
+                                    </button>
                                     <button type="button" className="btn btn-primary btn-sm" disabled={acceptingId === id} onClick={() => accept(id)}>
                                         {acceptingId === id ? <CircleNotch size={14} className="animate-spin" /> : 'Aceptar'}
                                     </button>

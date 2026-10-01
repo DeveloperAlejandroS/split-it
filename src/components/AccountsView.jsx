@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, CaretRight, HandCoins, Plus } from '@phosphor-icons/react';
-import { ScreenHeader } from './ui/ScreenHeader';
+import { ArrowDownLeft, ArrowUpRight, CaretRight, HandCoins, Plus, UsersThree } from '@phosphor-icons/react';
+import { ScreenHeader, NavAction } from './ui/ScreenHeader';
 import { Avatar } from './ui/Avatar';
 import { EmptyState } from './ui/EmptyState';
 import { ProgressBar } from './ui/ProgressBar';
@@ -42,7 +42,7 @@ const EntryRow = ({ entry, kind, onOpen }) => {
     );
 };
 
-export const AccountsView = ({ segment, onSegmentChange, refreshKey, onAdd }) => {
+export const AccountsView = ({ segment, onSegmentChange, refreshKey, onAdd, onOpenFriends, friendBadge }) => {
     const [owed, setOwed] = useState({ entries: [], total_pending: 0 });
     const [owe, setOwe] = useState({ entries: [], total_pending: 0 });
     const [loaded, setLoaded] = useState(false);
@@ -96,7 +96,7 @@ export const AccountsView = ({ segment, onSegmentChange, refreshKey, onAdd }) =>
 
     return (
         <section>
-            <ScreenHeader title="Cuentas" subtitle="Préstamos y deudas fuera de los gastos compartidos" />
+            <ScreenHeader title="Cuentas" subtitle="Préstamos y deudas fuera de los gastos compartidos" actions={<NavAction label="Amigos" badge={friendBadge} onClick={onOpenFriends}><UsersThree size={22} weight="bold" /></NavAction>} />
 
             <div className="stagger flex flex-col gap-5">
                 <div className="grid grid-cols-2 gap-3">

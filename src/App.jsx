@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { X } from '@phosphor-icons/react';
 import { Logo } from './components/ui/Logo';
 import { ExpensesView } from './components/ExpensesView';
@@ -94,7 +94,7 @@ const App = () => {
             if (current !== tab) window.history.pushState(null, '', `#${tab}`);
             return tab;
         });
-        window.scrollTo({ top: 0 });
+        document.querySelector('.app-shell')?.scrollTo({ top: 0 });
     }, []);
 
     useEffect(() => {
@@ -158,6 +158,40 @@ const App = () => {
     }, [showToast]);
 
     const refresh = useCallback(() => loadData(localStorage.getItem(TOKEN_KEY)), [loadData]);
+
+    // ---- Solicitudes de amistad: llegan sin recargar ----------------------
+    // Sin esto, quien recibe una solicitud no la veía hasta volver a abrir la
+    // app. Se consulta cada 30 s mientras la pantalla está visible y al volver
+    // a la pestaña; si hay una nueva, se avisa con un toast.
+    const knownRequestsRef = useRef(null);
+    useEffect(() => { knownRequestsRef.current = pendingFriendRequests.length; }, [pendingFriendRequests]);
+
+    useEffect(() => {
+        if (!isLoggedIn) return undefined;
+        const poll = async () => {
+            if (document.visibilityState !== 'visible') return;
+            try {
+                const headers = { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}`, Accept: 'application/json' };
+                const [rRes, fRes] = await Promise.all([fetch(`${API_URL}/friends/requests`, { headers }), fetch(`${API_URL}/friends`, { headers })]);
+                if (!rRes.ok || !fRes.ok) return;
+                const [rData, fData] = await Promise.all([rRes.json(), fRes.json()]);
+                const pick = (data, ...keys) => {
+                    for (const key of keys) if (Array.isArray(data?.[key])) return data[key];
+                    return Array.isArray(data) ? data : [];
+                };
+                const requests = pick(rData, 'requests', 'friends');
+                if (knownRequestsRef.current !== null && requests.length > knownRequestsRef.current) {
+                    setToast(requests.length - knownRequestsRef.current === 1 ? 'Tienes una solicitud de amistad nueva' : 'Tienes solicitudes de amistad nuevas');
+                }
+                setPendingFriendRequests(requests);
+                setFriends(pick(fData, 'friends'));
+            } catch { /* sin conexión: se reintenta en el próximo ciclo */ }
+        };
+        const id = setInterval(poll, 30000);
+        document.addEventListener('visibilitychange', poll);
+        window.addEventListener('focus', poll);
+        return () => { clearInterval(id); document.removeEventListener('visibilitychange', poll); window.removeEventListener('focus', poll); };
+    }, [isLoggedIn]);
 
     useEffect(() => {
         const token = localStorage.getItem(TOKEN_KEY);
@@ -271,7 +305,7 @@ const App = () => {
     }
 
     return (
-        <div className="min-h-screen">
+        <div className="app-shell">
             <Sidebar activeTab={activeTab} onChange={setActiveTab} badges={badges} userName={userName} userEmail={currentUser?.email} userAvatar={currentUser?.avatar_url} onOpenAccount={() => setShowAccount(true)} onAdd={handleAdd} addLabel={addLabel} />
 
             {toast && (
@@ -283,7 +317,7 @@ const App = () => {
                 </div>
             )}
 
-            <main className="xl:pl-[17rem] pb-[calc(120px+var(--safe-bottom))] xl:pb-16">
+            <main className="xl:pl-[17rem] pb-[calc(140px+var(--safe-bottom))] xl:pb-16">
                 <div className="mx-auto max-w-3xl px-4 sm:px-6">
                 {activeTab === 'home' && (
                     <HomeView
@@ -317,10 +351,12 @@ const App = () => {
                         onAddToSection={(section) => { setBudgetSection(section); setShowAddBudgetItem(true); }}
                         onViewSyncedExpense={(id) => setSelectedExpenseId(id)}
                         onViewAccounts={() => setActiveTab('accounts')}
+                        onOpenFriends={() => setActiveTab('friends')}
+                        friendBadge={pendingFriendRequests.length}
                     />
                 )}
                 {activeTab === 'accounts' && (
-                    <AccountsView segment={accountsSegment} onSegmentChange={setAccountsSegment} refreshKey={dataVersion} onAdd={handleAdd} />
+                    <AccountsView segment={accountsSegment} onSegmentChange={setAccountsSegment} refreshKey={dataVersion} onAdd={handleAdd} onOpenFriends={() => setActiveTab('friends')} friendBadge={pendingFriendRequests.length} />
                 )}
                 {activeTab === 'friends' && (
                     <FriendsView

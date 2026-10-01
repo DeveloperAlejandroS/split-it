@@ -223,7 +223,7 @@ export const HomeView = ({
                                     key={a.key}
                                     type="button"
                                     onClick={a.run}
-                                    className={`${i === 0 ? 'tile tile-violet' : 'card'} flex w-[250px] flex-col gap-3 p-4 text-left transition-transform active:scale-[0.97]`}
+                                    className={`${i === 0 ? 'tile tile-violet' : 'card'} flex w-[min(260px,calc(100vw-96px))] flex-col gap-3 p-4 text-left transition-transform active:scale-[0.97]`}
                                     style={i === 0 ? { boxShadow: '0 18px 30px -16px var(--primary-glow)' } : undefined}
                                 >
                                     <span className="bubble h-11 w-11 rounded-full" style={i === 0 ? { background: 'rgba(255,255,255,0.22)' } : { background: 'var(--card-tint)', color: 'var(--primary)' }}>{a.icon}</span>

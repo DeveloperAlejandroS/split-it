@@ -402,6 +402,8 @@ input.input-amount::placeholder { color: var(--lilac); }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .snap-x-row { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; -webkit-overflow-scrolling: touch; padding: 4px 16px 18px; margin: 0 -16px; }
 .snap-x-row > * { scroll-snap-align: start; flex-shrink: 0; }
+/* El borde derecho se desvanece: lo que sigue se insinúa sin cortarse en seco. */
+.snap-x-row { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
 
 @media (hover: hover) and (pointer: fine) {
   * { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }

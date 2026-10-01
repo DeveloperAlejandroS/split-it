@@ -1,93 +1,53 @@
-import { Coins, Home, LayoutGrid, MoonStar, NotebookText, PiggyBank, SunMedium, UserCircle2, Users } from 'lucide-react';
+import { Plus } from '@phosphor-icons/react';
+import { NAV_TABS } from './nav';
+import { Avatar } from './ui/Avatar';
+import { Logo } from './ui/Logo';
 
-// Rail de navegación persistente para desktop. Reemplaza al dock flotante
-// inferior (BottomIsland, que queda solo para mobile) — en pantallas anchas
-// un dock centrado se sentía como una app móvil estirada; un rail lateral
-// aprovecha el espacio vertical y deja el contenido principal más ancho.
-export const Sidebar = ({
-    activeTab,
-    onOpenHome,
-    onOpenExpenses,
-    onOpenFriends,
-    onOpenPersonal,
-    onOpenLibreta,
-    onOpenAccount,
-    theme = 'dark',
-    onToggleTheme,
-}) => {
-    const isLight = theme === 'light';
+// Barra lateral de escritorio: tarjeta flotante sobre el lienzo, con el
+// botón de agregar arriba (en móvil vive al centro de la barra inferior).
+export const Sidebar = ({ activeTab, onChange, badges = {}, userName, userEmail, onOpenAccount, onAdd, addLabel }) => (
+    <aside className="hidden xl:flex fixed bottom-4 left-4 top-4 z-40 w-60 flex-col card p-4">
+        <div className="flex items-center gap-3 px-2 pb-5 pt-1">
+            <Logo size={38} />
+            <span className="title">Split.it</span>
+        </div>
 
-    const navItemClass = (tab) =>
-        `h-11 w-11 rounded-2xl flex items-center justify-center transition-all ${
-            activeTab === tab
-                ? 'bg-(--accent-soft) text-(--accent)'
-                : 'text-secondary hover:bg-white/5 hover:text-primary'
-        }`;
+        <button type="button" onClick={onAdd} className="btn btn-primary btn-block mb-4">
+            <Plus size={18} weight="bold" />
+            {addLabel}
+        </button>
 
-    return (
-        <aside
-            className="hidden xl:flex fixed left-0 top-0 h-full w-20 flex-col items-center gap-6 py-6 z-40 border-r"
-            style={{ background: 'var(--surface-strong)', borderColor: 'var(--surface-border)', backdropFilter: 'blur(20px)' }}
-        >
-            <div
-                className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
-                style={{ background: 'linear-gradient(135deg, var(--brand), var(--brand-strong))', boxShadow: '0 8px 20px -10px rgba(156, 77, 244, 0.5)' }}
-            >
-                <Coins size={18} style={{ color: 'var(--accent-contrast)' }} />
-            </div>
+        <nav aria-label="Navegación principal" className="flex flex-col gap-1.5">
+            {NAV_TABS.map(({ id, label, icon: Icon }) => {
+                const active = activeTab === id;
+                return (
+                    <button
+                        key={id}
+                        type="button"
+                        onClick={() => onChange(id)}
+                        aria-current={active ? 'page' : undefined}
+                        className="flex h-11 items-center gap-3 rounded-full px-4 text-left transition-all active:scale-[0.98]"
+                        style={{
+                            background: active ? 'var(--card-tint)' : 'transparent',
+                            color: active ? 'var(--primary)' : 'var(--ink-2)',
+                            fontWeight: active ? 700 : 500,
+                            fontSize: 15,
+                        }}
+                    >
+                        <Icon size={22} weight={active ? 'fill' : 'regular'} />
+                        <span className="flex-1">{label}</span>
+                        {badges[id] > 0 && <span className="chip" style={{ background: 'var(--neg-bright)', color: '#fff', height: 22, padding: '0 8px' }}>{badges[id]}</span>}
+                    </button>
+                );
+            })}
+        </nav>
 
-            <nav className="flex flex-col items-center gap-2">
-                <button type="button" onClick={onOpenHome} className={navItemClass('home')} aria-label="Inicio" title="Inicio">
-                    <Home size={19} />
-                </button>
-                <button type="button" onClick={onOpenExpenses} className={navItemClass('expenses')} aria-label="Gastos" title="Gastos">
-                    <LayoutGrid size={19} />
-                </button>
-                <button type="button" onClick={onOpenFriends} className={navItemClass('friends')} aria-label="Amigos" title="Amigos">
-                    <Users size={19} />
-                </button>
-
-                <button
-                    type="button"
-                    onClick={onOpenPersonal}
-                    className={navItemClass('personal')}
-                    aria-label="Gastos personales"
-                    title="Gastos personales"
-                >
-                    <PiggyBank size={19} />
-                </button>
-
-                <button
-                    type="button"
-                    onClick={onOpenLibreta}
-                    className={navItemClass('libreta')}
-                    aria-label="Libreta"
-                    title="Libreta — deudas de gente que te debe a ti"
-                >
-                    <NotebookText size={19} />
-                </button>
-            </nav>
-
-            <div className="mt-auto flex flex-col items-center gap-2">
-                <button
-                    type="button"
-                    onClick={onToggleTheme}
-                    className="h-11 w-11 rounded-2xl flex items-center justify-center text-secondary hover:bg-white/5 hover:text-primary transition-all"
-                    aria-label="Cambiar tema"
-                    title="Cambiar tema"
-                >
-                    {isLight ? <MoonStar size={18} /> : <SunMedium size={18} />}
-                </button>
-                <button
-                    type="button"
-                    onClick={onOpenAccount}
-                    className="h-11 w-11 rounded-2xl flex items-center justify-center text-secondary hover:bg-white/5 hover:text-primary transition-all"
-                    aria-label="Cuenta"
-                    title="Cuenta"
-                >
-                    <UserCircle2 size={20} />
-                </button>
-            </div>
-        </aside>
-    );
-};
+        <button type="button" onClick={onOpenAccount} className="mt-auto flex items-center gap-3 rounded-[20px] p-2 text-left transition-colors hover:bg-(--card-soft) active:scale-[0.98]">
+            <Avatar name={userName} size={40} />
+            <span className="min-w-0">
+                <span className="block truncate text-[14px] font-semibold">{userName}</span>
+                <span className="block truncate tiny">{userEmail}</span>
+            </span>
+        </button>
+    </aside>
+);

@@ -1,19 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#9c4df4" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f2f7" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000" />
 
-    <!-- iOS: sin esto, "Agregar a inicio" abre igual pero como una pestaña
-         de Safari más -- con estos tags abre a pantalla completa, sin
-         barra de navegador, y con su propio ícono. Es lo que hace que se
-         sienta como una app real y no una página web. -->
+    <!-- iOS: con estos tags "Agregar a inicio" abre a pantalla completa, sin
+         barra de Safari, con su propio ícono. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Split.it" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Aplica el tema antes del primer pintado: sin esto, quien usa modo
+         oscuro veía un destello claro mientras React arrancaba. -->
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem('splitit_theme_pref') || 'system';
+          var dark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        } catch (e) {}
+      })();
+    </script>
 
     <title>Split.it</title>
   </head>

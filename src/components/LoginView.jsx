@@ -1,368 +1,162 @@
 import { useState } from 'react';
-import {
-    CalendarDays,
-    ChevronRight,
-    Eye,
-    EyeOff,
-    Loader2,
-    Lock,
-    Mail,
-    MoonStar,
-    Phone,
-    SunMedium,
-    UserRound,
-} from 'lucide-react';
-import { GlassCard } from './GlassCard';
+import { CircleNotch, Eye, EyeSlash } from '@phosphor-icons/react';
 import { API_URL } from '../config/api';
+import { Logo } from './ui/Logo';
 
 const TOKEN_KEY = 'splitit_jwt';
+const MIN_PASSWORD = 8;
 
-export const LoginView = ({ onAuth, loadData, theme = 'dark', onToggleTheme }) => {
-    const [mode, setMode] = useState('login'); // 'login' | 'register'
-    const [email, setEmail] = useState('');
+const post = async (path, body) => {
+    const res = await fetch(`${API_URL}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(body),
+    });
+    return { ok: res.ok, data: await res.json() };
+};
+
+// Entrada: cabecera violeta con la marca (como el splash de las referencias)
+// y el formulario en una tarjeta que sube sobre ella. Registrarse pide solo
+// lo necesario (nombre, correo, contraseña): usuario y teléfono son
+// opcionales. El nombre sí se pide porque es lo que tus amigos ven en lugar
+// de un correo.
+export const LoginView = ({ onAuth, loadData }) => {
+    const [mode, setMode] = useState('login');
+    const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [username, setUsername] = useState('');
+    const [phone, setPhone] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
 
-    // Register-only fields
-    const [username, setUsername] = useState('');
-    const [firstName, setFirstName] = useState('');
-    const [middleName, setMiddleName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [secondLastName, setSecondLastName] = useState('');
-    const [phone, setPhone] = useState('');
-    const [birthDate, setBirthDate] = useState('');
+    const isRegister = mode === 'register';
 
-    const handleLogin = async (e) => {
+    const submit = async (e) => {
         e.preventDefault();
-        setLoading(true);
-        setError('');
-        try {
-            const res = await fetch(`${API_URL}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                body: JSON.stringify({ identifier: email.trim(), password }),
-            });
-            const d = await res.json();
-            if (res.ok) {
-                localStorage.setItem(TOKEN_KEY, d.token);
-                await loadData(d.token);
-                onAuth();
-            } else {
-                setError(d.message || 'Credenciales inválidas');
-            }
-        } catch {
-            setError('Error de conexión');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleRegister = async (e) => {
-        e.preventDefault();
-        setLoading(true);
         setError('');
 
-        const norm = (v) => v.trim();
-        if (!norm(email) || !norm(password) || !norm(username) || !norm(firstName) || !norm(lastName) || !norm(phone)) {
-            setError('Por favor completa todos los campos obligatorios');
-            setLoading(false);
-            return;
+        if (isRegister) {
+            if (!firstName.trim() || !lastName.trim()) return setError('Escribe tu nombre y apellido.');
+            if (!identifier.includes('@')) return setError('Escribe un correo válido.');
+            if (password.length < MIN_PASSWORD) return setError(`La contraseña necesita al menos ${MIN_PASSWORD} caracteres.`);
+        } else if (!identifier.trim() || !password) {
+            return setError('Escribe tu usuario y tu contraseña.');
         }
 
+        setLoading(true);
         try {
-            const payload = {
-                email: norm(email),
-                password: norm(password),
-                username: norm(username),
-                first_name: norm(firstName),
-                last_name: norm(lastName),
-                phone: norm(phone),
-                ...(middleName && { middle_name: norm(middleName) }),
-                ...(secondLastName && { second_last_name: norm(secondLastName) }),
-                ...(birthDate && { birth_date: birthDate }),
-            };
-
-            const res = await fetch(`${API_URL}/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                body: JSON.stringify(payload),
-            });
-            const d = await res.json();
-
-            if (res.ok) {
-                // Auto-login after register
-                const loginRes = await fetch(`${API_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                    body: JSON.stringify({ email, password }),
+            if (isRegister) {
+                const created = await post('/auth/register', {
+                    email: identifier.trim(),
+                    password,
+                    first_name: firstName.trim(),
+                    last_name: lastName.trim(),
+                    ...(username.trim() && { username: username.trim() }),
+                    ...(phone.trim() && { phone: phone.trim() }),
                 });
-                const loginData = await loginRes.json();
-                if (loginRes.ok) {
-                    localStorage.setItem(TOKEN_KEY, loginData.token);
-                    await loadData(loginData.token);
-                    onAuth();
-                }
-            } else {
-                setError(d.message || 'Error al registrarse');
+                if (!created.ok) throw new Error(created.data.message || 'No se pudo crear la cuenta.');
             }
-        } catch {
-            setError('Error de conexión');
+            const session = await post('/auth/login', { identifier: identifier.trim(), password });
+            if (!session.ok) throw new Error(session.data.message || 'Usuario o contraseña incorrectos.');
+            localStorage.setItem(TOKEN_KEY, session.data.token);
+            await loadData(session.data.token);
+            onAuth();
+        } catch (err) {
+            setError(err instanceof TypeError ? 'No hay conexión con el servidor. Revisa tu internet.' : err.message);
         } finally {
             setLoading(false);
         }
-    };
-
-    const switchMode = () => {
-        setMode((m) => (m === 'login' ? 'register' : 'login'));
-        setError('');
-        setEmail(''); setPassword(''); setUsername(''); setFirstName('');
-        setMiddleName(''); setLastName(''); setSecondLastName(''); setPhone(''); setBirthDate('');
     };
 
     return (
-        <div
-            className="min-h-screen relative overflow-hidden px-4 py-8 flex items-center justify-center"
-            style={{ background: 'var(--app-bg)' }}
-        >
-            {/* Background orbs */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div
-                    className="absolute top-[-8%] left-1/2 -translate-x-1/2 w-[60vw] h-[60vw] rounded-full blur-[130px]"
-                    style={{ background: 'rgba(232, 24, 156, 0.22)' }}
-                />
-                <div
-                    className="absolute bottom-[-8%] right-[-10%] w-[40vw] h-[40vw] rounded-full blur-[130px]"
-                    style={{ background: 'rgba(14, 165, 233, 0.10)' }}
-                />
+        <div className="min-h-screen">
+            <div
+                className="relative overflow-hidden px-6 pb-24 text-center text-white"
+                style={{
+                    paddingTop: 'calc(var(--safe-top) + 56px)',
+                    background: 'radial-gradient(90% 70% at 85% 0%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 60%), var(--grad-hero)',
+                    borderRadius: '0 0 44px 44px',
+                }}
+            >
+                <span aria-hidden="true" className="absolute -left-10 top-16 h-40 w-40 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                <span aria-hidden="true" className="absolute -right-12 bottom-6 h-32 w-32 rounded-full" style={{ background: 'rgba(255,122,61,0.28)' }} />
+                <div className="relative animate-fade-up">
+                    <div className="mx-auto mb-5 w-fit rounded-[24px] bg-white/15 p-2"><Logo size={56} /></div>
+                    <h1 className="display-1" style={{ color: '#fff' }}>Split.it</h1>
+                    <p className="small mx-auto mt-2 max-w-[18rem]" style={{ color: 'rgba(255,255,255,0.85)' }}>Divide gastos con tus amigos y ten tu presupuesto en el mismo lugar.</p>
+                </div>
             </div>
 
-            <div className="w-full max-w-md relative z-10">
-                <div className="glass-border rounded-4xl p-px">
-                    <GlassCard theme={theme} className="relative overflow-hidden px-6 py-7 sm:px-8 sm:py-8">
-                        <div className="absolute inset-0 bg-linear-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
+            <div className="mx-auto -mt-14 w-full max-w-md px-4 pb-10">
+                <form onSubmit={submit} noValidate className="card animate-fade-up space-y-3 p-5" style={{ animationDelay: '80ms' }}>
+                    <div className="segmented mb-2" role="group" aria-label="Modo" style={{ background: 'var(--card-soft)', boxShadow: 'none' }}>
+                        <button type="button" aria-pressed={!isRegister} onClick={() => { setMode('login'); setError(''); }}>Iniciar sesión</button>
+                        <button type="button" aria-pressed={isRegister} onClick={() => { setMode('register'); setError(''); }}>Crear cuenta</button>
+                    </div>
 
-                        {/* Header */}
-                        <div className="relative z-10 flex items-start justify-between gap-4 mb-7">
-                            <div className="flex items-center gap-4">
-                                <div
-                                    className="h-14 w-14 rounded-2xl flex items-center justify-center shadow-2xl shrink-0"
-                                    style={{
-                                        background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
-                                        boxShadow: '0 18px 35px -18px rgba(232, 24, 156, 0.6)',
-                                    }}
-                                >
-                                    <UserRound size={24} style={{ color: 'var(--accent-contrast)' }} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-secondary">
-                                        Split.it
-                                    </p>
-                                    <h2 className="text-3xl font-extrabold tracking-tight text-primary mt-2">
-                                        {mode === 'login' ? 'Bienvenido' : 'Crear cuenta'}
-                                    </h2>
-                                    <p className="text-sm text-secondary mt-1">
-                                        {mode === 'login'
-                                            ? 'Accede a tu cuenta para continuar.'
-                                            : 'Completa el formulario para unirte.'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={onToggleTheme}
-                                className="h-11 w-11 rounded-full flex items-center justify-center border transition-all shrink-0"
-                                style={{
-                                    background: 'var(--surface-soft)',
-                                    borderColor: 'var(--surface-border)',
-                                    color: 'var(--text-primary)',
-                                }}
-                                aria-label="Cambiar tema"
-                            >
-                                {theme === 'dark' ? <SunMedium size={18} /> : <MoonStar size={18} />}
-                            </button>
+                    {isRegister && (
+                        <div className="grid grid-cols-2 gap-3">
+                            <input className="field" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Nombre" aria-label="Nombre" autoComplete="given-name" autoCapitalize="words" enterKeyHint="next" />
+                            <input className="field" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Apellido" aria-label="Apellido" autoComplete="family-name" autoCapitalize="words" enterKeyHint="next" />
                         </div>
+                    )}
 
-                        <form
-                            onSubmit={mode === 'login' ? handleLogin : handleRegister}
-                            className="relative z-10 space-y-4"
+                    <input
+                        className="field"
+                        value={identifier}
+                        onChange={(e) => setIdentifier(e.target.value)}
+                        placeholder={isRegister ? 'Correo electrónico' : 'Correo, usuario o teléfono'}
+                        aria-label={isRegister ? 'Correo electrónico' : 'Correo, usuario o teléfono'}
+                        type={isRegister ? 'email' : 'text'}
+                        inputMode={isRegister ? 'email' : 'text'}
+                        autoComplete={isRegister ? 'email' : 'username'}
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        enterKeyHint="next"
+                    />
+
+                    <div className="relative">
+                        <input
+                            className="field"
+                            style={{ paddingRight: 56 }}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Contraseña"
+                            aria-label="Contraseña"
+                            type={showPassword ? 'text' : 'password'}
+                            autoComplete={isRegister ? 'new-password' : 'current-password'}
+                            enterKeyHint={isRegister ? 'next' : 'go'}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword((v) => !v)}
+                            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                            className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center"
+                            style={{ color: 'var(--ink-3)' }}
                         >
-                            {error && (
-                                <div
-                                    className="rounded-2xl border px-4 py-3 text-sm text-primary"
-                                    style={{
-                                        background: 'rgba(244, 63, 94, 0.10)',
-                                        borderColor: 'rgba(244, 63, 94, 0.18)',
-                                    }}
-                                >
-                                    {error}
-                                </div>
-                            )}
+                            {showPassword ? <EyeSlash size={22} /> : <Eye size={22} />}
+                        </button>
+                    </div>
+                    {isRegister && <p className="tiny px-1">Mínimo {MIN_PASSWORD} caracteres.</p>}
 
-                            <div className="space-y-3">
-                                <label className="block text-[10px] font-bold uppercase tracking-[0.28em] text-secondary">
-                                    {mode === 'login' ? 'Email, usuario o teléfono' : 'Email'}
-                                </label>
-                                <div className="relative">
-                                    <Mail size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-secondary" />
-                                    <input
-                                        className="input-underline"
-                                        placeholder={mode === 'login' ? 'you@example.com, usuario o +56...' : 'you@example.com'}
-                                        type={mode === 'login' ? 'text' : 'email'}
-                                        required
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                    />
-                                </div>
-                            </div>
+                    {isRegister && (
+                        <>
+                            <p className="heading px-1 pt-2">Opcional</p>
+                            <input className="field" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Nombre de usuario" aria-label="Nombre de usuario" autoComplete="username" autoCapitalize="none" autoCorrect="off" enterKeyHint="next" />
+                            <input className="field" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Teléfono" aria-label="Teléfono" type="tel" inputMode="tel" autoComplete="tel" enterKeyHint="go" />
+                            <p className="tiny px-1">Tus amigos pueden encontrarte por usuario, correo o teléfono.</p>
+                        </>
+                    )}
 
-                            <div className="space-y-3">
-                                <label className="block text-[10px] font-bold uppercase tracking-[0.28em] text-secondary">
-                                    Contraseña
-                                </label>
-                                <div className="relative">
-                                    <Lock size={16} className="absolute left-0 top-1/2 -translate-y-1/2 text-secondary" />
-                                    <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        className="input-underline pr-11"
-                                        placeholder="••••••••"
-                                        required
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword((v) => !v)}
-                                        className="absolute right-0 top-1/2 -translate-y-1/2 text-secondary hover:text-primary transition-colors"
-                                        aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                                    >
-                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
-                                </div>
-                            </div>
+                    {error && <p role="alert" className="small rounded-[16px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
 
-                            {mode === 'register' && (
-                                <div className="grid grid-cols-2 gap-3 pt-2">
-                                    <div className="col-span-2 relative">
-                                        <UserRound
-                                            size={16}
-                                            className="absolute left-0 top-1/2 -translate-y-1/2 text-secondary"
-                                        />
-                                        <input
-                                            className="input-underline"
-                                            placeholder="Nombre de usuario *"
-                                            type="text"
-                                            required
-                                            maxLength="30"
-                                            value={username}
-                                            onChange={(e) => setUsername(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="relative">
-                                        <input
-                                            className="input-underline pl-0"
-                                            placeholder="Nombre *"
-                                            type="text"
-                                            required
-                                            value={firstName}
-                                            onChange={(e) => setFirstName(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="relative">
-                                        <input
-                                            className="input-underline pl-0"
-                                            placeholder="Apellido *"
-                                            type="text"
-                                            required
-                                            value={lastName}
-                                            onChange={(e) => setLastName(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="relative">
-                                        <input
-                                            className="input-underline pl-0"
-                                            placeholder="Segundo nombre"
-                                            type="text"
-                                            value={middleName}
-                                            onChange={(e) => setMiddleName(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="relative">
-                                        <input
-                                            className="input-underline pl-0"
-                                            placeholder="Segundo apellido"
-                                            type="text"
-                                            value={secondLastName}
-                                            onChange={(e) => setSecondLastName(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="col-span-2 relative">
-                                        <Phone
-                                            size={16}
-                                            className="absolute left-0 top-1/2 -translate-y-1/2 text-secondary"
-                                        />
-                                        <input
-                                            className="input-underline"
-                                            placeholder="Teléfono *"
-                                            type="tel"
-                                            required
-                                            value={phone}
-                                            onChange={(e) => setPhone(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="col-span-2 relative">
-                                        <CalendarDays
-                                            size={16}
-                                            className="absolute left-0 top-1/2 -translate-y-1/2 text-secondary"
-                                        />
-                                        <input
-                                            className="input-underline"
-                                            placeholder="Fecha de nacimiento"
-                                            type="date"
-                                            value={birthDate}
-                                            onChange={(e) => setBirthDate(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                            <button
-                                disabled={loading}
-                                className="w-full rounded-[1.35rem] px-5 py-4 text-sm font-semibold transition-all active:scale-[0.99] disabled:opacity-50 mt-2"
-                                style={{
-                                    background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
-                                    boxShadow: '0 14px 30px -16px rgba(232, 24, 156, 0.75)',
-                                    color: 'var(--accent-contrast)',
-                                }}
-                            >
-                                {loading ? (
-                                    <Loader2 size={18} className="animate-spin mx-auto" />
-                                ) : mode === 'login' ? (
-                                    'Acceder'
-                                ) : (
-                                    'Crear cuenta'
-                                )}
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={switchMode}
-                                className="w-full rounded-[1.25rem] px-4 py-3 text-sm font-semibold transition-all flex items-center justify-center gap-2 text-secondary hover:text-primary"
-                            >
-                                {mode === 'login' ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}
-                                <ChevronRight size={16} />
-                            </button>
-                        </form>
-                    </GlassCard>
-                </div>
-
-                <p
-                    className="text-center text-[10px] mt-6 font-bold uppercase tracking-[0.32em] text-secondary"
-                >
-                    Vibrance & Depth UI
-                </p>
+                    <button type="submit" className="btn btn-primary btn-block !mt-5" disabled={loading}>
+                        {loading ? <CircleNotch size={22} className="animate-spin" /> : isRegister ? 'Crear cuenta' : 'Entrar'}
+                    </button>
+                </form>
             </div>
         </div>
     );

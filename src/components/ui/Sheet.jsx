@@ -34,6 +34,7 @@ export const Sheet = ({
     title,
     children,
     action, // { label, onClick, disabled, loading }
+    backAction, // { label, onClick }: reemplaza el botón de cerrar (navegación interna)
     closeLabel = 'Cancelar',
     size = 'md', // 'md' | 'lg'
     zIndex = 90,
@@ -65,16 +66,28 @@ export const Sheet = ({
         return unlockScroll;
     }, [mounted]);
 
+    // onClose suele llegar como función en línea (cambia en cada render del
+    // padre): se guarda en una ref para que el efecto de abajo corra solo al
+    // abrir. Antes se re-ejecutaba en cada tecla y robaba el foco del campo
+    // que se estaba escribiendo.
+    const onCloseRef = useRef(onClose);
+    useEffect(() => { onCloseRef.current = onClose; });
+
     useEffect(() => {
         if (!isOpen) return undefined;
-        const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
+        const onKey = (e) => { if (e.key === 'Escape') onCloseRef.current?.(); };
         document.addEventListener('keydown', onKey);
-        panelRef.current?.focus({ preventScroll: true });
+        // Si un campo con autoFocus ya tiene el foco, no se lo quitamos.
+        const panel = panelRef.current;
+        if (panel && !panel.contains(document.activeElement)) panel.focus({ preventScroll: true });
         return () => document.removeEventListener('keydown', onKey);
-    }, [isOpen, onClose]);
+    }, [isOpen, mounted]);
 
     const onPointerDown = useCallback((e) => {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
+        // Los botones del encabezado (Cancelar, acción) no inician arrastre:
+        // capturar el puntero redirigiría su clic al contenedor.
+        if (e.target.closest('button')) return;
         e.currentTarget.setPointerCapture(e.pointerId);
         const panel = panelRef.current;
         if (!panel) return;
@@ -149,8 +162,8 @@ export const Sheet = ({
                     </div>
                     <div className="grid grid-cols-[1fr_auto_1fr] items-center px-4 pt-2 pb-3 min-h-14">
                         <div className="justify-self-start">
-                            <button type="button" className="btn btn-plain btn-sm" style={{ height: 40, fontSize: 15, fontWeight: 500 }} onClick={onClose}>
-                                {closeLabel}
+                            <button type="button" className="btn btn-plain btn-sm" style={{ height: 40, fontSize: 15, fontWeight: 500 }} onClick={backAction ? backAction.onClick : onClose}>
+                                {backAction ? backAction.label : closeLabel}
                             </button>
                         </div>
                         <h2 className="heading text-center truncate max-w-[55vw]">{title}</h2>

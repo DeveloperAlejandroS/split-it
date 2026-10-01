@@ -5,7 +5,7 @@ import { Logo } from './ui/Logo';
 
 // Barra lateral de escritorio: tarjeta flotante sobre el lienzo, con el
 // botón de agregar arriba (en móvil vive al centro de la barra inferior).
-export const Sidebar = ({ activeTab, onChange, badges = {}, userName, userEmail, onOpenAccount, onAdd, addLabel }) => (
+export const Sidebar = ({ activeTab, onChange, badges = {}, userName, userEmail, userAvatar, onOpenAccount, onAdd, addLabel }) => (
     <aside className="hidden xl:flex fixed bottom-4 left-4 top-4 z-40 w-60 flex-col card p-4">
         <div className="flex items-center gap-3 px-2 pb-5 pt-1">
             <Logo size={38} />
@@ -43,7 +43,7 @@ export const Sidebar = ({ activeTab, onChange, badges = {}, userName, userEmail,
         </nav>
 
         <button type="button" onClick={onOpenAccount} className="mt-auto flex items-center gap-3 rounded-[20px] p-2 text-left transition-colors hover:bg-(--card-soft) active:scale-[0.98]">
-            <Avatar name={userName} size={40} />
+            <Avatar name={userName} src={userAvatar} size={40} />
             <span className="min-w-0">
                 <span className="block truncate text-[14px] font-semibold">{userName}</span>
                 <span className="block truncate tiny">{userEmail}</span>

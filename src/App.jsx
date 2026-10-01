@@ -11,12 +11,13 @@ import { ExpenseDetailSheet } from './components/ExpenseDetailSheet';
 import { AddBudgetItemModal } from './components/AddBudgetItemModal';
 import { AddLedgerEntrySheet } from './components/LedgerSheets';
 import { AddMenuSheet } from './components/AddMenuSheet';
-import { AccountSheet } from './components/AccountSheet';
+import { SettingsSheet } from './components/SettingsSheet';
 import { TabBar } from './components/TabBar';
 import { Sidebar } from './components/Sidebar';
 import { LoginView } from './components/LoginView';
 import { displayNameOf, numberOrZero } from './utils/helpers';
 import { API_URL } from './config/api';
+import { applyAccent, readAccent } from './utils/accent';
 
 const TOKEN_KEY = 'splitit_jwt';
 const THEME_KEY = 'splitit_theme_pref';
@@ -57,6 +58,7 @@ const App = () => {
     const [selectedExpenseId, setSelectedExpenseId] = useState(null);
 
     const [themePref, setThemePref] = useState(() => localStorage.getItem(THEME_KEY) || 'system');
+    const [accent, setAccent] = useState(readAccent);
     const [systemIsDark, setSystemIsDark] = useState(() => systemTheme() === 'dark');
     const theme = themePref === 'system' ? (systemIsDark ? 'dark' : 'light') : themePref;
 
@@ -77,8 +79,14 @@ const App = () => {
         localStorage.setItem(THEME_KEY, themePref);
         // La barra de estado del teléfono toma este color: debe coincidir con
         // lo que hay arriba de la pantalla, no con el color de marca.
-        document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', theme === 'dark' ? '#000000' : '#f2f2f7'));
     }, [theme, themePref]);
+
+    // ---- Color de la app: se deriva de un solo color base ----------------
+    useEffect(() => {
+        applyAccent(accent);
+        const root = document.documentElement;
+        document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', getComputedStyle(root).getPropertyValue('--bg').trim() || (theme === 'dark' ? '#0d0a26' : '#eceaf8')));
+    }, [accent, theme]);
 
     // ---- Navegación: la pestaña vive en el hash (el botón atrás funciona) -
     const setActiveTab = useCallback((tab) => {
@@ -264,7 +272,7 @@ const App = () => {
 
     return (
         <div className="min-h-screen">
-            <Sidebar activeTab={activeTab} onChange={setActiveTab} badges={badges} userName={userName} userEmail={currentUser?.email} onOpenAccount={() => setShowAccount(true)} onAdd={handleAdd} addLabel={addLabel} />
+            <Sidebar activeTab={activeTab} onChange={setActiveTab} badges={badges} userName={userName} userEmail={currentUser?.email} userAvatar={currentUser?.avatar_url} onOpenAccount={() => setShowAccount(true)} onAdd={handleAdd} addLabel={addLabel} />
 
             {toast && (
                 <div className="fixed inset-x-0 z-[110] flex justify-center px-4 animate-materialize" style={{ top: 'calc(var(--safe-top) + 12px)' }} role="alert">
@@ -369,13 +377,17 @@ const App = () => {
                 isLoading={isLoading}
             />
 
-            <AccountSheet
+            <SettingsSheet
                 isOpen={showAccount}
                 onClose={() => setShowAccount(false)}
                 user={currentUser}
+                onUserUpdated={setCurrentUser}
                 themePref={themePref}
                 onThemeChange={setThemePref}
+                accent={accent}
+                onAccentChange={setAccent}
                 onLogout={handleLogout}
+                onToast={setToast}
             />
         </div>
     );

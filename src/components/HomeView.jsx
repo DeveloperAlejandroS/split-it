@@ -180,7 +180,7 @@ export const HomeView = ({
                 actions={
                     <>
                         <NavAction label="Amigos" badge={pendingFriendRequests.length} onClick={() => onNavigate('friends')}><UsersThree size={22} weight="bold" /></NavAction>
-                        <button type="button" onClick={onOpenAccount} aria-label="Tu cuenta" className="rounded-full transition-transform active:scale-90 xl:hidden"><Avatar name={displayNameOf(currentUser)} size={44} /></button>
+                        <button type="button" onClick={onOpenAccount} aria-label="Tu cuenta" className="rounded-full transition-transform active:scale-90 xl:hidden"><Avatar name={displayNameOf(currentUser)} src={currentUser?.avatar_url} size={44} /></button>
                     </>
                 }
             />

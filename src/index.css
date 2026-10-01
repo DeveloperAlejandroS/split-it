@@ -59,10 +59,11 @@
   --grad-teal: linear-gradient(140deg, #3ee3d1 0%, #14a7c4 100%);
   --grad-coral: linear-gradient(140deg, #ffa264 0%, #ff6a3d 100%);
 
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 12px 32px -14px rgba(66, 44, 180, 0.28);
-  --shadow-sm: 0 6px 18px -10px rgba(66, 44, 180, 0.3);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 12px 32px -14px rgb(var(--shadow-rgb) / 0.28);
+  --shadow-sm: 0 6px 18px -10px rgb(var(--shadow-rgb) / 0.3);
   --shadow-sheet: 0 -18px 50px rgba(40, 24, 120, 0.22);
 
+  --shadow-rgb: 66 44 180;
   --scrim: rgba(20, 12, 70, 0.4);
   --material: rgba(255, 255, 255, 0.82);
 
@@ -73,8 +74,8 @@
   --glass-blur: 22px;
   --glass-sat: 180%;
   --glass-sheen: rgba(255, 255, 255, 0.55);
-  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(66, 44, 180, 0.1);
-  --glass-drop: 0 14px 34px -12px rgba(66, 44, 180, 0.32), 0 2px 6px rgba(66, 44, 180, 0.08);
+  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgb(var(--shadow-rgb) / 0.1);
+  --glass-drop: 0 14px 34px -12px rgb(var(--shadow-rgb) / 0.32), 0 2px 6px rgb(var(--shadow-rgb) / 0.08);
   --sheet-bg: rgba(236, 234, 248, 0.8);
 
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
@@ -299,6 +300,16 @@ input.input-amount::placeholder { color: var(--lilac); }
 .segmented > button[aria-pressed='true'], .segmented > button[aria-selected='true'] {
   background: var(--grad-hero); color: #fff; font-weight: 600; box-shadow: 0 8px 16px -8px var(--primary-glow);
 }
+
+.swatch {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 999px;
+  border: 0; color: var(--ink-2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 0 0 0 transparent;
+  transition: transform 220ms var(--spring), box-shadow 200ms var(--ease-out);
+}
+.swatch:active { transform: scale(0.92); }
+.swatch[data-active='true'] { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 0 0 3px var(--bg), 0 0 0 5px var(--ink-2); }
+.swatch-custom { background: conic-gradient(from 90deg, #ff5f6d, #ffc371, #47e891, #3aa0ff, #a064ff, #ff5f6d); color: #fff; overflow: hidden; }
 
 .chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
 

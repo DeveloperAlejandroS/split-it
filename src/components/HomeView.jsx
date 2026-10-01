@@ -71,18 +71,21 @@ export const HomeView = ({
     useEffect(() => { if (refreshKey > 0) loadAll(true); }, [refreshKey, loadAll]);
     /* eslint-enable react-hooks/set-state-in-effect */
 
-    const cash = numberOrZero(budget?.totals?.balance);
-    const savings = numberOrZero(budget?.totals?.savings_balance);
-    const monthlyMargin = numberOrZero(budget?.totals?.actual_net);
+    // Caja real: `carry_forward_cash` es el saldo sin lo que ya se apartó a
+    // ahorros este mes (`balance` lo incluye, y sumarlo a `savings_balance`
+    // contaba ese ahorro dos veces).
+    const totals = budget?.totals;
+    const cash = numberOrZero(totals?.carry_forward_cash ?? totals?.balance);
+    const savings = numberOrZero(totals?.savings_balance);
     const libretaPending = numberOrZero(libreta.total_pending);
     const debtPending = numberOrZero(debts.total_pending);
     const owedToMe = numberOrZero(balance?.owed_to_me) + libretaPending;
     const iOwe = numberOrZero(balance?.i_owe) + debtPending;
 
-    // Patrimonio neto: todo lo tuyo (caja, ahorros, lo que te deben) menos lo
-    // que debes. "Disponible" se muestra aparte y nunca cuenta lo que aún no
-    // te pagan.
-    const netWorth = cash + savings + owedToMe - iOwe;
+    // "Lo que tienes": solo plata que ya está en tu mano (caja + ahorros).
+    // Lo que te deben NO cuenta hasta que te lo paguen, y lo que debes no se
+    // resta: ambos se muestran aparte, en sus propias tarjetas.
+    const have = cash + savings;
 
     const today = new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -150,9 +153,11 @@ export const HomeView = ({
             const stake = getExpenseStake(e, currentUser?.id);
             rows.push({
                 key: `e${e.id}`, ts, title: e.description, icon: <Receipt size={22} weight="duotone" />, tone: 'violet',
-                meta: `${e.paid_by_me ? 'Pagaste tú' : `Pagó ${firstNameOf(e.paid_by)}`} · ${relativeDay(ts)}`,
                 // Lo que importa de un gasto compartido es TU posición, no el total.
-                display: stake.kind === 'owed' ? `+${formatCurrency(stake.amount)}` : stake.kind === 'owe' || stake.kind === 'waiting' ? `−${formatCurrency(stake.amount)}` : formatCurrency(e.amount),
+                // Va sin signo: mientras no se pague no es plata que entró ni
+                // que salió, solo una cuenta pendiente (el color dice de qué lado).
+                meta: `${stake.kind === 'owed' ? 'Te deben' : stake.kind === 'owe' ? `Le debes a ${firstNameOf(e.paid_by)}` : stake.kind === 'waiting' ? 'Esperando confirmación' : e.paid_by_me ? 'Pagaste tú' : `Pagó ${firstNameOf(e.paid_by)}`} · ${relativeDay(ts)}`,
+                display: stake.kind === 'settled' ? formatCurrency(e.amount) : formatCurrency(stake.amount),
                 color: stake.kind === 'owed' ? 'var(--pos)' : stake.kind === 'owe' ? 'var(--neg)' : stake.kind === 'waiting' ? 'var(--info)' : 'var(--ink-3)',
                 onClick: () => onOpenExpense(e),
             });
@@ -161,7 +166,7 @@ export const HomeView = ({
             (bucket.items || []).forEach((item) => {
                 if (item.is_pending || item.is_split_synced) return;
                 const ts = item.created_at || item.updated_at;
-                const amt = numberOrZero(item.actual_amount);
+                const amt = Math.abs(numberOrZero(item.actual_amount));
                 if (!ts || amt === 0) return;
                 const mk = (positive, meta, tone, icon, go) => ({
                     key: `b${item.id}`, ts, title: item.label, icon, tone, meta: `${meta} · ${relativeDay(ts)}`,
@@ -193,12 +198,12 @@ export const HomeView = ({
 
             <div className="stagger flex flex-col gap-5">
                 <div className="hero p-6">
-                    <p className="small">Patrimonio neto</p>
-                    <p className="money-xl mt-2"><AnimatedNumber value={netWorth} /></p>
+                    <p className="small">Lo que tienes</p>
+                    <p className="money-xl mt-2"><AnimatedNumber value={have} /></p>
                     <div className="mt-5 grid grid-cols-2 gap-3">
                         <button type="button" onClick={() => onNavigate('personal')} className="rounded-[18px] p-3 text-left transition-transform active:scale-[0.97]" style={{ background: 'rgba(255,255,255,0.16)' }}>
-                            <span className="flex items-center gap-1.5 tiny" style={{ color: 'rgba(255,255,255,0.8)' }}><Wallet size={14} weight="fill" /> Disponible</span>
-                            <span className="money mt-1 block text-[18px]">{formatCurrency(monthlyMargin)}</span>
+                            <span className="flex items-center gap-1.5 tiny" style={{ color: 'rgba(255,255,255,0.8)' }}><Wallet size={14} weight="fill" /> En caja</span>
+                            <span className="money mt-1 block text-[18px]">{formatCurrency(cash)}</span>
                         </button>
                         <button type="button" onClick={() => onNavigate('personal')} className="rounded-[18px] p-3 text-left transition-transform active:scale-[0.97]" style={{ background: 'rgba(255,255,255,0.16)' }}>
                             <span className="flex items-center gap-1.5 tiny" style={{ color: 'rgba(255,255,255,0.8)' }}><PiggyBank size={14} weight="fill" /> Ahorros</span>

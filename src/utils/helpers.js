@@ -37,7 +37,9 @@ export const formatCurrency = (amount, showSign = false) => {
         maximumFractionDigits: 0
     }).format(Math.abs(value));
 
-    if (showSign && value < 0) return `-${formatted}`;
+    // Un monto negativo SIEMPRE lleva su signo: antes se mostraba el valor
+    // absoluto y un saldo de -10 millones se leía como +10 millones.
+    if (value < 0) return `−${formatted}`;
     if (showSign && value > 0) return `+${formatted}`;
     return formatted;
 };

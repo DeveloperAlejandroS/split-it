@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, CaretRight, Check, Eye, EyeSlash, Lock, Palette, SignOut, Trash, UserCircle } from '@phosphor-icons/react';
+import { Bell, Camera, CaretRight, Check, CircleNotch, DeviceMobile, Eye, EyeSlash, Lock, Palette, SignOut, Trash, UserCircle } from '@phosphor-icons/react';
 import { Sheet } from './ui/Sheet';
 import { Avatar } from './ui/Avatar';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -7,6 +7,9 @@ import { API_URL } from '../config/api';
 import { ACCENT_PRESETS, DEFAULT_ACCENT, isValidHex } from '../utils/accent';
 import { fileToAvatar } from '../utils/image';
 import { displayNameOf } from '../utils/helpers';
+import { disablePush, enablePush, getPushState, sendTestPush } from '../utils/push';
+import { useInstall } from '../utils/useInstall';
+import { IosInstallSheet } from './InstallBanner';
 
 const TOKEN_KEY = 'splitit_jwt';
 const MIN_PASSWORD = 8;
@@ -17,7 +20,7 @@ const THEME_OPTIONS = [
     { id: 'dark', label: 'Oscuro' },
 ];
 
-const PAGE_TITLES = { root: 'Ajustes', profile: 'Perfil', security: 'Contraseña', appearance: 'Apariencia' };
+const PAGE_TITLES = { root: 'Ajustes', profile: 'Perfil', security: 'Contraseña', appearance: 'Apariencia', notifications: 'Notificaciones' };
 
 const request = async (method, path, body) => {
     const res = await fetch(`${API_URL}${path}`, {
@@ -41,6 +44,87 @@ const Field = ({ label, children }) => (
 
 // ---- Páginas ------------------------------------------------------------
 
+const InstallRow = () => {
+    const { mode, install } = useInstall();
+    const [showIos, setShowIos] = useState(false);
+    if (!mode) return null;
+    return (
+        <>
+            <div className="stack mt-3">
+                <button type="button" className="row" onClick={() => (mode === 'prompt' ? install() : setShowIos(true))}>
+                    <span className="bubble h-11 w-11 rounded-full" style={{ background: 'var(--primary-soft)', color: 'var(--primary)' }}><DeviceMobile size={22} weight="duotone" /></span>
+                    <span className="min-w-0 flex-1 text-left">
+                        <span className="body block font-semibold">Instalar app</span>
+                        <span className="small block truncate">{mode === 'prompt' ? 'Ábrela a pantalla completa' : 'Cómo agregarla al inicio del iPhone'}</span>
+                    </span>
+                    <CaretRight size={16} weight="bold" style={{ color: 'var(--ink-3)' }} />
+                </button>
+            </div>
+            <IosInstallSheet isOpen={showIos} onClose={() => setShowIos(false)} />
+        </>
+    );
+};
+
+const PUSH_COPY = {
+    unsupported: 'Este navegador no admite notificaciones. En iPhone, primero instala la app en la pantalla de inicio y ábrela desde ahí.',
+    denied: 'Bloqueaste las notificaciones para Split.it. Actívalas en los ajustes del navegador o del teléfono y vuelve aquí.',
+    on: 'Te avisamos cuando llegue una solicitud de amistad, un gasto nuevo o un pago por confirmar.',
+    off: 'Recibe un aviso cuando llegue una solicitud de amistad, un gasto nuevo o un pago por confirmar.',
+};
+
+const NotificationsPage = ({ onToast }) => {
+    const [state, setState] = useState('loading');
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => { getPushState().then(setState); }, []);
+
+    const toggle = async () => {
+        setBusy(true);
+        setError('');
+        try {
+            if (state === 'on') await disablePush(); else await enablePush();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setState(await getPushState());
+            setBusy(false);
+        }
+    };
+
+    const test = async () => {
+        try {
+            await sendTestPush();
+            onToast?.('Prueba enviada. Debería llegar en unos segundos.');
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
+    if (state === 'loading') return <div className="flex justify-center py-10"><CircleNotch size={22} className="animate-spin" style={{ color: 'var(--ink-3)' }} /></div>;
+
+    const canToggle = state === 'on' || state === 'off';
+    return (
+        <div className="space-y-4">
+            <div className="card flex items-center gap-3 p-4">
+                <span className="bubble h-11 w-11 shrink-0 rounded-full" style={{ background: 'var(--primary-soft)', color: 'var(--primary)' }}><Bell size={22} weight={state === 'on' ? 'fill' : 'duotone'} /></span>
+                <span className="min-w-0 flex-1">
+                    <span className="body block font-semibold">{state === 'on' ? 'Activadas en este dispositivo' : 'Desactivadas'}</span>
+                    <span className="small block">{PUSH_COPY[state]}</span>
+                </span>
+            </div>
+            {canToggle && (
+                <button type="button" className={`btn btn-block ${state === 'on' ? 'btn-gray' : 'btn-primary'}`} disabled={busy} onClick={toggle}>
+                    {busy ? <CircleNotch size={20} className="animate-spin" /> : state === 'on' ? 'Desactivar notificaciones' : 'Activar notificaciones'}
+                </button>
+            )}
+            {state === 'on' && <button type="button" className="btn btn-tinted btn-block" onClick={test}>Enviar una de prueba</button>}
+            {error && <p role="alert" className="small rounded-[16px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
+            <p className="tiny px-1">Se activan por dispositivo: hazlo en cada teléfono o computador donde quieras recibirlas.</p>
+        </div>
+    );
+};
+
 const RootPage = ({ user, name, onGo, onLogout }) => (
     <>
         <button type="button" onClick={() => onGo('profile')} className="hero flex w-full items-center gap-4 p-5 text-left transition-transform active:scale-[0.98]" style={{ transitionDuration: '160ms' }}>
@@ -57,6 +141,7 @@ const RootPage = ({ user, name, onGo, onLogout }) => (
                 { id: 'profile', label: 'Perfil', hint: 'Foto, nombre y usuario', icon: UserCircle },
                 { id: 'security', label: 'Contraseña', hint: 'Cámbiala cuando quieras', icon: Lock },
                 { id: 'appearance', label: 'Apariencia', hint: 'Tema y color de la app', icon: Palette },
+                { id: 'notifications', label: 'Notificaciones', hint: 'Solicitudes, gastos y pagos', icon: Bell },
             ].map(({ id, label, hint, icon: Icon }) => (
                 <button key={id} type="button" className="row" onClick={() => onGo(id)}>
                     <span className="bubble h-11 w-11 rounded-full" style={{ background: 'var(--primary-soft)', color: 'var(--primary)' }}><Icon size={22} weight="duotone" /></span>
@@ -68,6 +153,8 @@ const RootPage = ({ user, name, onGo, onLogout }) => (
                 </button>
             ))}
         </div>
+
+        <InstallRow />
 
         <button type="button" className="btn btn-danger btn-block mt-8" onClick={onLogout}>
             <SignOut size={20} weight="bold" />
@@ -314,6 +401,7 @@ export const SettingsSheet = ({ isOpen, onClose, user, onUserUpdated, themePref,
                         />
                     )}
                     {page === 'security' && <SecurityPage form={password} setForm={setPassword} error={error} />}
+                    {page === 'notifications' && <NotificationsPage onToast={onToast} />}
                     {page === 'appearance' && <AppearancePage themePref={themePref} onThemeChange={onThemeChange} accent={accent} onAccentChange={onAccentChange} />}
                 </div>
             </Sheet>

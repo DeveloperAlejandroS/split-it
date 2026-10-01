@@ -37,6 +37,7 @@ export const HomeView = ({
     onNavigate,
     onOpenExpense,
     onOpenAccount,
+    banner,
 }) => {
     const [budget, setBudget] = useState(null);
     const [libreta, setLibreta] = useState({ total_pending: 0 });
@@ -184,6 +185,8 @@ export const HomeView = ({
                     </>
                 }
             />
+
+            {banner}
 
             <div className="stagger flex flex-col gap-5">
                 <div className="hero p-6">

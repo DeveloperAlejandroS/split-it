@@ -15,14 +15,21 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      // Maneja las notificaciones push dentro del service worker generado.
+      workbox: { importScripts: ['/push-sw.js'] },
       manifest: {
         name: 'Split.it',
         short_name: 'Split.it',
         description: 'Gastos compartidos, presupuesto personal y cuentas por cobrar/pagar, todo en un solo lugar.',
         // Morado de marca -- coincide con el degradé del ícono, para que la
         // transición del splash screen a la app se sienta continua.
-        theme_color: '#f2f2f7',
-        background_color: '#f2f2f7',
+        theme_color: '#eceaf8',
+        background_color: '#eceaf8',
+        lang: 'es',
+        dir: 'ltr',
+        id: '/',
+        orientation: 'portrait',
+        categories: ['finance', 'productivity'],
         display: 'standalone',
         start_url: '/',
         scope: '/',

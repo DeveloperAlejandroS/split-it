@@ -12,6 +12,7 @@ import { AddBudgetItemModal } from './components/AddBudgetItemModal';
 import { AddLedgerEntrySheet } from './components/LedgerSheets';
 import { AddMenuSheet } from './components/AddMenuSheet';
 import { SettingsSheet } from './components/SettingsSheet';
+import { InstallBanner, OfflineNotice } from './components/InstallBanner';
 import { TabBar } from './components/TabBar';
 import { Sidebar } from './components/Sidebar';
 import { LoginView } from './components/LoginView';
@@ -59,6 +60,15 @@ const App = () => {
 
     const [themePref, setThemePref] = useState(() => localStorage.getItem(THEME_KEY) || 'system');
     const [accent, setAccent] = useState(readAccent);
+    const [offline, setOffline] = useState(() => !navigator.onLine);
+
+    useEffect(() => {
+        const on = () => setOffline(false);
+        const off = () => setOffline(true);
+        window.addEventListener('online', on);
+        window.addEventListener('offline', off);
+        return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+    }, []);
     const [systemIsDark, setSystemIsDark] = useState(() => systemTheme() === 'dark');
     const theme = themePref === 'system' ? (systemIsDark ? 'dark' : 'light') : themePref;
 
@@ -308,6 +318,8 @@ const App = () => {
         <div className="app-shell">
             <Sidebar activeTab={activeTab} onChange={setActiveTab} badges={badges} userName={userName} userEmail={currentUser?.email} userAvatar={currentUser?.avatar_url} onOpenAccount={() => setShowAccount(true)} onAdd={handleAdd} addLabel={addLabel} />
 
+            <OfflineNotice offline={offline && !toast} />
+
             {toast && (
                 <div className="fixed inset-x-0 z-[110] flex justify-center px-4 animate-materialize" style={{ top: 'calc(var(--safe-top) + 12px)' }} role="alert">
                     <div className="glass glass-strong flex max-w-md items-center gap-3 rounded-full py-2.5 pl-5 pr-2">
@@ -330,6 +342,7 @@ const App = () => {
                         onOpenExpense={openExpense}
                         onAdd={handleAdd}
                         onOpenAccount={() => setShowAccount(true)}
+                        banner={<InstallBanner />}
                     />
                 )}
                 {activeTab === 'expenses' && (

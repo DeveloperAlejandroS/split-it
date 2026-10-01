@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CircleNotch, Plus, MagnifyingGlass, UserPlus, UsersThree } from '@phosphor-icons/react';
+import { CaretRight, CircleNotch, Plus, MagnifyingGlass, UserMinus, UserPlus, UsersThree } from '@phosphor-icons/react';
 import { ScreenHeader, NavAction } from './ui/ScreenHeader';
 import { Avatar } from './ui/Avatar';
 import { EmptyState } from './ui/EmptyState';
 import { Sheet } from './ui/Sheet';
+import { ConfirmDialog } from './ConfirmDialog';
+import { useHeldValue } from './ui/useHeldValue';
 import { API_URL } from '../config/api';
 import { displayNameOf, formatCurrency } from '../utils/helpers';
 
@@ -124,9 +126,85 @@ const AddFriendSheet = ({ isOpen, onClose, token, onRefresh }) => {
     );
 };
 
+// Gestionar a un amigo: ver cómo van las cuentas y eliminarlo. La amistad es
+// una sola relación compartida: si uno la elimina, desaparece para los dos.
+// Los gastos que ya compartieron NO se borran ni se saldan.
+const FriendSheet = ({ friend, net, onClose, onRemove, removing, error }) => {
+    const [confirming, setConfirming] = useState(false);
+    // Conserva al amigo mientras la hoja se cierra (si no, se vacía a media animación).
+    const shown = useHeldValue(friend);
+    const user = userOf(shown);
+    const name = displayNameOf(user);
+    const hasBalance = Math.abs(net) > 0.5;
+
+    return (
+        <>
+            <Sheet isOpen={Boolean(friend)} onClose={onClose} title="Amigo" closeLabel="Cerrar">
+                <div className="flex flex-col items-center gap-2 pt-1 text-center">
+                    <Avatar name={name} src={user.avatar_url} size={84} />
+                    <p className="title">{name}</p>
+                    <p className="small">{user.username ? `@${user.username}` : user.email}</p>
+                </div>
+
+                <div className="card mt-5 flex items-center justify-between p-4">
+                    <span className="body">Cuentas entre ustedes</span>
+                    {hasBalance ? (
+                        <span className="text-right">
+                            <span className="tiny block" style={{ color: net > 0 ? 'var(--pos)' : 'var(--neg)' }}>{net > 0 ? 'te debe' : 'le debes'}</span>
+                            <span className="money block" style={{ color: net > 0 ? 'var(--pos)' : 'var(--neg)' }}>{formatCurrency(Math.abs(net))}</span>
+                        </span>
+                    ) : (
+                        <span className="small">Al día</span>
+                    )}
+                </div>
+
+                {error && <p role="alert" className="small mt-4 rounded-[16px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
+
+                <button type="button" className="btn btn-danger btn-block mt-6" onClick={() => setConfirming(true)}>
+                    <UserMinus size={20} weight="bold" /> Eliminar amigo
+                </button>
+                <p className="tiny px-1 pt-3 text-center">Deja de ser tu amigo y tú dejas de ser el suyo. Los gastos que ya compartieron se conservan.</p>
+            </Sheet>
+
+            <ConfirmDialog
+                isOpen={confirming}
+                tone="danger"
+                title={`¿Eliminar a ${name}?`}
+                message={hasBalance
+                    ? `Todavía hay ${formatCurrency(Math.abs(net))} pendientes entre ustedes. Eliminarlo no salda esa cuenta: los gastos siguen ahí, pero no podrán crear nuevos juntos.`
+                    : 'Ya no podrán dividir gastos nuevos. Para volver a hacerlo tendrán que enviarse una solicitud otra vez.'}
+                confirmLabel="Eliminar"
+                isLoading={removing}
+                onConfirm={async () => { await onRemove(); setConfirming(false); }}
+                onCancel={() => setConfirming(false)}
+            />
+        </>
+    );
+};
+
 export const FriendsView = ({ friends, pendingRequests, balance, token, onRefresh, isAddOpen, onAddOpenChange }) => {
     const [acceptingId, setAcceptingId] = useState(null);
     const [error, setError] = useState('');
+    const [openFriend, setOpenFriend] = useState(null);
+    const [removing, setRemoving] = useState(false);
+    const [removeError, setRemoveError] = useState('');
+
+    const removeFriend = async () => {
+        const id = requestIdOf(openFriend);
+        setRemoving(true);
+        setRemoveError('');
+        try {
+            const res = await fetch(`${API_URL}/friends/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || 'No se pudo eliminar');
+            setOpenFriend(null);
+            await onRefresh?.();
+        } catch (err) {
+            setRemoveError(err instanceof TypeError ? 'No hay conexión con el servidor. Revisa tu internet.' : err.message);
+        } finally {
+            setRemoving(false);
+        }
+    };
 
     const netByFriend = useMemo(() => {
         const map = new Map();
@@ -216,9 +294,9 @@ export const FriendsView = ({ friends, pendingRequests, balance, token, onRefres
                             const user = userOf(f);
                             const net = netByFriend.get(Number(user.id ?? f.user_id ?? f.friend_id)) || 0;
                             return (
-                                <div key={user.id ?? f.id ?? i} className="row">
+                                <button key={user.id ?? f.id ?? i} type="button" className="row" onClick={() => { setRemoveError(''); setOpenFriend(f); }} aria-label={`Gestionar a ${displayNameOf(user)}`}>
                                     <Avatar name={displayNameOf(user)} size={44} />
-                                    <span className="min-w-0 flex-1">
+                                    <span className="min-w-0 flex-1 text-left">
                                         <span className="body block truncate font-medium">{displayNameOf(user)}</span>
                                         <span className="small block truncate text-secondary">{user.username ? `@${user.username}` : user.email}</span>
                                     </span>
@@ -232,12 +310,22 @@ export const FriendsView = ({ friends, pendingRequests, balance, token, onRefres
                                             <span className="small text-secondary">Al día</span>
                                         )}
                                     </span>
-                                </div>
+                                    <CaretRight size={16} weight="bold" style={{ color: 'var(--ink-3)' }} className="shrink-0" />
+                                </button>
                             );
                         })}
                     </div>
                 </>
             )}
+
+            <FriendSheet
+                friend={openFriend}
+                net={openFriend ? netByFriend.get(Number(userOf(openFriend).id ?? openFriend.user_id ?? openFriend.friend_id)) || 0 : 0}
+                onClose={() => setOpenFriend(null)}
+                onRemove={removeFriend}
+                removing={removing}
+                error={removeError}
+            />
 
             <AddFriendSheet isOpen={isAddOpen} onClose={() => onAddOpenChange(false)} token={token} onRefresh={onRefresh} />
         </section>

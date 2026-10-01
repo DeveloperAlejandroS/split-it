@@ -19,6 +19,7 @@ import { LoginView } from './components/LoginView';
 import { displayNameOf, numberOrZero } from './utils/helpers';
 import { API_URL } from './config/api';
 import { applyAccent, readAccent } from './utils/accent';
+import { useRealtime } from './utils/useRealtime';
 
 const TOKEN_KEY = 'splitit_jwt';
 const THEME_KEY = 'splitit_theme_pref';
@@ -47,6 +48,9 @@ const App = () => {
     const [expenseFilter, setExpenseFilter] = useState('all');
     const [accountsSegment, setAccountsSegment] = useState('owed');
     const [dataVersion, setDataVersion] = useState(0);
+    // Sube cuando llega un cambio hecho por otra persona (tiempo real): las
+    // pantallas recargan sus datos sin reiniciar animaciones ni mostrar carga.
+    const [liveVersion, setLiveVersion] = useState(0);
 
     const [showAddMenu, setShowAddMenu] = useState(false);
     const [showCreateExpense, setShowCreateExpense] = useState(false);
@@ -125,8 +129,8 @@ const App = () => {
     }, [toast]);
 
     // ---- Datos -----------------------------------------------------------
-    const loadData = useCallback(async (token) => {
-        setIsLoading(true);
+    const loadData = useCallback(async (token, { silent = false } = {}) => {
+        if (!silent) setIsLoading(true);
         try {
             const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' };
             const responses = await Promise.all([
@@ -168,6 +172,11 @@ const App = () => {
     }, [showToast]);
 
     const refresh = useCallback(() => loadData(localStorage.getItem(TOKEN_KEY)), [loadData]);
+
+    // ---- Tiempo real: otro usuario creó/cambió algo que te incluye --------
+    useRealtime(isLoggedIn, useCallback(() => {
+        loadData(localStorage.getItem(TOKEN_KEY), { silent: true }).then(() => setLiveVersion((v) => v + 1));
+    }, [loadData]));
 
     // ---- Solicitudes de amistad: llegan sin recargar ----------------------
     // Sin esto, quien recibe una solicitud no la veía hasta volver a abrir la
@@ -334,6 +343,7 @@ const App = () => {
                 {activeTab === 'home' && (
                     <HomeView
                         key={dataVersion}
+                        refreshKey={liveVersion}
                         currentUser={currentUser}
                         expenses={expenses}
                         pendingFriendRequests={pendingFriendRequests}
@@ -360,7 +370,7 @@ const App = () => {
                 )}
                 {activeTab === 'personal' && (
                     <BudgetView
-                        refreshKey={dataVersion}
+                        refreshKey={dataVersion + liveVersion}
                         onAddToSection={(section) => { setBudgetSection(section); setShowAddBudgetItem(true); }}
                         onViewSyncedExpense={(id) => setSelectedExpenseId(id)}
                         onViewAccounts={() => setActiveTab('accounts')}
@@ -369,7 +379,7 @@ const App = () => {
                     />
                 )}
                 {activeTab === 'accounts' && (
-                    <AccountsView segment={accountsSegment} onSegmentChange={setAccountsSegment} refreshKey={dataVersion} onAdd={handleAdd} onOpenFriends={() => setActiveTab('friends')} friendBadge={pendingFriendRequests.length} />
+                    <AccountsView segment={accountsSegment} onSegmentChange={setAccountsSegment} refreshKey={dataVersion + liveVersion} onAdd={handleAdd} onOpenFriends={() => setActiveTab('friends')} friendBadge={pendingFriendRequests.length} />
                 )}
                 {activeTab === 'friends' && (
                     <FriendsView

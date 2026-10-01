@@ -38,14 +38,15 @@ export const HomeView = ({
     onOpenExpense,
     onOpenAccount,
     banner,
+    refreshKey = 0,
 }) => {
     const [budget, setBudget] = useState(null);
     const [libreta, setLibreta] = useState({ total_pending: 0 });
     const [debts, setDebts] = useState({ total_pending: 0 });
     const [isLoading, setIsLoading] = useState(true);
 
-    const loadAll = useCallback(async () => {
-        setIsLoading(true);
+    const loadAll = useCallback(async (silent = false) => {
+        if (!silent) setIsLoading(true);
         try {
             const headers = { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}`, Accept: 'application/json' };
             const [b, l, d] = await Promise.all([
@@ -66,6 +67,8 @@ export const HomeView = ({
 
     /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => { loadAll(); }, [loadAll]);
+    // Cambios en vivo: se recarga sin estado de carga (nada parpadea).
+    useEffect(() => { if (refreshKey > 0) loadAll(true); }, [refreshKey, loadAll]);
     /* eslint-enable react-hooks/set-state-in-effect */
 
     const cash = numberOrZero(budget?.totals?.balance);

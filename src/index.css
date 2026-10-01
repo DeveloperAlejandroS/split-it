@@ -245,7 +245,7 @@ input:focus-visible { outline: none; }
   min-height: 64px; padding: 12px 14px; border: 0; color: inherit;
   background: var(--card); border-radius: 20px; box-shadow: var(--shadow-sm);
 }
-button.row, a.row, button.ios-row { cursor: pointer; transition: transform 140ms var(--ease-out), box-shadow 140ms; }
+button.row, a.row, button.ios-row { cursor: pointer; transition: transform 140ms var(--ease-out), translate 140ms var(--ease-out), box-shadow 140ms; }
 button.row:active, a.row:active, button.ios-row:active { transform: scale(0.985); }
 .stack, .ios-group { display: flex; flex-direction: column; gap: 10px; }
 
@@ -258,7 +258,7 @@ button.row:active, a.row:active, button.ios-row:active { transform: scale(0.985)
   height: 52px; padding: 0 24px; border-radius: 999px; border: 0;
   font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: -0.01em;
   cursor: pointer; white-space: nowrap;
-  transition: transform 140ms var(--ease-out), opacity 140ms, box-shadow 200ms;
+  transition: transform 140ms var(--ease-out), opacity 140ms, box-shadow 200ms, filter 140ms, background-color 140ms;
 }
 .btn:active { transform: translateY(1px) scale(0.98); }
 .btn:disabled { opacity: 0.4; pointer-events: none; }
@@ -364,6 +364,12 @@ input.input-amount::placeholder { color: var(--lilac); }
 .animate-month-in-back { animation: month-in-back 280ms var(--ease-ios) both; }
 .animate-sheet-in { animation: sheet-in 460ms var(--ease-ios) backwards; }
 .animate-sheet-out { animation: sheet-out 260ms var(--ease-ios) both; }
+/* En pantallas anchas la hoja es un diálogo centrado: aparece en su sitio
+   (escala + opacidad, rápido) en vez de subir desde el borde inferior. */
+@media (min-width: 640px) {
+  .animate-sheet-in { animation: dialog-in 220ms var(--ease-out) backwards; }
+  .animate-sheet-out { animation: dialog-out 150ms var(--ease-out) both; }
+}
 .animate-pop-in { animation: pop-in 320ms var(--spring) both; }
 /* El vidrio "se materializa": entra desenfocado y ligeramente más chico. */
 .animate-materialize { animation: materialize 420ms var(--ease-ios) backwards; }
@@ -385,6 +391,8 @@ input.input-amount::placeholder { color: var(--lilac); }
 @keyframes fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes scrim-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes dialog-in { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes dialog-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(6px) scale(0.98); } }
 @keyframes sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes sheet-out { from { transform: translateY(0); } to { transform: translateY(100%); } }
 @keyframes pop-in { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
@@ -437,4 +445,80 @@ input.input-amount::placeholder { color: var(--lilac); }
   position: absolute; top: 6px; bottom: 6px; border-radius: 999px; pointer-events: none;
   background: var(--primary-soft); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
   transition: transform 460ms var(--spring), opacity 200ms;
+}
+
+/* ============================================================
+   Escritorio: mouse y teclado
+   ------------------------------------------------------------
+   Todo lo de hover va detrás de (hover: hover) and (pointer: fine):
+   en táctil un hover se queda "pegado" después de tocar.
+   Reglas: el hover solo anuncia que algo es clicable (cursor +
+   un cambio sutil y rápido); nunca mueve el layout ni esconde
+   información que no esté también disponible sin mouse.
+   ============================================================ */
+
+/* Atajo de teclado junto a una acción. */
+.kbd {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px;
+  border-radius: 6px; background: var(--card-soft); color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line);
+  font: 600 11px/1 var(--font-body); letter-spacing: 0;
+}
+.kbd-on-primary { background: rgba(255, 255, 255, 0.18); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22); }
+
+/* Barra lateral: la pastilla activa se desliza entre enlaces. */
+.side-pill {
+  position: absolute; inset: 0 0 auto 0; border-radius: 999px; background: var(--card-tint); pointer-events: none;
+  transition: transform 240ms var(--ease-out), opacity 160ms;
+}
+.side-link {
+  position: relative; display: flex; align-items: center; gap: 12px; padding: 0 12px 0 16px; border-radius: 999px;
+  text-align: left; font-size: 15px; font-weight: 500; color: var(--ink-2);
+  transition: color 140ms, background-color 140ms, transform 140ms var(--ease-out);
+}
+.side-link:active { transform: scale(0.98); }
+.side-link[aria-current='page'] { color: var(--primary); font-weight: 700; }
+.side-account { transition: background-color 140ms, transform 140ms var(--ease-out); }
+/* Los atajos aparecen al acercar el mouse o navegar con Tab: visibles cuando sirven, sin ruido el resto del tiempo. */
+.sidebar .kbd { opacity: 0; transition: opacity 160ms; }
+.sidebar:hover .kbd, .sidebar:focus-within .kbd { opacity: 1; }
+
+@media (hover: hover) and (pointer: fine) {
+  /* Tailwind deja los botones con cursor de flecha. */
+  button:not(:disabled), [role='button'], summary, select,
+  label:has(input[type='color']), label:has(input[type='file']) { cursor: pointer; }
+
+  /* Superficies clicables: se levantan apenas. `translate` es independiente
+     de `transform`, así no pisa el estado activo ni los estilos en línea. */
+  button.tile:hover, button.card:hover { translate: 0 -2px; }
+  button.row:hover, a.row:hover { translate: 0 -1px; }
+  button.hero:hover { translate: 0 -1px; filter: brightness(1.05); }
+  /* Casillas dentro de una tarjeta de color (caja, ahorros): un velo claro. */
+  .hero button:hover { box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.1); }
+
+  .btn:hover { filter: brightness(1.07); }
+  .btn-plain:hover { background: var(--primary-soft); filter: none; }
+  .btn-gray:hover { background: var(--card-tint); filter: none; }
+  .btn-tinted:hover { background: color-mix(in srgb, var(--primary) 17%, transparent); filter: none; }
+  .side-link:hover:not([aria-current='page']) { background: var(--card-soft); color: var(--ink); }
+  .side-account:hover { background: var(--card-soft); }
+  .segmented > button:hover:not([aria-pressed='true']):not([aria-selected='true']) { background: var(--primary-soft); color: var(--ink); }
+  .swatch:hover { transform: scale(1.08); }
+  .glass-interactive:hover { background: var(--glass-bg-strong); }
+  .tabbar button:hover:not([aria-current='page']) svg { translate: 0 -1px; }
+  .field:hover:not(:focus), .input-underline:hover:not(:focus) { border-color: var(--line-strong); }
+}
+
+/* Con mouse y espacio suficiente no hay carruseles: las tarjetas se acomodan
+   en filas, a la vista, sin scroll horizontal (que con rueda es incómodo). */
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+  .snap-x-row {
+    flex-wrap: wrap; overflow: visible; scroll-snap-type: none; margin: 0; padding: 0;
+    -webkit-mask-image: none; mask-image: none;
+  }
+  .snap-x-row.snap-grow > * { flex: 1 1 220px; max-width: 380px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.tile:hover, button.card:hover, button.row:hover, a.row:hover, button.hero:hover, .swatch:hover { translate: none; transform: none; }
+  .side-pill { transition: opacity 160ms; }
 }

@@ -20,6 +20,7 @@ import { displayNameOf, numberOrZero } from './utils/helpers';
 import { API_URL } from './config/api';
 import { applyAccent, readAccent } from './utils/accent';
 import { useRealtime } from './utils/useRealtime';
+import { useShortcuts } from './utils/useShortcuts';
 
 const TOKEN_KEY = 'splitit_jwt';
 const THEME_KEY = 'splitit_theme_pref';
@@ -307,6 +308,9 @@ const App = () => {
     const closeExpense = useCallback(() => setSelectedExpenseId(null), []);
 
     const userName = displayNameOf(currentUser);
+    // Atajos de teclado: N agrega, 1–5 cambia de pantalla.
+    useShortcuts(isLoggedIn, { onAdd: handleAdd, onTab: setActiveTab, tabs: TABS });
+
     const addLabel = activeTab === 'expenses' ? 'Nuevo gasto' : activeTab === 'personal' ? 'Agregar movimiento' : activeTab === 'accounts' ? (accountsSegment === 'owed' ? 'Alguien me debe' : 'Yo debo') : activeTab === 'friends' ? 'Agregar amigo' : 'Agregar';
     const badges = { friends: pendingFriendRequests.length };
 

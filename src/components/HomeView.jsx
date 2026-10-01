@@ -228,7 +228,7 @@ export const HomeView = ({
                 {attention.length > 0 && (
                     <div>
                         <h2 className="title mb-3">Requiere tu atención</h2>
-                        <div className="snap-x-row scrollbar-hide">
+                        <div className="snap-x-row snap-grow scrollbar-hide">
                             {attention.map((a, i) => (
                                 <button
                                     key={a.key}

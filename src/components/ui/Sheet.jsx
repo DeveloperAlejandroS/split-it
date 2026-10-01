@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CircleNotch } from '@phosphor-icons/react';
+import { useDialog } from './useDialog';
 
 // Sheet estilo iOS: en móvil sube desde abajo y se arrastra para cerrar; en
 // pantallas anchas es un diálogo centrado. Reglas de movimiento (Apple,
@@ -45,10 +46,14 @@ export const Sheet = ({
     const panelRef = useRef(null);
     const drag = useRef(null);
     const [draggedOut, setDraggedOut] = useState(false);
+    const returnFocusRef = useRef(null);
 
     /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (isOpen) {
+            // Se anota antes de montar el panel: un campo con autoFocus se
+            // lleva el foco al aparecer y ya no sabríamos qué lo abrió.
+            returnFocusRef.current = document.activeElement;
             setMounted(true);
             setClosing(false);
             setDraggedOut(false);
@@ -67,25 +72,35 @@ export const Sheet = ({
         return unlockScroll;
     }, [mounted]);
 
-    // onClose suele llegar como función en línea (cambia en cada render del
-    // padre): se guarda en una ref para que el efecto de abajo corra solo al
-    // abrir. Antes se re-ejecutaba en cada tecla y robaba el foco del campo
-    // que se estaba escribiendo.
-    const onCloseRef = useRef(onClose);
-    useEffect(() => { onCloseRef.current = onClose; });
-
-    useEffect(() => {
-        if (!isOpen) return undefined;
-        const onKey = (e) => { if (e.key === 'Escape') onCloseRef.current?.(); };
-        document.addEventListener('keydown', onKey);
-        // Si un campo con autoFocus ya tiene el foco, no se lo quitamos.
+    // Enter en un campo = acción principal de la hoja (como en cualquier
+    // formulario de escritorio). Primero el botón del encabezado; si la hoja
+    // no tiene, el único botón primario habilitado que haya en el cuerpo.
+    const onEnter = (e) => {
+        const target = e.target;
+        if (e.shiftKey || e.isComposing || target.tagName !== 'INPUT') return;
+        if (['search', 'file', 'checkbox', 'radio', 'button', 'submit', 'color', 'range'].includes(target.type)) return;
+        if (target.closest('form')) return; // un <form> real ya se envía solo
         const panel = panelRef.current;
-        if (panel && !panel.contains(document.activeElement)) panel.focus({ preventScroll: true });
-        return () => document.removeEventListener('keydown', onKey);
-    }, [isOpen, mounted]);
+        const headerAction = panel.querySelector('[data-sheet-action]');
+        let primary = null;
+        if (headerAction) {
+            primary = headerAction.disabled ? null : headerAction;
+        } else {
+            const candidates = [...panel.querySelectorAll('.btn-primary:not(:disabled)')];
+            if (candidates.length === 1) [primary] = candidates;
+        }
+        if (primary) { e.preventDefault(); primary.click(); }
+    };
+
+    // onClose suele llegar como función en línea; useDialog la guarda en una
+    // ref, así el efecto corre solo al abrir (antes se re-ejecutaba en cada
+    // tecla y robaba el foco del campo que se estaba escribiendo).
+    useDialog(isOpen && mounted, panelRef, { onEscape: onClose, onEnter, returnFocusRef });
 
     const onPointerDown = useCallback((e) => {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
+        // En escritorio la hoja es un diálogo centrado: no se arrastra con el mouse.
+        if (e.pointerType === 'mouse' && window.matchMedia('(min-width: 640px)').matches) return;
         // Los botones del encabezado (Cancelar, acción) no inician arrastre:
         // capturar el puntero redirigiría su clic al contenedor.
         if (e.target.closest('button')) return;
@@ -152,7 +167,7 @@ export const Sheet = ({
             >
                 {/* Zona de arrastre: grabber + barra de título */}
                 <div
-                    className="shrink-0 touch-none select-none cursor-grab active:cursor-grabbing"
+                    className="shrink-0 touch-none select-none cursor-grab active:cursor-grabbing sm:cursor-default sm:active:cursor-default"
                     onPointerDown={onPointerDown}
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
@@ -172,6 +187,7 @@ export const Sheet = ({
                             {action && (
                                 <button
                                     type="button"
+                                    data-sheet-action
                                     className="btn btn-plain btn-sm"
                                     style={{ height: 40, fontSize: 15, fontWeight: 700 }}
                                     disabled={action.disabled || action.loading}

@@ -267,10 +267,10 @@ const App = () => {
             <Sidebar activeTab={activeTab} onChange={setActiveTab} badges={badges} userName={userName} userEmail={currentUser?.email} onOpenAccount={() => setShowAccount(true)} onAdd={handleAdd} addLabel={addLabel} />
 
             {toast && (
-                <div className="fixed inset-x-0 z-[110] flex justify-center px-4 animate-pop-in" style={{ top: 'calc(var(--safe-top) + 12px)' }} role="alert">
-                    <div className="card flex max-w-md items-center gap-3 py-3 pl-5 pr-2">
+                <div className="fixed inset-x-0 z-[110] flex justify-center px-4 animate-materialize" style={{ top: 'calc(var(--safe-top) + 12px)' }} role="alert">
+                    <div className="glass glass-strong flex max-w-md items-center gap-3 rounded-full py-2.5 pl-5 pr-2">
                         <p className="small flex-1" style={{ color: 'var(--ink)' }}>{toast}</p>
-                        <button type="button" onClick={() => setToast('')} aria-label="Cerrar aviso" className="btn btn-icon" style={{ width: 34, height: 34, boxShadow: 'none', background: 'var(--card-soft)' }}><X size={15} weight="bold" /></button>
+                        <button type="button" onClick={() => setToast('')} aria-label="Cerrar aviso" className="btn btn-icon" style={{ width: 34, height: 34, boxShadow: 'none', background: 'var(--primary-soft)' }}><X size={15} weight="bold" /></button>
                     </div>
                 </div>
             )}

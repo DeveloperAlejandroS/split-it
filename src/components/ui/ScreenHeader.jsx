@@ -17,7 +17,7 @@ export const ScreenHeader = ({ kicker, title, subtitle, leading, actions }) => (
 
 // Botón redondo de la barra superior. `tint` = acción principal (degradé).
 export const NavAction = ({ label, onClick, children, tint = false, badge = 0 }) => (
-    <button type="button" onClick={onClick} aria-label={label} title={label} className={`btn btn-icon relative ${tint ? 'is-tint' : ''}`}>
+    <button type="button" onClick={onClick} aria-label={label} title={label} className={`btn btn-icon relative ${tint ? 'is-tint' : 'glass glass-interactive'}`}>
         {children}
         {badge > 0 && (
             <span

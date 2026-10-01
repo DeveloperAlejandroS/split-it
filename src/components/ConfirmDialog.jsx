@@ -31,7 +31,7 @@ export const ConfirmDialog = ({
             onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel?.(); }}
             role="presentation"
         >
-            <div role="alertdialog" aria-modal="true" aria-label={title} className="animate-pop-in card w-full max-w-sm p-6 text-center">
+            <div role="alertdialog" aria-modal="true" aria-label={title} className="animate-materialize glass glass-strong w-full max-w-sm rounded-[28px] p-6 text-center">
                 <h3 className="title">{title}</h3>
                 {message && <p className="small mt-2">{message}</p>}
                 <div className="mt-6 grid grid-cols-2 gap-3">

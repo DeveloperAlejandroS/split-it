@@ -66,6 +66,17 @@
   --scrim: rgba(20, 12, 70, 0.4);
   --material: rgba(255, 255, 255, 0.82);
 
+  /* Vidrio: regular (legible sobre contenido). Opacidad alta a propósito:
+     Apple advierte que el vidrio translúcido sobre claro pierde contraste. */
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-bg-strong: rgba(255, 255, 255, 0.82);
+  --glass-blur: 22px;
+  --glass-sat: 180%;
+  --glass-sheen: rgba(255, 255, 255, 0.55);
+  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(66, 44, 180, 0.1);
+  --glass-drop: 0 14px 34px -12px rgba(66, 44, 180, 0.32), 0 2px 6px rgba(66, 44, 180, 0.08);
+  --sheet-bg: rgba(236, 234, 248, 0.8);
+
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
@@ -144,6 +155,13 @@
   --shadow-sheet: 0 -18px 50px rgba(0, 0, 0, 0.55);
   --scrim: rgba(5, 3, 25, 0.62);
   --material: rgba(26, 21, 69, 0.8);
+
+  --glass-bg: rgba(38, 31, 96, 0.56);
+  --glass-bg-strong: rgba(52, 44, 122, 0.78);
+  --glass-sheen: rgba(255, 255, 255, 0.14);
+  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  --glass-drop: 0 16px 36px -12px rgba(0, 0, 0, 0.65), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --sheet-bg: rgba(13, 10, 38, 0.8);
 
   --fill-2: rgba(133, 102, 255, 0.22);
   color-scheme: dark;
@@ -286,9 +304,39 @@ input.input-amount::placeholder { color: var(--lilac); }
 
 /* ---------- Sheets ---------- */
 .material { background: var(--material); -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%); border-color: var(--line); }
+
+/* ---------- Liquid Glass (aproximación web) ----------
+   Apple no publica CSS: solo SwiftUI (glassEffect: regular/clear, tint,
+   interactive). Aquí se traducen sus reglas: el vidrio vive SOLO en la capa
+   de navegación y controles flotantes (barra inferior, sheets, botones del
+   encabezado, avisos), nunca en el contenido; no se apila vidrio sobre
+   vidrio; y se compone de cuatro capas: desenfoque + saturación del fondo,
+   tinte, borde de luz (1px interior, más brillante arriba) y reflejo
+   especular suave. Safari/Firefox no soportan refracción por SVG, así que
+   no se usa: solo blur + saturate, que funciona en todos. */
+.glass {
+  position: relative; isolation: isolate;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  box-shadow: var(--glass-rim), var(--glass-drop);
+}
+.glass::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(170deg, var(--glass-sheen) 0%, transparent 42%);
+}
+.glass-strong { background: var(--glass-bg-strong); }
+.glass-interactive { transition: transform 360ms var(--spring), background-color 220ms, box-shadow 220ms; }
+.glass-interactive:active { transform: scale(0.94); background: var(--glass-bg-strong); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass { background: var(--card); }
+}
 .sheet-backdrop { position: fixed; inset: 0; z-index: 90; background: var(--scrim); animation: scrim-in 260ms var(--ease-ios) both; }
 .sheet-backdrop[data-closing='true'] { animation: scrim-out 220ms var(--ease-ios) both; }
-.sheet-panel { background: var(--bg); color: var(--ink); border-radius: 32px 32px 0 0; box-shadow: var(--shadow-sheet); will-change: transform; }
+.sheet-panel {
+  background: var(--sheet-bg); color: var(--ink); border-radius: 32px 32px 0 0; will-change: transform;
+  -webkit-backdrop-filter: blur(30px) saturate(170%); backdrop-filter: blur(30px) saturate(170%);
+  box-shadow: var(--shadow-sheet), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
 @media (min-width: 640px) { .sheet-panel { border-radius: 32px; } }
 
 /* ---------- Movimiento ---------- */
@@ -301,6 +349,13 @@ input.input-amount::placeholder { color: var(--lilac); }
 .animate-sheet-in { animation: sheet-in 460ms var(--ease-ios) backwards; }
 .animate-sheet-out { animation: sheet-out 260ms var(--ease-ios) both; }
 .animate-pop-in { animation: pop-in 320ms var(--spring) both; }
+/* El vidrio "se materializa": entra desenfocado y ligeramente más chico. */
+.animate-materialize { animation: materialize 420ms var(--ease-ios) backwards; }
+/* Skeleton: marca el lugar del contenido que está cargando. */
+.skeleton { position: relative; overflow: hidden; background: var(--card-soft); border-radius: 16px; }
+.skeleton::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, var(--glass-sheen), transparent); animation: shimmer 1.4s var(--ease-ios) infinite; }
+/* Cuenta que cambia de valor: el número "late" una vez. */
+.animate-bump { animation: bump 380ms var(--spring) both; }
 /* Entrada escalonada: cada bloque entra 60ms después del anterior. */
 .stagger > * { animation: fade-up 520ms var(--ease-ios) both; }
 .stagger > *:nth-child(2) { animation-delay: 60ms; }
@@ -317,18 +372,26 @@ input.input-amount::placeholder { color: var(--lilac); }
 @keyframes sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes sheet-out { from { transform: translateY(0); } to { transform: translateY(100%); } }
 @keyframes pop-in { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes materialize { from { opacity: 0; transform: scale(0.94); filter: blur(10px); } to { opacity: 1; transform: scale(1); filter: blur(0); } }
+@keyframes shimmer { to { transform: translateX(100%); } }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
 @keyframes row-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes month-in-forward { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes month-in-back { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up, .animate-island-in, .animate-balance-float, .animate-row-in, .animate-month-in-forward,
-  .animate-month-in-back, .animate-pop-in, .animate-sheet-in, .stagger > * { animation: fade-in 200ms ease both; animation-delay: 0ms !important; }
+  .animate-month-in-back, .animate-pop-in, .animate-materialize, .animate-bump, .animate-sheet-in, .stagger > * { animation: fade-in 200ms ease both; animation-delay: 0ms !important; }
   .animate-sheet-out { animation: scrim-out 160ms ease both; }
-  .btn:active, button.row:active { transform: none; }
+  .btn:active, button.row:active, .glass-interactive:active { transform: none; }
+  .skeleton::after { animation: none; }
+  .tabbar-lens { transition: opacity 200ms; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .material { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--card); }
+  .material, .glass, .glass-strong { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--card); }
+  .glass::before { display: none; }
+  .sheet-panel { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--bg); }
+  .tabbar-lens { background: var(--primary-soft) !important; }
 }
 @media (prefers-contrast: more) {
   :root { --line: rgba(20, 17, 58, 0.4); --ink-3: #4f4b78; }
@@ -350,8 +413,10 @@ input.input-amount::placeholder { color: var(--lilac); }
 
 /* Barra inferior con botón central elevado: la muesca se recorta con una
    máscara radial, así el fondo de la página se ve a través de ella. */
-.tabbar {
-  background: var(--card); border-radius: 30px 30px 0 0; box-shadow: 0 -10px 30px -12px rgba(66, 44, 180, 0.25);
-  -webkit-mask: radial-gradient(circle 41px at 50% 0, transparent 98%, #000 100%);
-  mask: radial-gradient(circle 41px at 50% 0, transparent 98%, #000 100%);
+.tabbar { border-radius: 999px; }
+/* Lente: la pastilla de vidrio que se desliza bajo la pestaña activa. */
+.tabbar-lens {
+  position: absolute; top: 6px; bottom: 6px; border-radius: 999px; pointer-events: none;
+  background: var(--primary-soft); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  transition: transform 460ms var(--spring), opacity 200ms;
 }

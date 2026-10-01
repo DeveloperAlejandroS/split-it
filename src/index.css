@@ -1,448 +1,431 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+/* ============================================================
+   Split.it — sistema de diseño estilo Apple (HIG)
+   ------------------------------------------------------------
+   - Tipografía: la del sistema (SF Pro en iOS/macOS) primero; trae
+     optical sizing y tabular-nums de fábrica. Inter solo de respaldo.
+   - Color: capas "grouped" de iOS (fondo agrupado + tarjetas), un único
+     tint (morado de marca) para todo lo interactivo, y colores
+     semánticos (verde/rojo/ámbar) que nunca se mezclan con el tint.
+   - Materiales: barras y sheets translúcidos (backdrop-filter), no
+     opacos; las tarjetas son sólidas y se separan por tono, no por borde.
+   - Movimiento: curva iOS (cubic-bezier .32,.72,0,1) para sheets/
+     navegación; feedback en pointer-down (:active) siempre.
+   ============================================================ */
+
 :root {
-  /* Base — ink violet, not pure black. Morado como color de marca (fondo,
-     logo, resplandores grandes), fucsia como acento de interacción
-     (botones, estados activos) -- ver --brand vs --accent más abajo. */
-  --app-bg: #0b0713;
-  --app-bg-2: #150e22;
-  --app-bg-3: #1e142f;
-  --surface: rgba(35, 24, 51, 0.55);
-  --surface-strong: rgba(40, 27, 59, 0.8);
-  --surface-soft: rgba(35, 24, 51, 0.32);
-  --surface-border: rgba(196, 130, 235, 0.14);
-  --surface-border-strong: rgba(196, 130, 235, 0.28);
-  --text-primary: #f4f0fa;
-  --text-secondary: #a99bc2;
-  --text-muted: #7a6d92;
+  /* --- Superficies (iOS grouped) --- */
+  --app-bg: #f2f2f7;
+  --app-bg-2: #e9e9ef;
+  --app-bg-3: #e0e0e8;
+  --card: #ffffff;
+  --card-2: #f7f7fa;
+  --surface: #ffffff;
+  --surface-strong: #ffffff;
+  --surface-soft: rgba(120, 120, 128, 0.12);
+  --surface-border: rgba(60, 60, 67, 0.12);
+  --surface-border-strong: rgba(60, 60, 67, 0.24);
+  --separator: rgba(60, 60, 67, 0.16);
+  --fill: rgba(120, 120, 128, 0.12);
+  --fill-2: rgba(120, 120, 128, 0.2);
 
-  /* Marca — morado principal */
-  --brand: #9c4df4;
-  --brand-strong: #7c2fd1;
-  --brand-soft: rgba(156, 77, 244, 0.16);
+  /* --- Texto --- */
+  --text-primary: #000000;
+  --text-secondary: rgba(60, 60, 67, 0.7);
+  --text-muted: rgba(60, 60, 67, 0.5);
 
-  /* Acento — fucsia, para botones y estados interactivos */
-  --accent: #e8189c;
-  --accent-strong: #c0127e;
-  --accent-soft: rgba(232, 24, 156, 0.16);
-  --accent-contrast: #fff6fb;
+  /* --- Tint: un solo color interactivo --- */
+  --brand: #7c3aed;
+  --brand-strong: #6425c7;
+  --brand-soft: rgba(124, 58, 237, 0.12);
+  --accent: #7c3aed;
+  --accent-strong: #6425c7;
+  --accent-soft: rgba(124, 58, 237, 0.12);
+  --accent-contrast: #ffffff;
+  --accent-2: #d6249f;
 
-  /* Semantic — kept distinct in hue from the accent so status never reads as "brand" */
-  --success: #6fcf97;
-  --success-soft: rgba(111, 207, 151, 0.14);
-  --info: #6fa8dc;
-  --info-soft: rgba(111, 168, 220, 0.14);
-  --danger: #e8637a;
-  --danger-soft: rgba(232, 99, 122, 0.14);
-  --warning: #e0a95a;
-  --warning-soft: rgba(224, 169, 90, 0.14);
-  --neutral-chip: rgba(167, 154, 190, 0.16);
+  /* --- Semánticos (iOS system colors) --- */
+  --success: #248a3d;
+  --success-soft: rgba(52, 199, 89, 0.16);
+  --info: #0071e3;
+  --info-soft: rgba(0, 122, 255, 0.12);
+  --danger: #d70015;
+  --danger-soft: rgba(255, 59, 48, 0.12);
+  --warning: #b25000;
+  --warning-soft: rgba(255, 149, 0, 0.16);
+  --neutral-chip: rgba(120, 120, 128, 0.12);
 
-  --shadow:
-    rgba(0, 0, 0, 0.5) 0 16px 40px -18px,
-    rgba(156, 77, 244, 0.16) 0 12px 28px -18px;
+  --material: rgba(249, 249, 251, 0.78);
+  --material-border: rgba(60, 60, 67, 0.14);
+  --scrim: rgba(0, 0, 0, 0.32);
 
-  --sans: 'Inter', 'Geist Sans', 'Segoe UI', system-ui, sans-serif;
-  --heading: 'Inter', 'Geist Sans', 'Segoe UI', system-ui, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px -12px rgba(0, 0, 0, 0.12);
+  --shadow-sheet: 0 -10px 40px rgba(0, 0, 0, 0.16);
 
-  font: 16px/1.5 var(--sans);
-  letter-spacing: 0.1px;
-  color-scheme: dark;
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+  --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --heading: var(--sans);
+  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, monospace;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  font: 17px/1.4 var(--sans);
+  letter-spacing: -0.01em;
+  color-scheme: light;
   color: var(--text-primary);
-  background:
-    radial-gradient(circle at 15% -10%, rgba(156, 77, 244, 0.18), transparent 38%),
-    radial-gradient(circle at 88% 12%, rgba(232, 24, 156, 0.08), transparent 30%),
-    var(--app-bg);
+  background: var(--app-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
 }
 
-:root[data-theme='light'] {
-  --app-bg: #faf7fd;
-  --app-bg-2: #f1e9fa;
-  --app-bg-3: #e8dbf5;
-  --surface: rgba(255, 255, 255, 0.68);
-  --surface-strong: rgba(255, 255, 255, 0.87);
-  --surface-soft: rgba(255, 255, 255, 0.34);
-  --surface-border: rgba(124, 47, 209, 0.16);
-  --surface-border-strong: rgba(124, 47, 209, 0.3);
-  --text-primary: #211530;
-  --text-secondary: #63537a;
-  --text-muted: #8d7ea3;
+:root[data-theme='dark'] {
+  --app-bg: #000000;
+  --app-bg-2: #0c0c0e;
+  --app-bg-3: #161618;
+  --card: #1c1c1e;
+  --card-2: #2c2c2e;
+  --surface: #1c1c1e;
+  --surface-strong: #2c2c2e;
+  --surface-soft: rgba(120, 120, 128, 0.24);
+  --surface-border: rgba(84, 84, 88, 0.45);
+  --surface-border-strong: rgba(84, 84, 88, 0.7);
+  --separator: rgba(84, 84, 88, 0.55);
+  --fill: rgba(120, 120, 128, 0.24);
+  --fill-2: rgba(120, 120, 128, 0.36);
 
-  --brand: #7c3aed;
-  --brand-strong: #6425c7;
-  --brand-soft: rgba(124, 58, 237, 0.1);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(235, 235, 245, 0.7);
+  --text-muted: rgba(235, 235, 245, 0.45);
 
-  --accent: #c21388;
-  --accent-strong: #9e0f6e;
-  --accent-soft: rgba(194, 19, 136, 0.1);
-  --accent-contrast: #fff6fb;
+  --brand: #a66bff;
+  --brand-strong: #8f4dff;
+  --brand-soft: rgba(166, 107, 255, 0.2);
+  --accent: #a66bff;
+  --accent-strong: #8f4dff;
+  --accent-soft: rgba(166, 107, 255, 0.2);
+  --accent-contrast: #ffffff;
+  --accent-2: #ff5fc4;
 
-  --success: #2f9e63;
-  --success-soft: rgba(47, 158, 99, 0.12);
-  --info: #3e72b0;
-  --info-soft: rgba(62, 114, 176, 0.1);
-  --danger: #c43f58;
-  --danger-soft: rgba(196, 63, 88, 0.1);
-  --warning: #a8722f;
-  --warning-soft: rgba(168, 114, 47, 0.12);
-  --neutral-chip: rgba(99, 83, 122, 0.1);
+  --success: #30d158;
+  --success-soft: rgba(48, 209, 88, 0.2);
+  --info: #4da3ff;
+  --info-soft: rgba(10, 132, 255, 0.2);
+  --danger: #ff6961;
+  --danger-soft: rgba(255, 69, 58, 0.2);
+  --warning: #ffb340;
+  --warning-soft: rgba(255, 159, 10, 0.2);
+  --neutral-chip: rgba(120, 120, 128, 0.24);
 
-  --shadow:
-    rgba(70, 30, 110, 0.14) 0 16px 40px -20px,
-    rgba(124, 58, 237, 0.1) 0 14px 24px -18px;
+  --material: rgba(28, 28, 30, 0.72);
+  --material-border: rgba(255, 255, 255, 0.1);
+  --scrim: rgba(0, 0, 0, 0.55);
 
-  color-scheme: light;
-  background:
-    radial-gradient(circle at 15% -10%, rgba(124, 58, 237, 0.12), transparent 38%),
-    radial-gradient(circle at 88% 12%, rgba(194, 19, 136, 0.05), transparent 30%),
-    var(--app-bg);
+  --shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.04), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --shadow-sheet: 0 -10px 40px rgba(0, 0, 0, 0.5);
+
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  background: var(--app-bg);
 }
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--app-bg);
   color: var(--text-primary);
 }
 
 #root {
   width: 100%;
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
   color: var(--text-primary);
-  background:
-    radial-gradient(circle at 15% -10%, rgba(156, 77, 244, 0.1), transparent 32%),
-    var(--app-bg);
 }
 
-:root[data-theme='light'] #root {
-  background:
-    radial-gradient(circle at 15% -10%, rgba(124, 58, 237, 0.08), transparent 32%),
-    var(--app-bg);
-}
+/* El Tailwind `min-h-screen` usa 100vh (el viewport más grande en iOS,
+   se corta bajo la URL bar) -- lo sustituimos por dvh en toda la app. */
+.min-h-screen { min-height: 100dvh; }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2, h3, h4, h5, h6 {
   font-family: var(--heading);
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
-}
-
-p {
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 8px;
-  color: var(--text-primary);
+p { margin: 0; }
+
+/* Los controles no son contenido: nada de selección por long-press ni
+   delay de doble tap. El contenido (textos, montos) sigue seleccionable. */
+button, a, [role='button'], select, summary {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  font-family: inherit;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--surface-soft);
+/* iOS hace zoom al enfocar inputs < 16px y no vuelve atrás. */
+input, textarea, select {
+  font-size: 17px !important;
+  font-family: inherit;
+  letter-spacing: -0.01em;
 }
 
-.text-primary {
-  color: var(--text-primary);
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
+input:focus-visible, textarea:focus-visible { outline: none; }
 
-.text-secondary {
-  color: var(--text-secondary);
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ---------- Tipografía (tracking/leading dependen del tamaño) ---------- */
+.t-large-title { font-size: 34px; line-height: 1.1; font-weight: 700; letter-spacing: -0.026em; }
+.t-title { font-size: 22px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; }
+.t-headline { font-size: 17px; line-height: 1.3; font-weight: 600; letter-spacing: -0.012em; }
+.t-body { font-size: 17px; line-height: 1.4; letter-spacing: -0.01em; }
+.t-callout { font-size: 16px; line-height: 1.35; }
+.t-subhead { font-size: 15px; line-height: 1.35; letter-spacing: -0.006em; }
+.t-footnote { font-size: 13px; line-height: 1.35; letter-spacing: 0; }
+.t-caption { font-size: 12px; line-height: 1.3; letter-spacing: 0.005em; }
+.t-section {
+  font-size: 13px; line-height: 1.3; font-weight: 400; letter-spacing: 0;
+  text-transform: uppercase; color: var(--text-secondary);
 }
+.t-money-xl { font-size: 48px; line-height: 1; font-weight: 700; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
+.t-money-lg { font-size: 28px; line-height: 1.1; font-weight: 700; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; }
 
-.text-muted {
-  color: var(--text-muted);
+/* ---------- Tarjetas / agrupaciones ---------- */
+.glass-shell,
+.glass-shell-strong,
+.ios-card {
+  background: var(--card);
+  border: 0;
+  box-shadow: var(--shadow);
 }
+.glass-border { position: relative; }
+.glass-border::before { content: none; }
 
-.tabular {
+.ios-card { border-radius: 20px; }
+
+/* Lista agrupada inset: filas dentro de una tarjeta, con separador inset. */
+.ios-group { background: var(--card); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); }
+.ios-row {
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+  min-height: 56px; padding: 10px 16px;
+  width: 100%; text-align: left;
+  background: transparent; border: 0; color: inherit;
+}
+.ios-row + .ios-row::before,
+.ios-group > * + *::before {
+  content: '';
+  position: absolute; top: 0; left: 16px; right: 0; height: 0.5px;
+  background: var(--separator);
+}
+.ios-group > * { position: relative; }
+button.ios-row, a.ios-row { cursor: pointer; transition: background-color 120ms var(--ease-out); }
+button.ios-row:active, a.ios-row:active { background: var(--fill); }
+
+/* ---------- Botones ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 50px; padding: 0 20px; border-radius: 14px; border: 0;
+  font-size: 17px; font-weight: 600; letter-spacing: -0.012em;
+  cursor: pointer; white-space: nowrap;
+  transition: transform 120ms var(--ease-out), opacity 120ms, background-color 120ms;
+}
+.btn:active { transform: scale(0.97); opacity: 0.85; }
+.btn:disabled { opacity: 0.4; pointer-events: none; }
+.btn-primary { background: var(--accent); color: var(--accent-contrast); }
+.btn-tinted { background: var(--accent-soft); color: var(--accent); }
+.btn-gray { background: var(--fill); color: var(--text-primary); }
+.btn-danger { background: var(--danger-soft); color: var(--danger); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-plain { background: transparent; color: var(--accent); padding: 0 8px; }
+.btn-block { width: 100%; }
+.btn-sm { height: 34px; padding: 0 14px; border-radius: 999px; font-size: 15px; }
+.btn-icon {
+  width: 36px; height: 36px; padding: 0; border-radius: 999px;
+  background: var(--fill); color: var(--text-primary);
+}
+.btn-icon.is-tint { background: var(--accent); color: var(--accent-contrast); }
+
+/* ---------- Campos ---------- */
+.field {
+  width: 100%; height: 50px; padding: 0 16px;
+  background: var(--fill); border: 1.5px solid transparent; border-radius: 12px;
+  color: var(--text-primary); outline: none;
+  transition: border-color 140ms, background-color 140ms;
+}
+.field::placeholder { color: var(--text-muted); }
+.field:focus { border-color: var(--accent); background: var(--accent-soft); }
+/* Monto protagonista (sheet de nuevo gasto). */
+input.input-amount {
+  width: 100%; height: 64px; margin-top: 2px; padding: 0;
+  background: transparent; border: 0; outline: none; text-align: center;
+  color: var(--text-primary); caret-color: var(--accent);
+  font-size: 52px !important; font-weight: 700; letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
 }
+input.input-amount::placeholder { color: var(--text-muted); }
 
-.glass-shell {
-  background: var(--surface);
-  border: 1px solid var(--surface-border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: var(--shadow);
-}
-
-.glass-shell-strong {
-  background: var(--surface-strong);
-  border: 1px solid var(--surface-border-strong);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: var(--shadow);
-}
-
-.glass-border {
-  position: relative;
-}
-
-.glass-border::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(232, 24, 156, 0.38), rgba(255, 255, 255, 0.05));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
+.field-label { display: block; margin: 0 0 6px 4px; font-size: 13px; color: var(--text-secondary); }
 
 .input-underline {
-  width: 100%;
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--surface-border);
-  border-radius: 0;
-  color: var(--text-primary);
-  outline: none;
-  padding: 0.95rem 0.25rem 0.85rem 2.1rem;
-  transition: border-color 180ms ease, box-shadow 180ms ease, color 180ms ease;
+  width: 100%; height: 50px; padding: 0 16px;
+  background: var(--fill); border: 1.5px solid transparent; border-radius: 12px;
+  color: var(--text-primary); outline: none;
+  transition: border-color 140ms, background-color 140ms;
+}
+.input-underline::placeholder { color: var(--text-muted); }
+.input-underline:focus { border-color: var(--accent); background: var(--accent-soft); }
+
+/* ---------- Control segmentado ---------- */
+.segmented {
+  position: relative; display: flex; padding: 2px; gap: 2px;
+  background: var(--fill); border-radius: 10px;
+}
+.segmented > button {
+  position: relative; z-index: 1; flex: 1; height: 32px; padding: 0 10px;
+  border: 0; background: transparent; color: var(--text-primary);
+  font-size: 13px; font-weight: 500; border-radius: 8px;
+  transition: background-color 200ms var(--ease-ios), box-shadow 200ms var(--ease-ios);
+}
+.segmented > button[aria-pressed='true'],
+.segmented > button[aria-selected='true'] {
+  background: var(--card); font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 0 0 0.5px rgba(0,0,0,.04);
+}
+:root[data-theme='dark'] .segmented > button[aria-pressed='true'],
+:root[data-theme='dark'] .segmented > button[aria-selected='true'] { background: #636366; }
+
+/* ---------- Materiales (barras translúcidas) ---------- */
+.material {
+  background: var(--material);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-color: var(--material-border);
 }
 
-.input-underline::placeholder {
-  color: var(--text-secondary);
+/* ---------- Sheets ---------- */
+.sheet-backdrop {
+  position: fixed; inset: 0; z-index: 90; background: var(--scrim);
+  animation: scrim-in 280ms var(--ease-ios) both;
+}
+.sheet-backdrop[data-closing='true'] { animation: scrim-out 220ms var(--ease-ios) both; }
+.sheet-panel {
+  background: var(--card); color: var(--text-primary);
+  border-radius: 28px 28px 0 0; box-shadow: var(--shadow-sheet);
+  will-change: transform;
+}
+@media (min-width: 640px) {
+  .sheet-panel { border-radius: 28px; }
 }
 
-.input-underline:focus {
-  border-bottom-color: var(--accent);
-  box-shadow: 0 10px 20px -16px rgba(232, 24, 156, 0.85);
-}
+/* ---------- Animaciones ---------- */
+.animate-fade-in { animation: fade-in 280ms var(--ease-out) both; }
+.animate-fade-up { animation: fade-up 420ms var(--ease-ios) both; }
+.animate-island-in { animation: fade-up 420ms var(--ease-ios) both; }
+.animate-balance-float { animation: fade-up 420ms var(--ease-ios) both; }
+.animate-row-in { animation: row-in 280ms var(--ease-ios) both; }
+.animate-row-out { animation: row-out 200ms ease-in both; }
+.animate-pulse-save { animation: pulse-save 900ms ease-out both; }
+.animate-pulse-error { animation: pulse-error 700ms ease-out both; }
+.animate-month-in-forward { animation: month-in-forward 260ms var(--ease-ios) both; }
+.animate-month-in-back { animation: month-in-back 260ms var(--ease-ios) both; }
+/* backwards: al terminar NO se queda aplicando transform (si no, pisaría el arrastre inline). */
+.animate-sheet-in { animation: sheet-in 420ms var(--ease-ios) backwards; }
+.animate-sheet-out { animation: sheet-out 260ms var(--ease-ios) both; }
+.animate-pop-in { animation: pop-in 260ms var(--ease-ios) both; }
 
-.surface-divider {
-  border-color: var(--surface-border);
-}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scrim-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes sheet-out { from { transform: translateY(0); } to { transform: translateY(100%); } }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+@keyframes row-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes row-out { from { opacity: 1; transform: translateX(0); max-height: 60px; } to { opacity: 0; transform: translateX(12px); max-height: 0; } }
+@keyframes pulse-save { 0% { background-color: rgba(52, 199, 89, 0.22); } 100% { background-color: transparent; } }
+@keyframes pulse-error { 0% { background-color: rgba(255, 59, 48, 0.22); } 100% { background-color: transparent; } }
+@keyframes month-in-forward { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes month-in-back { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
 
-.theme-switch {
-  position: relative;
-  width: 56px;
-  height: 32px;
-  border-radius: 999px;
-  border: 1px solid var(--surface-border);
-  background: var(--surface-soft);
-  transition: background 180ms ease, border-color 180ms ease;
-}
-
-.theme-switch-thumb {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  background: var(--text-primary);
-  transform: translateX(0);
-  transition: transform 180ms ease, background 180ms ease;
-}
-
-.theme-switch[data-active='true'] .theme-switch-thumb {
-  transform: translateX(24px);
-  background: var(--accent);
-}
-
-.animate-fade-in {
-  animation: fade-in 340ms ease-out both;
-}
-
-.animate-fade-up {
-  animation: fade-up 480ms cubic-bezier(0.2, 0.65, 0.2, 1) both;
-}
-
-.animate-island-in {
-  animation: island-in 520ms cubic-bezier(0.18, 0.88, 0.26, 1.16) both;
-}
-
-.animate-balance-float {
-  animation: fade-up 420ms ease-out both;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes island-in {
-  from {
-    opacity: 0;
-    transform: translateY(28px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.animate-row-in {
-  animation: row-in 320ms cubic-bezier(0.2, 0.65, 0.2, 1) both;
-}
-
-.animate-row-out {
-  animation: row-out 200ms ease-in both;
-}
-
-.animate-pulse-save {
-  animation: pulse-save 900ms ease-out both;
-}
-
-.animate-pulse-error {
-  animation: pulse-error 700ms ease-out both;
-}
-
-.animate-month-in-forward {
-  animation: month-in-forward 260ms cubic-bezier(0.2, 0.65, 0.2, 1) both;
-}
-
-.animate-month-in-back {
-  animation: month-in-back 260ms cubic-bezier(0.2, 0.65, 0.2, 1) both;
-}
-
-@keyframes row-in {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes row-out {
-  from {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-    max-height: 60px;
-  }
-  to {
-    opacity: 0;
-    transform: translateX(12px) scale(0.98);
-    max-height: 0;
-  }
-}
-
-@keyframes pulse-save {
-  0% {
-    background-color: rgba(111, 207, 151, 0.22);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
-@keyframes pulse-error {
-  0% {
-    background-color: rgba(232, 99, 122, 0.22);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
-@keyframes month-in-forward {
-  from {
-    opacity: 0;
-    transform: translateX(18px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes month-in-back {
-  from {
-    opacity: 0;
-    transform: translateX(-18px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
+/* Reduced motion: no se quita el feedback, se cambia por fundidos suaves. */
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-in,
-  .animate-fade-up,
-  .animate-island-in,
-  .animate-balance-float,
-  .animate-row-in,
-  .animate-row-out,
-  .animate-pulse-save,
-  .animate-pulse-error,
-  .animate-month-in-forward,
-  .animate-month-in-back {
-    animation: none;
-  }
+  .animate-fade-up, .animate-island-in, .animate-balance-float, .animate-row-in,
+  .animate-month-in-forward, .animate-month-in-back, .animate-pop-in { animation: fade-in 200ms ease both; }
+  .animate-sheet-in { animation: fade-in 200ms ease both; }
+  .animate-sheet-out { animation: scrim-out 160ms ease both; }
+  .animate-pulse-save, .animate-pulse-error { animation: none; }
+  .btn:active { transform: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .material { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--card); }
+}
+@media (prefers-contrast: more) {
+  :root { --separator: rgba(60, 60, 67, 0.5); --surface-border: rgba(60, 60, 67, 0.4); }
+  :root[data-theme='dark'] { --separator: rgba(235, 235, 245, 0.45); }
+  .material { background: var(--card); }
 }
 
-/* Scrollbar propia — delgada, con el color de acento en vez del gris
-   genérico del navegador, coherente con el resto del look glass. Firefox
-   usa scrollbar-width/-color (nativo); WebKit/Chromium/Safari usan los
-   pseudo-elementos ::-webkit-scrollbar*, que no tienen equivalente estándar
-   así que van por separado. */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--surface-border-strong) transparent;
+/* ---------- Switch de tema (control tipo iOS) ---------- */
+.theme-switch {
+  position: relative; width: 51px; height: 31px; border-radius: 999px;
+  background: var(--fill-2); transition: background-color 220ms var(--ease-ios);
+}
+.theme-switch-thumb {
+  position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 999px;
+  background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.25);
+  transition: transform 260ms var(--ease-ios);
+}
+.theme-switch[data-active='true'] { background: var(--success); }
+.theme-switch[data-active='true'] .theme-switch-thumb { transform: translateX(20px); }
+
+.scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Scrollbar fina y discreta (solo desktop). */
+@media (hover: hover) and (pointer: fine) {
+  * { scrollbar-width: thin; scrollbar-color: var(--fill-2) transparent; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background-color: var(--fill-2); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background-color: var(--text-muted); }
 }
 
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+/* ============================================================
+   Capa de compatibilidad: varios componentes (presupuesto, etc.)
+   todavía usan utilidades pensadas para fondo oscuro
+   (border-white/10, bg-white/5...). Las mapeamos a los tokens
+   semánticos para que se lean bien en ambos temas.
+   ============================================================ */
+.border-white\/5, .border-white\/10, .border-white\/15, .border-white\/20 { border-color: var(--separator) !important; }
+.bg-white\/5, .bg-white\/8 { background-color: var(--fill) !important; }
+.bg-white\/10 { background-color: var(--fill-2) !important; }
+.bg-black\/20 { background-color: var(--fill) !important; }
+.divide-white\/5 > :not([hidden]) ~ :not([hidden]) { border-color: var(--separator) !important; }
+@media (hover: hover) and (pointer: fine) {
+  .hover\:bg-white\/5:hover, .hover\:bg-white\/10:hover { background-color: var(--fill-2) !important; }
 }
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: var(--surface-border-strong);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: var(--accent);
-}
-
-::-webkit-scrollbar-corner {
-  background: transparent;
-}
-

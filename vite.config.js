@@ -21,8 +21,8 @@ export default defineConfig({
         description: 'Gastos compartidos, presupuesto personal y cuentas por cobrar/pagar, todo en un solo lugar.',
         // Morado de marca -- coincide con el degradé del ícono, para que la
         // transición del splash screen a la app se sienta continua.
-        theme_color: '#9c4df4',
-        background_color: '#0b0713',
+        theme_color: '#f2f2f7',
+        background_color: '#f2f2f7',
         display: 'standalone',
         start_url: '/',
         scope: '/',

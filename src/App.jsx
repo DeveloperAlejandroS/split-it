@@ -1,117 +1,133 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Coins, ShieldAlert, XCircle } from 'lucide-react';
-import { BalanceCard } from './components/BalanceCard';
-import { ExpenseList } from './components/ExpenseList';
+import { Coins, X } from 'lucide-react';
+import { ExpensesView } from './components/ExpensesView';
 import { FriendsView } from './components/FriendsView';
 import { HomeView } from './components/HomeView';
-import { FloatingAddButton } from './components/FloatingAddButton';
-import { CreateExpenseForm } from './components/CreateExpenseForm';
-import { ExpenseDetailModal } from './components/ExpenseDetailModal';
-import { BottomIsland } from './components/BottomIsland';
-import { Sidebar } from './components/Sidebar';
-import { PersonalBudgetView } from './components/PersonalBudgetView';
+import { AccountsView } from './components/AccountsView';
+import { BudgetView } from './components/BudgetView';
+import { CreateExpenseSheet } from './components/CreateExpenseSheet';
+import { ExpenseDetailSheet } from './components/ExpenseDetailSheet';
 import { AddBudgetItemModal } from './components/AddBudgetItemModal';
-import { LibretaView } from './components/LibretaView';
-import { AddLibretaEntryModal } from './components/AddLibretaEntryModal';
+import { AddLedgerEntrySheet } from './components/LedgerSheets';
+import { AddMenuSheet } from './components/AddMenuSheet';
+import { AccountSheet } from './components/AccountSheet';
+import { TabBar } from './components/TabBar';
+import { Sidebar } from './components/Sidebar';
 import { LoginView } from './components/LoginView';
-import { numberOrZero } from './utils/helpers';
-import { brandPalette } from './utils/brandPalette';
+import { displayNameOf, numberOrZero } from './utils/helpers';
 import { API_URL } from './config/api';
 
 const TOKEN_KEY = 'splitit_jwt';
+const THEME_KEY = 'splitit_theme_pref';
+const TABS = ['home', 'expenses', 'personal', 'accounts', 'friends'];
+const EMPTY_BALANCE = { owed_to_me: 0, i_owe: 0, net_balance: 0, by_friend: [] };
+
+const tabFromHash = () => {
+    const id = window.location.hash.replace('#', '');
+    return TABS.includes(id) ? id : 'home';
+};
+
+const systemTheme = () => (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 
 const App = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isBooting, setIsBooting] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
-    const [balance, setBalance] = useState({ owed_to_me: 0, i_owe: 0, net_balance: 0, by_friend: [] });
+    const [balance, setBalance] = useState(EMPTY_BALANCE);
     const [expenses, setExpenses] = useState([]);
     const [friends, setFriends] = useState([]);
     const [pendingFriendRequests, setPendingFriendRequests] = useState([]);
-    const [error, setError] = useState('');
-    const [showCreateExpense, setShowCreateExpense] = useState(false);
-    const [showAddBudgetItem, setShowAddBudgetItem] = useState(false);
-    const [budgetRefreshKey, setBudgetRefreshKey] = useState(0);
-    const [showAddLibretaEntry, setShowAddLibretaEntry] = useState(false);
-    const [libretaRefreshKey, setLibretaRefreshKey] = useState(0);
-    const [editingExpense, setEditingExpense] = useState(null);
-    const [selectedExpenseId, setSelectedExpenseId] = useState(null);
-    const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('home');
+    const [toast, setToast] = useState('');
+
+    const [activeTab, setActiveTabState] = useState(tabFromHash);
     const [expenseFilter, setExpenseFilter] = useState('all');
-    const [theme, setTheme] = useState(() => localStorage.getItem('splitit_theme') || 'light');
-    const [isDockCompact, setIsDockCompact] = useState(false);
+    const [accountsSegment, setAccountsSegment] = useState('owed');
+    const [dataVersion, setDataVersion] = useState(0);
+
+    const [showAddMenu, setShowAddMenu] = useState(false);
+    const [showCreateExpense, setShowCreateExpense] = useState(false);
+    const [editingExpense, setEditingExpense] = useState(null);
+    const [showAddBudgetItem, setShowAddBudgetItem] = useState(false);
+    const [budgetSection, setBudgetSection] = useState(null);
+    const [showAddLedger, setShowAddLedger] = useState(false);
+    const [showAddFriend, setShowAddFriend] = useState(false);
+    const [showAccount, setShowAccount] = useState(false);
+    const [selectedExpenseId, setSelectedExpenseId] = useState(null);
+
+    const [themePref, setThemePref] = useState(() => localStorage.getItem(THEME_KEY) || 'system');
+    const [systemIsDark, setSystemIsDark] = useState(() => systemTheme() === 'dark');
+    const theme = themePref === 'system' ? (systemIsDark ? 'dark' : 'light') : themePref;
 
     const currentUserId = numberOrZero(currentUser?.id);
+
+    // ---- Tema: automático por defecto, como iOS --------------------------
+    useEffect(() => {
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        const onChange = (e) => setSystemIsDark(e.matches);
+        mq.addEventListener('change', onChange);
+        return () => mq.removeEventListener('change', onChange);
+    }, []);
 
     useEffect(() => {
         const root = document.documentElement;
         root.dataset.theme = theme;
         root.classList.toggle('dark', theme === 'dark');
-        localStorage.setItem('splitit_theme', theme);
-    }, [theme]);
+        localStorage.setItem(THEME_KEY, themePref);
+        // La barra de estado del teléfono toma este color: debe coincidir con
+        // lo que hay arriba de la pantalla, no con el color de marca.
+        document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', theme === 'dark' ? '#000000' : '#f2f2f7'));
+    }, [theme, themePref]);
+
+    // ---- Navegación: la pestaña vive en el hash (el botón atrás funciona) -
+    const setActiveTab = useCallback((tab) => {
+        setActiveTabState((current) => {
+            if (current !== tab) window.history.pushState(null, '', `#${tab}`);
+            return tab;
+        });
+        window.scrollTo({ top: 0 });
+    }, []);
 
     useEffect(() => {
-        const handleScroll = () => {
-            setIsDockCompact(window.scrollY > 24);
-        };
-
-        handleScroll();
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
+        const onPop = () => setActiveTabState(tabFromHash());
+        window.addEventListener('popstate', onPop);
+        return () => window.removeEventListener('popstate', onPop);
     }, []);
 
-    const toggleTheme = useCallback(() => {
-        setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
+    // ---- Errores: aviso temporal arriba, con cierre manual ----------------
+    const showToast = useCallback((message) => {
+        setToast(message);
     }, []);
 
+    useEffect(() => {
+        if (!toast) return undefined;
+        const t = setTimeout(() => setToast(''), 6000);
+        return () => clearTimeout(t);
+    }, [toast]);
+
+    // ---- Datos -----------------------------------------------------------
     const loadData = useCallback(async (token) => {
         setIsLoading(true);
         try {
-            const headers = {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
-            };
-            const [uR, bR, eR, fR, frqR] = await Promise.all([
+            const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' };
+            const responses = await Promise.all([
                 fetch(`${API_URL}/auth/me`, { headers }),
                 fetch(`${API_URL}/expenses/balance`, { headers }),
                 fetch(`${API_URL}/expenses`, { headers }),
                 fetch(`${API_URL}/friends`, { headers }),
-                fetch(`${API_URL}/friends/requests`, { headers })
+                fetch(`${API_URL}/friends/requests`, { headers }),
             ]);
+            const [uR, bR, eR, fR, rR] = responses;
+            if (uR.status === 401) throw new Error('Tu sesión expiró. Inicia sesión de nuevo.');
 
-            if (uR.status === 401) throw new Error('Sesión expirada');
+            const [userData, balanceData, expensesData, friendsData, requestsData] = await Promise.all(responses.map((r) => r.json()));
+            const failed = [!uR.ok && 'perfil', !bR.ok && 'balance', !eR.ok && 'gastos', !fR.ok && 'amigos', !rR.ok && 'solicitudes'].filter(Boolean);
+            if (failed.length > 0) throw new Error(`No se pudo cargar: ${failed.join(', ')}`);
 
-            const [userData, balanceData, expensesData, friendsData, requestsData] = await Promise.all([
-                uR.json(), bR.json(), eR.json(), fR.json(), frqR.json()
-            ]);
-
-            const failedLabels = [
-                !uR.ok && 'perfil',
-                !bR.ok && 'balance',
-                !eR.ok && 'gastos',
-                !fR.ok && 'amigos',
-                !frqR.ok && 'solicitudes',
-            ].filter(Boolean);
-
-            if (failedLabels.length > 0) {
-                throw new Error(`No se pudo cargar: ${failedLabels.join(', ')}`);
-            }
-
-            const rawFriends = Array.isArray(friendsData?.friends)
-                ? friendsData.friends
-                : Array.isArray(friendsData)
-                    ? friendsData
-                    : [];
-
-            const rawPendingRequests = Array.isArray(requestsData?.requests)
-                ? requestsData.requests
-                : Array.isArray(requestsData?.friends)
-                    ? requestsData.friends
-                    : Array.isArray(requestsData)
-                        ? requestsData
-                        : [];
+            const pickList = (data, ...keys) => {
+                for (const key of keys) if (Array.isArray(data?.[key])) return data[key];
+                return Array.isArray(data) ? data : [];
+            };
 
             setCurrentUser(userData.user);
             setBalance({
@@ -119,210 +135,20 @@ const App = () => {
                 i_owe: numberOrZero(balanceData?.i_owe),
                 net_balance: numberOrZero(balanceData?.net_balance),
                 by_friend: Array.isArray(balanceData?.by_friend)
-                    ? balanceData.by_friend.map((f) => ({
-                        ...f,
-                        owed_to_me: numberOrZero(f?.owed_to_me),
-                        i_owe: numberOrZero(f?.i_owe),
-                        net: numberOrZero(f?.net),
-                    }))
+                    ? balanceData.by_friend.map((f) => ({ ...f, owed_to_me: numberOrZero(f?.owed_to_me), i_owe: numberOrZero(f?.i_owe), net: numberOrZero(f?.net) }))
                     : [],
             });
             setExpenses(Array.isArray(expensesData.expenses) ? expensesData.expenses : []);
-            setFriends(rawFriends);
-            setPendingFriendRequests(rawPendingRequests);
-            setError('');
+            setFriends(pickList(friendsData, 'friends'));
+            setPendingFriendRequests(pickList(requestsData, 'requests', 'friends'));
         } catch (err) {
-            setError(err.message);
+            showToast(err.message);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [showToast]);
 
-    // Wrapper compartido por las acciones de liquidación/edición/borrado de
-    // gastos: hace el fetch autenticado, refresca los datos si sale bien, y
-    // deja el error visible en el banner si falla.
-    const performExpenseAction = useCallback(async (path, method = 'PATCH', body = null) => {
-        const token = localStorage.getItem(TOKEN_KEY);
-        setIsLoading(true);
-        try {
-            const response = await fetch(`${API_URL}${path}`, {
-                method,
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json',
-                    ...(body ? { 'Content-Type': 'application/json' } : {}),
-                },
-                ...(body ? { body: JSON.stringify(body) } : {}),
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || `Error ${response.status}`);
-            await loadData(token);
-            return data;
-        } catch (err) {
-            setError(err.message);
-            setTimeout(() => setError(''), 5000);
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    }, [loadData]);
-
-    const handleClaimPaid = useCallback(
-        (expenseId, amount) => performExpenseAction(`/expenses/${expenseId}/claim`, 'PATCH', amount ? { amount } : null).catch(() => {}),
-        [performExpenseAction],
-    );
-
-    const handleMarkPaid = useCallback(
-        (expenseId, userId, amount) => performExpenseAction(`/expenses/${expenseId}/participants/${userId}/mark-paid`, 'PATCH', amount ? { amount } : null).catch(() => {}),
-        [performExpenseAction],
-    );
-
-    const handleConfirmPayment = useCallback(
-        (expenseId, userId) => performExpenseAction(`/expenses/${expenseId}/participants/${userId}/confirm`).catch(() => {}),
-        [performExpenseAction],
-    );
-
-    const handleRejectPayment = useCallback(
-        (expenseId, userId) => performExpenseAction(`/expenses/${expenseId}/participants/${userId}/reject`).catch(() => {}),
-        [performExpenseAction],
-    );
-
-    const handleDeleteExpense = useCallback(
-        async (expense) => {
-            try {
-                await performExpenseAction(`/expenses/${expense.id}`, 'DELETE');
-                setSelectedExpenseId(null);
-            } catch {
-                // El error ya quedó en el banner via performExpenseAction.
-            }
-        },
-        [performExpenseAction],
-    );
-
-    const handleEditExpense = useCallback((expense) => {
-        setSelectedExpenseId(null);
-        setEditingExpense(expense);
-        setShowCreateExpense(true);
-    }, []);
-
-    const handleLogout = () => {
-        localStorage.removeItem(TOKEN_KEY);
-        setIsLoggedIn(false);
-        setCurrentUser(null);
-        setBalance({ owed_to_me: 0, i_owe: 0, net_balance: 0, by_friend: [] });
-        setExpenses([]);
-        setSelectedExpenseId(null);
-        setFriends([]);
-        setPendingFriendRequests([]);
-        setShowCreateExpense(false);
-        setEditingExpense(null);
-        setIsHamburgerOpen(false);
-        setActiveTab('expenses');
-        setExpenseFilter('all');
-    };
-
-    const handleOpenCreateExpense = () => {
-        setIsHamburgerOpen(false);
-        setEditingExpense(null);
-        setShowCreateExpense(true);
-    };
-
-    // Botón de agregar contextual: en "Gastos personales" abre el picker de
-    // categorías del presupuesto, en "Libreta" abre el formulario de deuda
-    // nueva, y en cualquier otro lado abre el formulario de gasto compartido.
-    const handleContextualAdd = () => {
-        if (activeTab === 'personal') {
-            setShowAddBudgetItem(true);
-        } else if (activeTab === 'libreta') {
-            setShowAddLibretaEntry(true);
-        } else {
-            handleOpenCreateExpense();
-        }
-    };
-
-    const handleBudgetItemCreated = () => {
-        setShowAddBudgetItem(false);
-        setBudgetRefreshKey((k) => k + 1);
-    };
-
-    const handleLibretaEntryCreated = () => {
-        setShowAddLibretaEntry(false);
-        setLibretaRefreshKey((k) => k + 1);
-    };
-
-    const handleCloseCreateExpense = useCallback(() => {
-        setShowCreateExpense(false);
-        setEditingExpense(null);
-    }, []);
-
-    // Guardamos solo el id y derivamos el expense actual desde `expenses` en
-    // cada render, así el modal de detalle siempre refleja el estado más
-    // reciente después de una acción (marcar pagado, confirmar, editar...).
-    const handleOpenExpenseDetail = useCallback((expense) => {
-        setSelectedExpenseId(expense.id);
-    }, []);
-
-    const handleCloseExpenseDetail = useCallback(() => {
-        setSelectedExpenseId(null);
-    }, []);
-
-    const selectedExpense = useMemo(
-        () => expenses.find((e) => e.id === selectedExpenseId) || null,
-        [expenses, selectedExpenseId],
-    );
-
-    const handleHamburgerOpenChange = (nextOpen) => {
-        if (nextOpen) {
-            setShowCreateExpense(false);
-        }
-        setIsHamburgerOpen(nextOpen);
-    };
-
-    const knownUsers = useMemo(() => {
-        const usersById = new Map();
-
-        const mergeUser = (rawUser, explicitId) => {
-            const id = numberOrZero(explicitId ?? rawUser?.id ?? rawUser?.user_id);
-            if (!id) return;
-
-            const prev = usersById.get(id) || {};
-            const firstName = String(rawUser?.first_name || '').trim();
-            const middleName = String(rawUser?.middle_name || '').trim();
-            const lastName = String(rawUser?.last_name || '').trim();
-            const secondLastName = String(rawUser?.second_last_name || '').trim();
-            const nameParts = [firstName, middleName, lastName, secondLastName].filter(Boolean);
-
-            usersById.set(id, {
-                id,
-                username: String(rawUser?.username || prev?.username || '').trim(),
-                email: String(rawUser?.email || prev?.email || '').trim(),
-                phone: String(rawUser?.phone || prev?.phone || '').trim(),
-                displayName: nameParts.join(' ') || String(rawUser?.username || prev?.username || rawUser?.email || prev?.email || '').trim()
-            });
-        };
-
-        if (currentUser?.id != null) {
-            mergeUser(currentUser, currentUser.id);
-        }
-
-        expenses.forEach((expense) => {
-            const paidBy = expense?.paid_by;
-            if (paidBy && typeof paidBy === 'object') {
-                mergeUser(paidBy, paidBy.id);
-            }
-
-            (Array.isArray(expense?.participants) ? expense.participants : []).forEach((participant) => {
-                mergeUser(participant, participant?.user_id);
-            });
-        });
-
-        friends.forEach((friend) => {
-            const user = friend?.user || friend?.friend || friend?.profile || friend;
-            mergeUser(user, user?.id ?? friend?.user_id ?? friend?.friend_id);
-        });
-
-        return Array.from(usersById.values()).filter((user) => user.id !== currentUserId);
-    }, [currentUser, currentUserId, expenses, friends]);
+    const refresh = useCallback(() => loadData(localStorage.getItem(TOKEN_KEY)), [loadData]);
 
     useEffect(() => {
         const token = localStorage.getItem(TOKEN_KEY);
@@ -335,203 +161,220 @@ const App = () => {
         }
     }, [loadData]);
 
-    if (isBooting) return (
-        <div className="min-h-screen flex flex-col items-center justify-center gap-6 animate-fade-in text-primary" style={{ background: 'var(--app-bg)' }}>
-            <div className="relative">
-                <div className="w-16 h-16 rounded-full animate-spin" style={{ border: '2px solid var(--surface-border)', borderTopColor: 'var(--brand)' }} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <Coins size={20} style={{ color: 'var(--brand)' }} />
+    const performExpenseAction = useCallback(async (path, method = 'PATCH', body = null) => {
+        const token = localStorage.getItem(TOKEN_KEY);
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${API_URL}${path}`, {
+                method,
+                headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+                ...(body ? { body: JSON.stringify(body) } : {}),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || `Error ${response.status}`);
+            await loadData(token);
+            setDataVersion((v) => v + 1);
+            return data;
+        } catch (err) {
+            showToast(err.message);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }, [loadData, showToast]);
+
+    const swallow = (promise) => promise.catch(() => {});
+    const handleClaim = (id, amount) => swallow(performExpenseAction(`/expenses/${id}/claim`, 'PATCH', amount ? { amount } : null));
+    const handleMarkPaid = (id, userId, amount) => swallow(performExpenseAction(`/expenses/${id}/participants/${userId}/mark-paid`, 'PATCH', amount ? { amount } : null));
+    const handleConfirm = (id, userId) => swallow(performExpenseAction(`/expenses/${id}/participants/${userId}/confirm`));
+    const handleReject = (id, userId) => swallow(performExpenseAction(`/expenses/${id}/participants/${userId}/reject`));
+    const handleDelete = async (expense) => {
+        try {
+            await performExpenseAction(`/expenses/${expense.id}`, 'DELETE');
+            setSelectedExpenseId(null);
+        } catch { /* el aviso ya se mostró */ }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem(TOKEN_KEY);
+        setIsLoggedIn(false);
+        setCurrentUser(null);
+        setBalance(EMPTY_BALANCE);
+        setExpenses([]);
+        setFriends([]);
+        setPendingFriendRequests([]);
+        setSelectedExpenseId(null);
+        setActiveTabState('home');
+        window.history.replaceState(null, '', '#home');
+    };
+
+    // ---- Agregar: cada pantalla sabe qué agregar; Inicio pregunta ---------
+    const handleAdd = () => {
+        if (activeTab === 'expenses') { setEditingExpense(null); setShowCreateExpense(true); }
+        else if (activeTab === 'personal') { setBudgetSection(null); setShowAddBudgetItem(true); }
+        else if (activeTab === 'accounts') setShowAddLedger(true);
+        else if (activeTab === 'friends') setShowAddFriend(true);
+        else setShowAddMenu(true);
+    };
+
+    const handleAddMenuPick = (id) => {
+        setShowAddMenu(false);
+        if (id === 'expense') { setEditingExpense(null); setShowCreateExpense(true); }
+        else if (id === 'personal') { setBudgetSection(null); setShowAddBudgetItem(true); }
+        else { setAccountsSegment(id); setShowAddLedger(true); }
+    };
+
+    const afterCreate = (tab) => {
+        setDataVersion((v) => v + 1);
+        refresh();
+        setActiveTab(tab);
+    };
+
+    const friendUsers = useMemo(() => friends.map((f) => {
+        const u = f?.user || f?.friend || f?.profile || f;
+        return {
+            id: numberOrZero(u?.id ?? f?.user_id ?? f?.friend_id),
+            username: String(u?.username || '').trim(),
+            email: String(u?.email || '').trim(),
+            displayName: displayNameOf(u),
+        };
+    }).filter((u) => u.id > 0), [friends]);
+
+    const selectedExpense = useMemo(() => expenses.find((e) => e.id === selectedExpenseId) || null, [expenses, selectedExpenseId]);
+    const openExpense = useCallback((expense) => setSelectedExpenseId(expense.id), []);
+    const closeExpense = useCallback(() => setSelectedExpenseId(null), []);
+
+    const userName = displayNameOf(currentUser);
+    const badges = { friends: pendingFriendRequests.length };
+
+    if (isBooting) {
+        return (
+            <div className="flex min-h-screen flex-col items-center justify-center gap-4 animate-fade-in">
+                <div className="flex h-16 w-16 items-center justify-center rounded-[18px]" style={{ background: 'linear-gradient(135deg, var(--brand), var(--accent-2))' }}>
+                    <Coins size={30} color="#fff" />
                 </div>
+                <span className="t-footnote text-secondary">Split.it</span>
             </div>
-            <span className="text-secondary font-bold tracking-[0.22em] text-[10px] uppercase">Split.it</span>
-        </div>
-    );
+        );
+    }
 
     if (!isLoggedIn) {
-        return <LoginView theme={theme} onToggleTheme={toggleTheme} onAuth={() => setIsLoggedIn(true)} loadData={loadData} />;
+        return <LoginView onAuth={() => setIsLoggedIn(true)} loadData={loadData} />;
     }
 
     return (
-        <div className={`min-h-screen text-slate-100 font-sans ${brandPalette.selection} overflow-x-hidden transition-colors duration-500 animate-fade-in`} style={{ background: 'var(--app-bg)' }}>
-            {/* Background Orbs */}
-            <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[40%] rounded-full blur-[120px]" style={{ background: 'rgba(232, 24, 156, 0.16)' }} />
-                <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[120px]" style={{ background: 'rgba(111, 168, 220, 0.08)' }} />
-            </div>
+        <div className="min-h-screen">
+            <Sidebar activeTab={activeTab} onChange={setActiveTab} badges={badges} userName={userName} userEmail={currentUser?.email} onOpenAccount={() => setShowAccount(true)} />
 
-            <Sidebar
-                activeTab={activeTab}
-                onOpenHome={() => setActiveTab('home')}
-                onOpenExpenses={() => setActiveTab('expenses')}
-                onOpenFriends={() => setActiveTab('friends')}
-                onOpenPersonal={() => setActiveTab('personal')}
-                onOpenLibreta={() => setActiveTab('libreta')}
-                onOpenAccount={() => setIsHamburgerOpen(true)}
-                theme={theme}
-                onToggleTheme={toggleTheme}
-            />
-
-            <FloatingAddButton activeTab={activeTab} onClick={handleContextualAdd} />
-
-            {isHamburgerOpen && (
-                <button
-                    className="fixed inset-0 z-50 bg-slate-950/30 backdrop-blur-sm"
-                    onClick={() => setIsHamburgerOpen(false)}
-                    aria-label="Cerrar menú"
-                />
-            )}
-
-            {/* Error Alert */}
-            {error && (
-                <div className="fixed top-24 left-4 right-4 xl:left-28 z-100 animate-in fade-in slide-in-from-top-4">
-                    <div className="glass-shell-strong p-4 rounded-2xl shadow-2xl flex gap-3 items-center max-w-xl mx-auto xl:mx-0" style={{ color: 'var(--text-primary)' }}>
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>
-                            <ShieldAlert size={16} />
-                        </div>
-                        <p className="flex-1 text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{error}</p>
-                        <button onClick={() => setError('')} className="p-2 text-secondary hover:text-primary transition-colors">
-                            <XCircle size={18} />
-                        </button>
+            {toast && (
+                <div className="fixed inset-x-0 z-[110] flex justify-center px-4 animate-pop-in" style={{ top: 'calc(var(--safe-top) + 12px)' }} role="alert">
+                    <div className="material flex max-w-md items-center gap-3 rounded-[16px] border py-3 pl-4 pr-2 shadow-lg">
+                        <p className="t-subhead flex-1">{toast}</p>
+                        <button type="button" onClick={() => setToast('')} aria-label="Cerrar aviso" className="btn btn-icon" style={{ width: 30, height: 30 }}><X size={15} /></button>
                     </div>
                 </div>
             )}
 
-            {/* Header — only on mobile/tablet; the sidebar carries the identity on desktop.
-                paddingTop suma env(safe-area-inset-top) -- como PWA instalada en iPhone
-                (status-bar-style: black-translucent + viewport-fit=cover) el contenido
-                dibuja por debajo de la status bar/notch; sin este espacio el logo quedaba
-                tapado por ella. En navegador normal (sin safe-area) el env() da 0 y no
-                cambia nada. */}
-            <nav
-                className="xl:hidden sticky top-0 z-50 px-4 pb-4 backdrop-blur-xl border-b border-white/5"
-                style={{ background: 'color-mix(in srgb, var(--app-bg) 58%, transparent)', paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
-            >
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--brand), var(--brand-strong))', boxShadow: '0 0 20px rgba(156, 77, 244, 0.3)' }}>
-                            <Coins size={20} style={{ color: 'var(--accent-contrast)' }} />
-                        </div>
-                        <h1 className="text-xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>Split.it</h1>
-                    </div>
-                </div>
-            </nav>
-
-            {/* Main Content */}
-            {/* Gastos personales tiene 3 columnas de tablas (Ingresos/Deudas/
-                Ahorros + Gastos Fijos + Seguimiento) — con el mismo ancho que
-                el resto de la app quedaban tan angostas que los montos se
-                veían apretados/cortados. Le damos más aire ahí solamente. */}
-            <main className={`mx-auto px-4 sm:px-6 xl:pl-28 xl:pr-8 pb-40 xl:pb-16 pt-8 xl:pt-10 animate-fade-up ${
-                activeTab === 'personal' ? 'max-w-[105rem]' : activeTab === 'home' ? 'max-w-4xl' : 'max-w-6xl'
-            }`}>
-                {activeTab === 'home' ? (
+            <main className="xl:pl-64 pb-[calc(96px+var(--safe-bottom))] xl:pb-16">
+                <div className="mx-auto max-w-3xl px-4 sm:px-6">
+                {activeTab === 'home' && (
                     <HomeView
-                        theme={theme}
+                        key={dataVersion}
                         currentUser={currentUser}
                         expenses={expenses}
-                        friends={friends}
                         pendingFriendRequests={pendingFriendRequests}
                         balance={balance}
-                        onOpenSplit={() => setActiveTab('expenses')}
-                        onOpenBudget={() => setActiveTab('personal')}
-                        onOpenAccounts={() => setActiveTab('libreta')}
-                        onOpenFriends={() => setActiveTab('friends')}
+                        onNavigate={setActiveTab}
+                        onOpenExpense={openExpense}
+                        onAdd={handleAdd}
+                        onOpenAccount={() => setShowAccount(true)}
                     />
-                ) : activeTab === 'personal' ? (
-                    <PersonalBudgetView
-                        key={budgetRefreshKey}
-                        theme={theme}
-                        splitBalance={balance}
-                        onViewSyncedExpense={(expenseId) => handleOpenExpenseDetail({ id: expenseId })}
-                        onViewLibreta={() => setActiveTab('libreta')}
-                        onViewSplit={() => setActiveTab('expenses')}
+                )}
+                {activeTab === 'expenses' && (
+                    <ExpensesView
+                        expenses={expenses}
+                        balance={balance}
+                        currentUserId={currentUserId}
+                        filter={expenseFilter}
+                        onFilterChange={setExpenseFilter}
+                        onOpen={openExpense}
+                        onAdd={handleAdd}
                     />
-                ) : activeTab === 'libreta' ? (
-                    <LibretaView key={libretaRefreshKey} theme={theme} />
-                ) : activeTab === 'friends' ? (
-                    // Amigos es su propia pantalla, igual que Personal/Libreta -- ya
-                    // no vive como panel lateral pegado a Gastos. Gestionar contactos
-                    // y ver el split de un gasto son dos tareas distintas.
+                )}
+                {activeTab === 'personal' && (
+                    <BudgetView
+                        refreshKey={dataVersion}
+                        onAdd={handleAdd}
+                        onAddToSection={(section) => { setBudgetSection(section); setShowAddBudgetItem(true); }}
+                        onViewSyncedExpense={(id) => setSelectedExpenseId(id)}
+                        onViewAccounts={() => setActiveTab('accounts')}
+                    />
+                )}
+                {activeTab === 'accounts' && (
+                    <AccountsView segment={accountsSegment} onSegmentChange={setAccountsSegment} refreshKey={dataVersion} onAdd={handleAdd} />
+                )}
+                {activeTab === 'friends' && (
                     <FriendsView
                         friends={friends}
                         pendingRequests={pendingFriendRequests}
+                        balance={balance}
                         token={localStorage.getItem(TOKEN_KEY)}
-                        onRefresh={() => loadData(localStorage.getItem(TOKEN_KEY))}
-                        isLoading={isLoading}
-                        theme={theme}
-                        onViewExpenses={() => setActiveTab('expenses')}
+                        onRefresh={refresh}
+                        isAddOpen={showAddFriend}
+                        onAddOpenChange={setShowAddFriend}
                     />
-                ) : (
-                    <section className="space-y-5 min-w-0 max-w-3xl mx-auto xl:mx-0">
-                        <BalanceCard balance={balance} theme={theme} filter={expenseFilter} onFilterChange={setExpenseFilter} />
-                        <ExpenseList
-                            expenses={expenses}
-                            currentUserId={currentUserId}
-                            onOpenExpense={handleOpenExpenseDetail}
-                            onRefresh={() => loadData(localStorage.getItem(TOKEN_KEY))}
-                            isLoading={isLoading}
-                            filter={expenseFilter}
-                            theme={theme}
-                        />
-                    </section>
                 )}
+                </div>
             </main>
 
-            <BottomIsland
-                activeTab={activeTab}
-                onCreateExpense={handleContextualAdd}
-                userEmail={currentUser?.email || 'User'}
-                onLogout={handleLogout}
-                isHamburgerOpen={isHamburgerOpen}
-                onHamburgerOpenChange={handleHamburgerOpenChange}
-                compact={isDockCompact}
-                theme={theme}
-                onToggleTheme={toggleTheme}
-                onOpenHome={() => setActiveTab('home')}
-                onOpenExpenses={() => setActiveTab('expenses')}
-                onOpenFriends={() => setActiveTab('friends')}
-                onOpenPersonal={() => setActiveTab('personal')}
-                onOpenLibreta={() => setActiveTab('libreta')}
-            />
+            <TabBar activeTab={activeTab} onChange={setActiveTab} badges={badges} />
 
-            {/* Create / Edit Expense Modal */}
-            <CreateExpenseForm
+            <AddMenuSheet isOpen={showAddMenu} onClose={() => setShowAddMenu(false)} onPick={handleAddMenuPick} />
+
+            <CreateExpenseSheet
                 isOpen={showCreateExpense}
-                mode={editingExpense ? 'edit' : 'create'}
-                initialExpense={editingExpense}
-                onClose={handleCloseCreateExpense}
-                onSuccess={() => loadData(localStorage.getItem(TOKEN_KEY))}
-                knownUsers={knownUsers}
+                onClose={() => { setShowCreateExpense(false); setEditingExpense(null); }}
+                onSuccess={() => afterCreate('expenses')}
+                friendUsers={friendUsers}
                 currentUserId={currentUserId}
-                theme={theme}
+                initialExpense={editingExpense}
+                onGoToFriends={() => setActiveTab('friends')}
             />
 
             <AddBudgetItemModal
                 isOpen={showAddBudgetItem}
+                initialSection={budgetSection}
                 onClose={() => setShowAddBudgetItem(false)}
-                onCreated={handleBudgetItemCreated}
-                theme={theme}
+                onCreated={() => { setShowAddBudgetItem(false); afterCreate('personal'); }}
             />
 
-            <AddLibretaEntryModal
-                isOpen={showAddLibretaEntry}
-                onClose={() => setShowAddLibretaEntry(false)}
-                onCreated={handleLibretaEntryCreated}
-                theme={theme}
+            <AddLedgerEntrySheet
+                isOpen={showAddLedger}
+                kind={accountsSegment}
+                onClose={() => setShowAddLedger(false)}
+                onCreated={() => { setShowAddLedger(false); afterCreate('accounts'); }}
             />
 
-            <ExpenseDetailModal
+            <ExpenseDetailSheet
                 expense={selectedExpense}
                 currentUserId={currentUserId}
-                onClose={handleCloseExpenseDetail}
-                onClaim={handleClaimPaid}
+                onClose={closeExpense}
+                onClaim={handleClaim}
                 onMarkPaid={handleMarkPaid}
-                onConfirmPayment={handleConfirmPayment}
-                onRejectPayment={handleRejectPayment}
-                onEdit={handleEditExpense}
-                onDelete={handleDeleteExpense}
+                onConfirmPayment={handleConfirm}
+                onRejectPayment={handleReject}
+                onEdit={(expense) => { setSelectedExpenseId(null); setEditingExpense(expense); setShowCreateExpense(true); }}
+                onDelete={handleDelete}
                 isLoading={isLoading}
-                theme={theme}
+            />
+
+            <AccountSheet
+                isOpen={showAccount}
+                onClose={() => setShowAccount(false)}
+                user={currentUser}
+                themePref={themePref}
+                onThemeChange={setThemePref}
+                onLogout={handleLogout}
             />
         </div>
     );

@@ -1,371 +1,247 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-    ArrowRight,
-    LayoutGrid,
-    Loader2,
-    NotebookText,
-    PiggyBank,
-    RefreshCw,
-    Repeat2,
-    Users,
-    Wallet,
-} from 'lucide-react';
-import { GlassCard } from './GlassCard';
+import { Bell, ChevronRight, Clock, HandCoins, Loader2, PieChart, PiggyBank, Plus, Receipt, Wallet } from 'lucide-react';
+import { ScreenHeader, NavAction } from './ui/ScreenHeader';
+import { Avatar } from './ui/Avatar';
 import { AnimatedNumber } from './AnimatedNumber';
-import { formatCurrency, numberOrZero } from '../utils/helpers';
-import { getCurrentMonthKey } from '../utils/budgetHelpers';
 import { API_URL } from '../config/api';
+import { getCurrentMonthKey } from '../utils/budgetHelpers';
+import {
+    displayNameOf,
+    firstNameOf,
+    formatCurrency,
+    getExpenseStake,
+    getParticipantStatus,
+    numberOrZero,
+    relativeDay,
+} from '../utils/helpers';
 
 const TOKEN_KEY = 'splitit_jwt';
 
-// Inicio: la pantalla que faltaba. Antes, "ver todo junto" significaba
-// visitar 4 pantallas y sumar a mano. Acá el patrimonio neto, las
-// secciones y un feed cronológico real (mezclando gastos compartidos,
-// movimientos del presupuesto y abonos de Cuentas) viven en un solo lugar.
-// Usa el mismo lenguaje visual glass + marca morado/fucsia que el resto de
-// la app -- no tiene identidad propia (eso fue una primera versión, mal:
-// toda la app tiene que ser coherente con un solo lenguaje de diseño).
+const IconSquare = ({ color, children }) => (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px]" style={{ background: color }}>{children}</span>
+);
 
-const relativeTime = (isoDate) => {
-    if (!isoDate) return '';
-    const then = new Date(isoDate).getTime();
-    if (!Number.isFinite(then)) return '';
-    const diffMs = Date.now() - then;
-    const diffMin = Math.floor(diffMs / 60000);
-    if (diffMin < 1) return 'ahora mismo';
-    if (diffMin < 60) return `hace ${diffMin} min`;
-    const diffH = Math.floor(diffMin / 60);
-    if (diffH < 24) return `hace ${diffH} h`;
-    const diffD = Math.floor(diffH / 24);
-    if (diffD === 1) return 'ayer';
-    if (diffD < 7) return `hace ${diffD} días`;
-    return new Date(isoDate).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
-};
-
-const getPayerName = (paidBy) => {
-    if (!paidBy || typeof paidBy !== 'object') return 'Alguien';
-    const parts = [paidBy.first_name, paidBy.last_name].filter(Boolean);
-    return parts.join(' ') || paidBy.username || paidBy.email || 'Alguien';
-};
-
-const DomainCard = ({ icon, label, figure, note, tint, onClick, theme }) => (
-    <button type="button" onClick={onClick} className="text-left w-full">
-        <GlassCard theme={theme} className="p-5 h-full transition-all duration-200 hover:-translate-y-0.5">
-            <div className="flex items-center justify-between mb-4">
-                <span
-                    className="h-9 w-9 rounded-xl flex items-center justify-center"
-                    style={{ background: tint.soft, color: tint.solid }}
-                >
-                    {icon}
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">{label}</span>
-            </div>
-            <p className="tabular text-xl font-black text-primary">{figure}</p>
-            <p className="text-[11px] text-muted mt-1.5 leading-snug">{note}</p>
-        </GlassCard>
+const BreakdownRow = ({ icon, color, label, hint, value, tone, onClick }) => (
+    <button type="button" className="ios-row" onClick={onClick}>
+        <IconSquare color={color}>{icon}</IconSquare>
+        <span className="min-w-0 flex-1">
+            <span className="t-body block font-medium">{label}</span>
+            {hint && <span className="t-footnote block text-secondary">{hint}</span>}
+        </span>
+        <span className="t-headline tabular" style={{ color: tone || 'var(--text-primary)' }}>{value}</span>
+        <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
     </button>
 );
 
-const FeedRow = ({ title, meta, tag, tint, amount, isPositive }) => (
-    <div className="grid items-center gap-4 px-5 py-3.5 border-b border-white/5 last:border-0">
-        <div className="grid grid-cols-[30px_1fr_auto_auto] items-center gap-4">
-            <span className="h-[30px] w-[30px] rounded-[9px] flex items-center justify-center" style={{ background: tint.soft, color: tint.solid }}>
-                <Repeat2 size={13} />
-            </span>
-            <div className="min-w-0">
-                <p className="text-[13.5px] font-semibold text-primary truncate">{title}</p>
-                <p className="text-[11.5px] text-muted">{meta}</p>
-            </div>
-            <span
-                className="text-[10px] font-bold uppercase tracking-[0.08em] px-2.5 py-1 rounded-full whitespace-nowrap"
-                style={{ background: tint.soft, color: tint.solid }}
-            >
-                {tag}
-            </span>
-            <span
-                className="tabular text-sm font-semibold text-right whitespace-nowrap"
-                style={{ color: isPositive ? 'var(--success)' : 'var(--danger)' }}
-            >
-                {isPositive ? '+' : '−'}{formatCurrency(Math.abs(amount))}
-            </span>
-        </div>
-    </div>
-);
-
 export const HomeView = ({
-    theme = 'dark',
     currentUser,
     expenses = [],
-    friends = [],
     pendingFriendRequests = [],
     balance,
-    onOpenSplit,
-    onOpenBudget,
-    onOpenAccounts,
-    onOpenFriends,
+    onNavigate,
+    onOpenExpense,
+    onAdd,
+    onOpenAccount,
 }) => {
     const [budget, setBudget] = useState(null);
     const [libreta, setLibreta] = useState({ total_pending: 0 });
-    const [debts, setDebts] = useState({ entries: [], total_pending: 0 });
+    const [debts, setDebts] = useState({ total_pending: 0 });
     const [isLoading, setIsLoading] = useState(true);
 
     const loadAll = useCallback(async () => {
         setIsLoading(true);
         try {
-            const token = localStorage.getItem(TOKEN_KEY);
-            const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' };
-            const monthKey = getCurrentMonthKey();
-            const [budgetRes, libretaRes, debtsRes] = await Promise.all([
-                fetch(`${API_URL}/budget/${monthKey}`, { headers }),
+            const headers = { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}`, Accept: 'application/json' };
+            const [b, l, d] = await Promise.all([
+                fetch(`${API_URL}/budget/${getCurrentMonthKey()}`, { headers }),
                 fetch(`${API_URL}/libreta`, { headers }),
                 fetch(`${API_URL}/debts`, { headers }),
             ]);
-            const [budgetJson, libretaJson, debtsJson] = await Promise.all([
-                budgetRes.json(),
-                libretaRes.json(),
-                debtsRes.json(),
-            ]);
-            if (budgetRes.ok) setBudget(budgetJson);
-            if (libretaRes.ok) setLibreta(libretaJson);
-            if (debtsRes.ok) setDebts(debtsJson);
+            const [bj, lj, dj] = await Promise.all([b.json(), l.json(), d.json()]);
+            if (b.ok) setBudget(bj);
+            if (l.ok) setLibreta(lj);
+            if (d.ok) setDebts(dj);
         } catch {
-            // Silencioso: Inicio es un resumen -- si una fuente falla, las
-            // demás cards igual se pintan con lo que sí llegó.
+            // Inicio es un resumen: si una fuente falla, las demás igual se pintan.
         } finally {
             setIsLoading(false);
         }
     }, []);
 
     /* eslint-disable react-hooks/set-state-in-effect */
-    useEffect(() => {
-        loadAll();
-    }, [loadAll]);
+    useEffect(() => { loadAll(); }, [loadAll]);
     /* eslint-enable react-hooks/set-state-in-effect */
 
-    const libretaPending = numberOrZero(libreta.total_pending);
-    const debtPending = numberOrZero(debts.total_pending);
     const cash = numberOrZero(budget?.totals?.balance);
     const savings = numberOrZero(budget?.totals?.savings_balance);
-    // "Disponible para gastar este mes" NO es `balance` (ese ya incluye
-    // Ahorros/Deudas de vuelta) -- es el margen puro (Ingresos - Gastos
-    // Fijos - Gastos), `actual_net`. Ahorros tiene su propia card: es plata
-    // que separaste con una meta, no plata con la que podés contar para
-    // gastos del mes sin arruinar esa meta.
     const monthlyMargin = numberOrZero(budget?.totals?.actual_net);
-    const netBalance = numberOrZero(balance?.net_balance);
-    // Patrimonio neto SÍ suma lo que te deben (Libreta + Split) como activo
-    // -- es plata que ya es tuya, aunque no esté en la mano. "Disponible"
-    // (arriba) nunca la suma: mientras no se confirme, no es caja.
-    const netWorth = cash + savings + libretaPending + netBalance - debtPending;
-    const cuentasNet = libretaPending - debtPending;
-    const requestsCount = pendingFriendRequests.length;
+    const splitNet = numberOrZero(balance?.net_balance);
+    const libretaPending = numberOrZero(libreta.total_pending);
+    const debtPending = numberOrZero(debts.total_pending);
 
-    const greetingName = (() => {
-        const first = String(currentUser?.first_name || '').trim();
-        return first || String(currentUser?.username || currentUser?.email || '').split('@')[0] || 'ahí';
-    })();
+    // Patrimonio neto: todo lo que es tuyo (caja, ahorros, lo que te deben
+    // por Split y por Cuentas) menos lo que debes. "Disponible para gastar"
+    // se muestra aparte y NUNCA cuenta lo que aún no te han pagado.
+    const receivable = splitNet + libretaPending;
+    const netWorth = cash + savings + receivable - debtPending;
 
-    const todayLabel = new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+    const today = new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+    const subtitle = `Hola, ${firstNameOf(currentUser)} · ${today}`;
 
-    // Feed de movimientos: cruza 3 fuentes que hoy viven en pantallas
-    // separadas -- gastos compartidos recientes, movimientos manuales del
-    // presupuesto, y abonos de Cuentas (que ya llegan como budget_items con
-    // libreta_entry_id/debt_entry_id) -- y los ordena por fecha real. Esta
-    // es la interconexión de verdad: un timeline, no solo un número
-    // compartido entre pantallas.
-    const feed = useMemo(() => {
+    // Cosas que esperan una acción tuya, ordenadas por urgencia.
+    const attention = useMemo(() => {
         const items = [];
-
-        expenses.slice(0, 6).forEach((expense) => {
-            const ts = expense.updated_at || expense.created_at;
-            if (!ts) return;
-            items.push({
-                key: `exp-${expense.id}`,
-                ts,
-                title: expense.description || 'Gasto compartido',
-                meta: `Compartido · pagó ${getPayerName(expense.paid_by)} · ${relativeTime(ts)}`,
-                tag: 'Split',
-                tint: { soft: 'var(--info-soft)', solid: 'var(--info)' },
-                amount: numberOrZero(expense.amount),
-                isPositive: Boolean(expense.paid_by_me),
+        expenses.forEach((expense) => {
+            (expense.participants || []).forEach((p) => {
+                if (expense.paid_by_me && getParticipantStatus(p) === 'awaiting_confirmation') {
+                    items.push({
+                        key: `c-${expense.id}-${p.user_id}`,
+                        who: displayNameOf(p),
+                        title: `${displayNameOf(p)} dice que te pagó ${formatCurrency(p.pending_claim_amount)}`,
+                        hint: `${expense.description} · confírmalo`,
+                        color: '#34c759',
+                        icon: <Clock size={19} color="#fff" />,
+                        run: () => onOpenExpense(expense),
+                    });
+                }
             });
+            if (!expense.paid_by_me) {
+                const stake = getExpenseStake(expense, currentUser?.id);
+                if (stake.kind === 'owe') {
+                    items.push({
+                        key: `o-${expense.id}`,
+                        who: displayNameOf(expense.paid_by),
+                        title: `Debes ${formatCurrency(stake.amount)} a ${displayNameOf(expense.paid_by)}`,
+                        hint: expense.description,
+                        color: '#ff3b30',
+                        icon: <Receipt size={19} color="#fff" />,
+                        run: () => onOpenExpense(expense),
+                    });
+                }
+            }
         });
-
-        const sections = budget?.sections;
-        if (sections) {
-            Object.values(sections).forEach((bucket) => {
-                (bucket.items || []).forEach((item) => {
-                    if (item.is_pending || item.is_split_synced) return;
-                    const ts = item.created_at || item.updated_at;
-                    if (!ts || numberOrZero(item.actual_amount) === 0) return;
-
-                    if (item.libreta_entry_id) {
-                        items.push({
-                            key: `bi-${item.id}`,
-                            ts,
-                            title: item.label,
-                            meta: `Cuentas · me deben · ${relativeTime(ts)}`,
-                            tag: 'Me deben',
-                            tint: { soft: 'var(--success-soft)', solid: 'var(--success)' },
-                            amount: numberOrZero(item.actual_amount),
-                            isPositive: true,
-                        });
-                    } else if (item.debt_entry_id) {
-                        items.push({
-                            key: `bi-${item.id}`,
-                            ts,
-                            title: item.label,
-                            meta: `Cuentas · debo · ${relativeTime(ts)}`,
-                            tag: 'Debo',
-                            tint: { soft: 'var(--danger-soft)', solid: 'var(--danger)' },
-                            amount: numberOrZero(item.actual_amount),
-                            isPositive: false,
-                        });
-                    } else {
-                        const isIncomeLike = item.section === 'income' || item.section === 'saving';
-                        items.push({
-                            key: `bi-${item.id}`,
-                            ts,
-                            title: item.label,
-                            meta: `Presupuesto · ${relativeTime(ts)}`,
-                            tag: 'Presupuesto',
-                            tint: { soft: 'var(--accent-soft)', solid: 'var(--accent)' },
-                            amount: numberOrZero(item.actual_amount),
-                            isPositive: isIncomeLike,
-                        });
-                    }
-                });
+        if (pendingFriendRequests.length > 0) {
+            items.unshift({
+                key: 'fr',
+                title: `${pendingFriendRequests.length} ${pendingFriendRequests.length === 1 ? 'solicitud de amistad' : 'solicitudes de amistad'}`,
+                hint: 'Acéptalas para dividir gastos',
+                color: '#0a84ff',
+                icon: <Bell size={19} color="#fff" />,
+                run: () => onNavigate('friends'),
             });
         }
+        return items.slice(0, 5);
+    }, [expenses, pendingFriendRequests, currentUser?.id, onOpenExpense, onNavigate]);
 
-        return items
-            .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())
-            .slice(0, 7);
-    }, [expenses, budget]);
+    // Feed cronológico que cruza gastos compartidos, presupuesto y cuentas.
+    const feed = useMemo(() => {
+        const rows = [];
+        expenses.slice(0, 6).forEach((e) => {
+            const ts = e.updated_at || e.created_at;
+            if (!ts) return;
+            const stake = getExpenseStake(e, currentUser?.id);
+            rows.push({
+                key: `e${e.id}`, ts, title: e.description,
+                meta: `${e.paid_by_me ? 'Pagaste tú' : `Pagó ${displayNameOf(e.paid_by)}`} · ${relativeDay(ts)}`,
+                tag: 'Gastos', color: '#af52de', onClick: () => onOpenExpense(e),
+                // Lo que importa de un gasto compartido es TU posición, no el total.
+                display: stake.kind === 'owed' ? `+${formatCurrency(stake.amount)}` : stake.kind === 'owe' || stake.kind === 'waiting' ? `−${formatCurrency(stake.amount)}` : formatCurrency(e.amount),
+                tone: stake.kind === 'owed' ? 'var(--success)' : stake.kind === 'owe' ? 'var(--danger)' : stake.kind === 'waiting' ? 'var(--info)' : 'var(--text-muted)',
+            });
+        });
+        Object.values(budget?.sections || {}).forEach((bucket) => {
+            (bucket.items || []).forEach((item) => {
+                if (item.is_pending || item.is_split_synced) return;
+                const ts = item.created_at || item.updated_at;
+                const amt = numberOrZero(item.actual_amount);
+                if (!ts || amt === 0) return;
+                const base = { key: `b${item.id}`, ts, title: item.label, amount: amt };
+                const out = (r) => ({ ...r, display: `${r.positive ? '+' : '−'}${formatCurrency(amt)}`, tone: r.positive ? 'var(--success)' : 'var(--text-primary)' });
+                if (item.libreta_entry_id) rows.push(out({ ...base, meta: `Me deben · ${relativeDay(ts)}`, tag: 'Cuentas', positive: true, color: '#0a84ff', onClick: () => onNavigate('accounts') }));
+                else if (item.debt_entry_id) rows.push(out({ ...base, meta: `Debo · ${relativeDay(ts)}`, tag: 'Cuentas', positive: false, color: '#ff9500', onClick: () => onNavigate('accounts') }));
+                else rows.push(out({ ...base, meta: `Presupuesto · ${relativeDay(ts)}`, tag: 'Presupuesto', positive: item.section === 'income' || item.section === 'saving', color: '#34c759', onClick: () => onNavigate('personal') }));
+            });
+        });
+        return rows.sort((a, b) => new Date(b.ts) - new Date(a.ts)).slice(0, 7);
+    }, [expenses, budget, currentUser?.id, onOpenExpense, onNavigate]);
 
     return (
-        <section className="space-y-5">
-            <div className="flex items-start justify-between gap-4 px-2">
-                <div>
-                    <p className="text-[11px] uppercase tracking-[0.16em] font-bold text-muted capitalize">{todayLabel}</p>
-                    <h2 className="mt-1 text-2xl font-black text-primary tracking-tight">Hola, {greetingName}</h2>
-                </div>
-                <button
-                    type="button"
-                    onClick={loadAll}
-                    disabled={isLoading}
-                    className="p-2.5 rounded-full transition-all disabled:opacity-50 shrink-0"
-                    style={{ background: 'var(--surface-soft)', border: '1px solid var(--surface-border)', color: 'var(--text-secondary)' }}
-                    aria-label="Refrescar"
-                >
-                    {isLoading ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
-                </button>
-            </div>
+        <section className="animate-fade-up">
+            <ScreenHeader
+                title="Inicio"
+                subtitle={subtitle}
+                leading={
+                    <button type="button" onClick={onOpenAccount} aria-label="Cuenta" className="rounded-full transition-transform active:scale-95 xl:hidden">
+                        <Avatar name={displayNameOf(currentUser)} size={34} />
+                    </button>
+                }
+                actions={<NavAction label="Agregar" tint onClick={onAdd}><Plus size={20} strokeWidth={2.4} /></NavAction>}
+            />
 
-            {/* Hero: patrimonio neto -- el número que amarra todo */}
-            <GlassCard theme={theme} className="p-6 sm:p-8">
-                <div className="flex items-center gap-2 mb-1">
-                    <Wallet size={14} className="text-(--accent)" />
-                    <p className="text-[11px] uppercase tracking-[0.12em] font-bold text-muted">Patrimonio neto</p>
-                </div>
-                <p
-                    className="tabular font-black mt-2 text-[38px] sm:text-[46px] leading-none"
-                    style={{ color: netWorth >= 0 ? 'var(--success)' : 'var(--danger)' }}
-                >
+            <div className="ios-card p-5">
+                <p className="t-footnote text-secondary">Patrimonio neto</p>
+                <p className="t-money-xl mt-1" style={{ color: netWorth >= 0 ? 'var(--text-primary)' : 'var(--danger)' }}>
                     <AnimatedNumber value={netWorth} />
                 </p>
-                <p className="text-[12.5px] text-muted mt-3 leading-snug">
-                    Caja + Ahorros + te deben (Split + Libreta) − debes. Como activo, no como caja disponible: mientras no se confirme, es riesgo, no efectivo.
-                </p>
-            </GlassCard>
-
-            {/* Dominios: cada sección con su cifra clave, un click de distancia */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
-                <DomainCard
-                    theme={theme}
-                    icon={<LayoutGrid size={16} />}
-                    label="Compartido"
-                    figure={<>{netBalance >= 0 ? '+' : '−'}{formatCurrency(Math.abs(netBalance))}</>}
-                    note={netBalance >= 0 ? 'Te deben en total' : 'Debes en total'}
-                    tint={{ soft: 'var(--info-soft)', solid: 'var(--info)' }}
-                    onClick={onOpenSplit}
-                />
-                <DomainCard
-                    theme={theme}
-                    icon={<Wallet size={16} />}
-                    label="Presupuesto"
-                    figure={formatCurrency(monthlyMargin)}
-                    note="Disponible para gastar este mes"
-                    tint={{ soft: 'var(--accent-soft)', solid: 'var(--accent)' }}
-                    onClick={onOpenBudget}
-                />
-                <DomainCard
-                    theme={theme}
-                    icon={<PiggyBank size={16} />}
-                    label="Ahorros"
-                    figure={formatCurrency(savings)}
-                    note="Aparte -- tiene meta, no es para gastar"
-                    tint={{ soft: 'var(--success-soft)', solid: 'var(--success)' }}
-                    onClick={onOpenBudget}
-                />
-                <DomainCard
-                    theme={theme}
-                    icon={<NotebookText size={16} />}
-                    label="Cuentas"
-                    figure={<>{cuentasNet >= 0 ? '+' : '−'}{formatCurrency(Math.abs(cuentasNet))}</>}
-                    note={`Te deben ${formatCurrency(libretaPending)} · debes ${formatCurrency(debtPending)}`}
-                    tint={{ soft: 'var(--warning-soft)', solid: 'var(--warning)' }}
-                    onClick={onOpenAccounts}
-                />
-                <DomainCard
-                    theme={theme}
-                    icon={<Users size={16} />}
-                    label="Amigos"
-                    figure={friends.length}
-                    note={requestsCount > 0 ? `${requestsCount} solicitud${requestsCount !== 1 ? 'es' : ''} pendiente${requestsCount !== 1 ? 's' : ''}` : 'Contactos activos'}
-                    tint={{ soft: 'var(--brand-soft)', solid: 'var(--brand)' }}
-                    onClick={onOpenFriends}
-                />
+                <p className="t-subhead mt-2 text-secondary">Todo lo tuyo menos lo que debes. Lo que aún no te pagan cuenta aquí, pero no como dinero disponible.</p>
             </div>
 
-            {/* Feed: la interconexión real -- todo lo reciente, de todas las secciones, en orden */}
-            <div>
-                <h3 className="text-lg font-bold text-primary mb-3 px-2">Movimientos recientes</h3>
-                <GlassCard theme={theme} className="overflow-hidden">
-                    {isLoading && feed.length === 0 ? (
-                        <div className="flex items-center justify-center py-12">
-                            <Loader2 size={18} className="animate-spin text-muted" />
-                        </div>
-                    ) : feed.length === 0 ? (
-                        <div className="py-12 px-5 text-center">
-                            <p className="text-sm text-muted">
-                                Todavía no hay movimientos este mes. Empieza registrando un gasto o cargando tu presupuesto.
-                            </p>
-                        </div>
-                    ) : (
-                        feed.map((row) => (
-                            <FeedRow
-                                key={row.key}
-                                title={row.title}
-                                meta={row.meta}
-                                tag={row.tag}
-                                tint={row.tint}
-                                amount={row.amount}
-                                isPositive={row.isPositive}
-                            />
-                        ))
-                    )}
-                </GlassCard>
+            <p className="t-section px-4 pb-2 pt-6">De qué se compone</p>
+            <div className="ios-group">
+                <BreakdownRow icon={<Wallet size={19} color="#fff" />} color="#34c759" label="Caja" hint="Tu saldo este mes" value={formatCurrency(cash)} onClick={() => onNavigate('personal')} />
+                <BreakdownRow icon={<PiggyBank size={19} color="#fff" />} color="#ff9f0a" label="Ahorros" hint="Con meta, no es para gastar" value={formatCurrency(savings)} onClick={() => onNavigate('personal')} />
+                <BreakdownRow icon={<HandCoins size={19} color="#fff" />} color="#0a84ff" label="Te deben" hint="Gastos compartidos y préstamos" value={formatCurrency(receivable)} tone={receivable >= 0 ? 'var(--success)' : 'var(--danger)'} onClick={() => onNavigate(libretaPending > Math.abs(splitNet) ? 'accounts' : 'expenses')} />
+                <BreakdownRow icon={<Receipt size={19} color="#fff" />} color="#ff3b30" label="Debes" hint="Tus deudas registradas" value={formatCurrency(debtPending)} tone={debtPending > 0 ? 'var(--danger)' : undefined} onClick={() => onNavigate('accounts')} />
             </div>
 
-            <button
-                type="button"
-                onClick={onOpenBudget}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[13px] font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))', boxShadow: '0 12px 28px -14px rgba(232, 24, 156, 0.55)' }}
-            >
-                Ver Presupuesto del mes <ArrowRight size={14} />
+            <button type="button" onClick={() => onNavigate('personal')} className="ios-card mt-4 flex w-full items-center gap-3 p-4 text-left transition-transform active:scale-[0.99]">
+                <IconSquare color="#af52de"><PieChart size={19} color="#fff" /></IconSquare>
+                <span className="min-w-0 flex-1">
+                    <span className="t-footnote block text-secondary">Disponible para gastar este mes</span>
+                    <span className="t-money-lg block" style={{ color: monthlyMargin >= 0 ? 'var(--text-primary)' : 'var(--danger)' }}>{formatCurrency(monthlyMargin)}</span>
+                </span>
+                <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
             </button>
+
+            {attention.length > 0 && (
+                <>
+                    <p className="t-section px-4 pb-2 pt-6">Requiere tu atención</p>
+                    <div className="ios-group">
+                        {attention.map((a) => (
+                            <button key={a.key} type="button" className="ios-row" onClick={a.run}>
+                                <IconSquare color={a.color}>{a.icon}</IconSquare>
+                                <span className="min-w-0 flex-1">
+                                    <span className="t-body block font-medium">{a.title}</span>
+                                    <span className="t-footnote block truncate text-secondary">{a.hint}</span>
+                                </span>
+                                <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
+                            </button>
+                        ))}
+                    </div>
+                </>
+            )}
+
+            <p className="t-section px-4 pb-2 pt-6">Movimientos recientes</p>
+            {isLoading && feed.length === 0 ? (
+                <div className="ios-card flex justify-center py-10"><Loader2 size={20} className="animate-spin" style={{ color: 'var(--text-muted)' }} /></div>
+            ) : feed.length === 0 ? (
+                <div className="ios-card px-6 py-10 text-center">
+                    <p className="t-subhead text-secondary">Todavía no hay movimientos. Toca + para registrar un gasto, un ingreso o una deuda.</p>
+                </div>
+            ) : (
+                <div className="ios-group">
+                    {feed.map((r) => (
+                        <button key={r.key} type="button" className="ios-row" onClick={r.onClick}>
+                            <IconSquare color={r.color}><span className="text-[11px] font-bold text-white">{r.tag.slice(0, 1)}</span></IconSquare>
+                            <span className="min-w-0 flex-1">
+                                <span className="t-body block truncate font-medium">{r.title}</span>
+                                <span className="t-footnote block truncate text-secondary">{r.meta}</span>
+                            </span>
+                            <span className="t-headline tabular" style={{ color: r.tone }}>{r.display}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
         </section>
     );
 };

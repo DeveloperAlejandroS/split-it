@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useHeldValue } from './ui/useHeldValue';
-import { CheckCircle2, Clock, Loader2 } from 'lucide-react';
+import { CheckCircle, Clock, CircleNotch } from '@phosphor-icons/react';
 import { Sheet } from './ui/Sheet';
 import { Avatar } from './ui/Avatar';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -35,7 +35,7 @@ const AbonoForm = ({ remaining, busy, onSubmit, onCancel }) => {
         <div className="mt-3 flex items-center gap-2">
             <CurrencyInput value={amount} onChange={setAmount} autoFocus className="field" />
             <button type="button" className="btn btn-success btn-sm shrink-0" disabled={!valid || busy} onClick={() => onSubmit(value)}>
-                {busy ? <Loader2 size={16} className="animate-spin" /> : 'Registrar'}
+                {busy ? <CircleNotch size={16} className="animate-spin" /> : 'Registrar'}
             </button>
             <button type="button" className="btn btn-gray btn-sm shrink-0" onClick={onCancel}>Cancelar</button>
         </div>
@@ -45,22 +45,22 @@ const AbonoForm = ({ remaining, busy, onSubmit, onCancel }) => {
 // Resumen en una frase de "dónde estás parado" + la acción principal.
 const PositionCard = ({ expense, stake, payerName, busy, onClaim }) => {
     const copy = {
-        owed: { title: `Te deben ${formatCurrency(stake.amount)}`, sub: stake.awaiting > 0 ? `${stake.awaiting} ${stake.awaiting === 1 ? 'persona avisó' : 'personas avisaron'} que ya pagó — confírmalo abajo.` : 'Cuando alguien te pague, márcalo como pagado.', color: 'var(--success)', bg: 'var(--success-soft)' },
-        owe: { title: `Le debes ${formatCurrency(stake.amount)} a ${payerName}`, sub: 'Cuando le pagues, avísale para que lo confirme.', color: 'var(--danger)', bg: 'var(--danger-soft)' },
+        owed: { title: `Te deben ${formatCurrency(stake.amount)}`, sub: stake.awaiting > 0 ? `${stake.awaiting} ${stake.awaiting === 1 ? 'persona avisó' : 'personas avisaron'} que ya pagó. Confírmalo abajo.` : 'Cuando alguien te pague, márcalo como pagado.', color: 'var(--pos)', bg: 'var(--pos-soft)' },
+        owe: { title: `Le debes ${formatCurrency(stake.amount)} a ${payerName}`, sub: 'Cuando le pagues, avísale para que lo confirme.', color: 'var(--neg)', bg: 'var(--neg-soft)' },
         waiting: { title: `Avisaste que pagaste ${formatCurrency(stake.amount)}`, sub: `Falta que ${payerName} lo confirme.`, color: 'var(--info)', bg: 'var(--info-soft)' },
         settled: { title: 'Todo saldado', sub: 'Nadie debe nada en este gasto.', color: 'var(--success)', bg: 'var(--success-soft)' },
     }[stake.kind];
 
     return (
         <div className="rounded-[18px] p-4" style={{ background: copy.bg }}>
-            <p className="t-headline flex items-center gap-2" style={{ color: copy.color }}>
-                {stake.kind === 'settled' ? <CheckCircle2 size={18} /> : stake.kind === 'waiting' ? <Clock size={18} /> : null}
+            <p className="heading flex items-center gap-2" style={{ color: copy.color }}>
+                {stake.kind === 'settled' ? <CheckCircle size={18} /> : stake.kind === 'waiting' ? <Clock size={18} /> : null}
                 {copy.title}
             </p>
-            <p className="t-footnote mt-1 text-secondary">{copy.sub}</p>
+            <p className="small mt-1 text-secondary">{copy.sub}</p>
             {stake.kind === 'owe' && !expense.paid_by_me && (
                 <button type="button" className="btn btn-primary btn-block mt-3" disabled={busy} onClick={onClaim}>
-                    {busy ? <Loader2 size={18} className="animate-spin" /> : 'Ya pagué'}
+                    {busy ? <CircleNotch size={18} className="animate-spin" /> : 'Ya pagué'}
                 </button>
             )}
         </div>
@@ -107,9 +107,9 @@ export const ExpenseDetailSheet = ({
                 {expense && (
                     <>
                         <div className="pb-4 pt-1">
-                            <h3 className="t-title">{expense.description}</h3>
-                            <p className="t-money-lg mt-1">{formatCurrency(expense.amount)}</p>
-                            <p className="t-footnote mt-1 text-secondary">
+                            <h3 className="title">{expense.description}</h3>
+                            <p className="money-lg mt-1">{formatCurrency(expense.amount)}</p>
+                            <p className="small mt-1 text-secondary">
                                 {isOwner ? 'Pagaste tú' : `Pagó ${payerName}`} · {relativeDay(expense.created_at)}
                             </p>
                         </div>
@@ -122,8 +122,8 @@ export const ExpenseDetailSheet = ({
                             onClaim={() => run('claim', () => onClaim(expense.id))}
                         />
 
-                        <p className="t-section px-4 pb-2 pt-6">Cómo se divide</p>
-                        <div className="ios-group">
+                        <p className="heading px-1 pb-2 pt-6">Cómo se divide</p>
+                        <div className="stack">
                             {ordered.map((p) => {
                                 const status = getParticipantStatus(p);
                                 const isPayer = p.user_id === ownerId;
@@ -145,14 +145,14 @@ export const ExpenseDetailSheet = ({
                                 const statusColor = status === PARTICIPANT_STATUS.PAID || isPayer ? 'var(--text-secondary)' : status === PARTICIPANT_STATUS.AWAITING_CONFIRMATION ? 'var(--info)' : 'var(--warning)';
 
                                 return (
-                                    <div key={p.user_id} className="px-4 py-3">
+                                    <div key={p.user_id} className="card p-4">
                                         <div className="flex items-center gap-3">
                                             <Avatar name={name} size={40} />
                                             <span className="min-w-0 flex-1">
-                                                <span className="t-body block truncate font-medium">{name}</span>
-                                                <span className="t-footnote block" style={{ color: statusColor }}>{statusLine}</span>
+                                                <span className="body block truncate font-medium">{name}</span>
+                                                <span className="small block" style={{ color: statusColor }}>{statusLine}</span>
                                             </span>
-                                            <span className="t-headline tabular">{formatCurrency(owed)}</span>
+                                            <span className="heading tabular">{formatCurrency(owed)}</span>
                                         </div>
 
                                         {!isPayer && status !== PARTICIPANT_STATUS.PAID && paid + claim > 0 && <ProgressBar owed={owed} paid={paid} claim={claim} />}
@@ -160,7 +160,7 @@ export const ExpenseDetailSheet = ({
                                         {isOwner && !isPayer && status === PARTICIPANT_STATUS.AWAITING_CONFIRMATION && (
                                             <div className="mt-3 flex gap-2">
                                                 <button type="button" className="btn btn-success btn-sm flex-1" disabled={busy} onClick={() => run(key, () => onConfirmPayment(expense.id, p.user_id))}>
-                                                    {busy ? <Loader2 size={16} className="animate-spin" /> : `Confirmar ${formatCurrency(claim)}`}
+                                                    {busy ? <CircleNotch size={16} className="animate-spin" /> : `Confirmar ${formatCurrency(claim)}`}
                                                 </button>
                                                 <button type="button" className="btn btn-gray btn-sm" disabled={busy} onClick={() => run(key, () => onRejectPayment(expense.id, p.user_id))}>No me pagó</button>
                                             </div>
@@ -169,7 +169,7 @@ export const ExpenseDetailSheet = ({
                                         {isOwner && !isPayer && status === PARTICIPANT_STATUS.PENDING && abonoKey !== key && (
                                             <div className="mt-3 flex gap-2">
                                                 <button type="button" className="btn btn-tinted btn-sm flex-1" disabled={busy} onClick={() => run(key, () => onMarkPaid(expense.id, p.user_id))}>
-                                                    {busy ? <Loader2 size={16} className="animate-spin" /> : `Me pagó ${formatCurrency(remaining)}`}
+                                                    {busy ? <CircleNotch size={16} className="animate-spin" /> : `Me pagó ${formatCurrency(remaining)}`}
                                                 </button>
                                                 {remaining > 1 && <button type="button" className="btn btn-gray btn-sm" onClick={() => setAbonoKey(key)}>Otro monto</button>}
                                             </div>

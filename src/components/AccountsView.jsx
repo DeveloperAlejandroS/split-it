@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronRight, HandCoins, Plus } from 'lucide-react';
-import { ScreenHeader, NavAction } from './ui/ScreenHeader';
+import { ArrowDownLeft, ArrowUpRight, CaretRight, HandCoins, Plus } from '@phosphor-icons/react';
+import { ScreenHeader } from './ui/ScreenHeader';
 import { Avatar } from './ui/Avatar';
 import { EmptyState } from './ui/EmptyState';
+import { ProgressBar } from './ui/ProgressBar';
 import { LedgerEntrySheet } from './LedgerSheets';
 import { LEDGER } from './ledgerConfig';
 import { API_URL } from '../config/api';
@@ -19,27 +20,24 @@ const fetchLedger = async (path) => {
 
 const EntryRow = ({ entry, kind, onOpen }) => {
     const name = entry[LEDGER[kind].nameKey];
-    const pct = entry.amount_owed > 0 ? Math.min(100, (entry.amount_paid / entry.amount_owed) * 100) : 0;
+    const pct = entry.amount_owed > 0 ? (entry.amount_paid / entry.amount_owed) * 100 : 0;
     const paid = entry.status === 'paid';
+    const color = kind === 'owed' ? 'var(--pos)' : 'var(--neg)';
     return (
-        <button type="button" className="ios-row" onClick={() => onOpen(entry)}>
-            <Avatar name={name} size={44} />
+        <button type="button" className="row" onClick={() => onOpen(entry)} style={{ flexWrap: 'wrap' }}>
+            <Avatar name={name} size={46} />
             <span className="min-w-0 flex-1">
-                <span className="t-body block truncate font-medium">{name}</span>
-                <span className="t-footnote block truncate text-secondary">
-                    {entry.description || (entry.amount_paid > 0 ? `${kind === 'owed' ? 'Ha pagado' : 'Has pagado'} ${formatCurrency(entry.amount_paid)}` : 'Sin abonos')}
+                <span className="body block truncate font-semibold">{name}</span>
+                <span className="small block truncate">
+                    {entry.description || (entry.amount_paid > 0 ? `${kind === 'owed' ? 'Ha pagado' : 'Has pagado'} ${formatCurrency(entry.amount_paid)}` : 'Sin abonos todavía')}
                 </span>
-                {!paid && entry.amount_paid > 0 && (
-                    <span className="mt-1.5 block h-1 w-full overflow-hidden rounded-full" style={{ background: 'var(--fill)' }}>
-                        <span className="block h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--success)' }} />
-                    </span>
-                )}
             </span>
             <span className="shrink-0 text-right">
-                <span className="t-caption block text-secondary">{paid ? 'saldada' : 'falta'}</span>
-                {!paid && <span className="t-headline tabular block" style={{ color: kind === 'owed' ? 'var(--success)' : 'var(--danger)' }}>{formatCurrency(entry.remaining)}</span>}
+                <span className="tiny block">{paid ? 'Saldada' : 'Falta'}</span>
+                {!paid && <span className="money block" style={{ color }}>{formatCurrency(entry.remaining)}</span>}
             </span>
-            <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} className="shrink-0" />
+            <CaretRight size={16} weight="bold" style={{ color: 'var(--ink-3)' }} className="shrink-0" />
+            {!paid && entry.amount_paid > 0 && <span className="block w-full pt-1"><ProgressBar pct={pct} tone={kind === 'owed' ? 'pos' : 'neg'} height={6} /></span>}
         </button>
     );
 };
@@ -54,9 +52,7 @@ export const AccountsView = ({ segment, onSegmentChange, refreshKey, onAdd }) =>
     const load = useCallback(async () => {
         try {
             const [a, b] = await Promise.all([fetchLedger('/libreta'), fetchLedger('/debts')]);
-            setOwed(a);
-            setOwe(b);
-            setError('');
+            setOwed(a); setOwe(b); setError('');
         } catch (err) {
             setError(err.message);
         } finally {
@@ -72,70 +68,72 @@ export const AccountsView = ({ segment, onSegmentChange, refreshKey, onAdd }) =>
     const pending = useMemo(() => data.entries.filter((e) => e.status !== 'paid'), [data]);
     const done = useMemo(() => data.entries.filter((e) => e.status === 'paid'), [data]);
     const openEntry = data.entries.find((e) => e.id === openId) || null;
+    const net = (owed.total_pending || 0) - (owe.total_pending || 0);
 
-    const owedTotal = owed.total_pending || 0;
-    const oweTotal = owe.total_pending || 0;
-    const net = owedTotal - oweTotal;
+    const renderWallet = ({ kind, grad, shadow, icon, label, total }) => {
+        const active = segment === kind;
+        return (
+            <button
+                key={kind}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onSegmentChange(kind)}
+                className={`tile ${grad} p-4 text-left transition-all active:scale-[0.97]`}
+                style={{
+                    boxShadow: active ? shadow : 'none',
+                    opacity: active ? 1 : 0.72,
+                    transform: active ? 'translateY(-3px)' : 'none',
+                    transitionDuration: '320ms',
+                    transitionTimingFunction: 'var(--spring)',
+                }}
+            >
+                <span className="bubble h-10 w-10 rounded-full" style={{ background: 'rgba(255,255,255,0.28)' }}>{icon}</span>
+                <span className="small mt-4 block" style={{ color: 'rgba(255,255,255,0.92)' }}>{label}</span>
+                <span className="money-lg block">{formatCurrency(total)}</span>
+            </button>
+        );
+    };
 
     return (
-        <section className="animate-fade-up">
-            <ScreenHeader
-                title="Cuentas"
-                subtitle="Lo que te deben y lo que debes, fuera de los gastos compartidos"
-                actions={<NavAction label={LEDGER[segment].addTitle} tint onClick={onAdd}><Plus size={20} strokeWidth={2.4} /></NavAction>}
-            />
+        <section>
+            <ScreenHeader title="Cuentas" subtitle="Préstamos y deudas fuera de los gastos compartidos" />
 
-            <div className="ios-card p-5">
-                <p className="t-footnote text-secondary">Neto</p>
-                <p className="t-money-xl mt-1" style={{ color: net > 0.5 ? 'var(--success)' : net < -0.5 ? 'var(--danger)' : 'var(--text-primary)' }}>
-                    {net > 0.5 ? '+' : net < -0.5 ? '−' : ''}{formatCurrency(Math.abs(net))}
+            <div className="stagger flex flex-col gap-5">
+                <div className="grid grid-cols-2 gap-3">
+                    {renderWallet({ kind: 'owed', grad: 'tile-teal', shadow: '0 18px 30px -14px rgba(20, 167, 196, 0.75)', icon: <ArrowDownLeft size={20} weight="bold" />, label: 'Me deben', total: owed.total_pending || 0 })}
+                    {renderWallet({ kind: 'owe', grad: 'tile-coral', shadow: '0 18px 30px -14px rgba(255, 106, 61, 0.75)', icon: <ArrowUpRight size={20} weight="bold" />, label: 'Debo', total: owe.total_pending || 0 })}
+                </div>
+
+                <p className="small px-1">
+                    Neto: <strong style={{ color: net >= 0 ? 'var(--pos)' : 'var(--neg)' }}>{net > 0 ? '+' : net < 0 ? '−' : ''}{formatCurrency(Math.abs(net))}</strong>. {segment === 'owed' ? 'Lo que otros te deben fuera de la app.' : 'Lo que debes a personas o entidades.'}
                 </p>
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                    <button type="button" onClick={() => onSegmentChange('owed')} className="rounded-[14px] p-3 text-left transition-transform active:scale-[0.98]" style={{ background: 'var(--success-soft)' }}>
-                        <span className="t-caption block" style={{ color: 'var(--success)' }}>Me deben</span>
-                        <span className="t-headline tabular block" style={{ color: 'var(--success)' }}>{formatCurrency(owedTotal)}</span>
-                    </button>
-                    <button type="button" onClick={() => onSegmentChange('owe')} className="rounded-[14px] p-3 text-left transition-transform active:scale-[0.98]" style={{ background: 'var(--danger-soft)' }}>
-                        <span className="t-caption block" style={{ color: 'var(--danger)' }}>Debo</span>
-                        <span className="t-headline tabular block" style={{ color: 'var(--danger)' }}>{formatCurrency(oweTotal)}</span>
-                    </button>
-                </div>
-            </div>
 
-            <div className="segmented mt-6" role="group" aria-label="Tipo de cuenta">
-                <button type="button" aria-pressed={segment === 'owed'} onClick={() => onSegmentChange('owed')}>Me deben</button>
-                <button type="button" aria-pressed={segment === 'owe'} onClick={() => onSegmentChange('owe')}>Debo</button>
-            </div>
+                {error && <p className="small rounded-[16px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
 
-            {error && <p className="t-subhead mt-4 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
-
-            {loaded && data.entries.length === 0 ? (
-                <div className="mt-4">
+                {loaded && data.entries.length === 0 ? (
                     <EmptyState
-                        icon={<HandCoins size={26} />}
+                        icon={<HandCoins size={32} weight="duotone" />}
                         title={segment === 'owed' ? 'Nadie te debe nada' : 'No debes nada'}
-                        message={segment === 'owed'
-                            ? 'Anota aquí los préstamos que haces a gente que no usa Split.it, y abónalos cuando te paguen.'
-                            : 'Registra tarjetas, préstamos o lo que le debas a alguien y ve abonando poco a poco.'}
-                        action={<button type="button" className="btn btn-primary" onClick={onAdd}>{LEDGER[segment].addTitle}</button>}
+                        message={segment === 'owed' ? 'Anota aquí los préstamos que haces a gente que no usa Split.it y abónalos cuando te paguen.' : 'Registra tarjetas, préstamos o lo que le debas a alguien y ve abonando poco a poco.'}
+                        action={<button type="button" className="btn btn-primary" onClick={onAdd}><Plus size={18} weight="bold" /> {LEDGER[segment].addTitle}</button>}
                     />
-                </div>
-            ) : (
-                <>
-                    {pending.length > 0 && (
-                        <>
-                            <p className="t-section px-4 pb-2 pt-5">Pendientes</p>
-                            <div className="ios-group">{pending.map((e) => <EntryRow key={e.id} entry={e} kind={segment} onOpen={(en) => setOpenId(en.id)} />)}</div>
-                        </>
-                    )}
-                    {done.length > 0 && (
-                        <>
-                            <p className="t-section px-4 pb-2 pt-6">Saldadas</p>
-                            <div className="ios-group">{done.map((e) => <EntryRow key={e.id} entry={e} kind={segment} onOpen={(en) => setOpenId(en.id)} />)}</div>
-                        </>
-                    )}
-                </>
-            )}
+                ) : (
+                    <>
+                        {pending.length > 0 && (
+                            <div>
+                                <h2 className="title mb-3">Pendientes</h2>
+                                <div className="stack">{pending.map((e) => <EntryRow key={e.id} entry={e} kind={segment} onOpen={(en) => setOpenId(en.id)} />)}</div>
+                            </div>
+                        )}
+                        {done.length > 0 && (
+                            <div>
+                                <h2 className="title mb-3">Saldadas</h2>
+                                <div className="stack" style={{ opacity: 0.8 }}>{done.map((e) => <EntryRow key={e.id} entry={e} kind={segment} onOpen={(en) => setOpenId(en.id)} />)}</div>
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
 
             <LedgerEntrySheet entry={openEntry} kind={segment} onClose={() => setOpenId(null)} onChanged={load} />
         </section>

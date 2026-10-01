@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, CircleNotch } from '@phosphor-icons/react';
 import { Sheet } from './ui/Sheet';
 import { Avatar } from './ui/Avatar';
 import { EmptyState } from './ui/EmptyState';
@@ -150,7 +150,7 @@ export const CreateExpenseSheet = ({
             <Sheet isOpen={isOpen} onClose={onClose} title={isEdit ? 'Editar gasto' : 'Nuevo gasto'} size="lg">
                 {/* Monto: el dato principal, grande y al centro (como Apple Pay) */}
                 <div className="py-4 text-center">
-                    <label htmlFor="expense-amount" className="t-footnote text-secondary">¿Cuánto pagaste?</label>
+                    <label htmlFor="expense-amount" className="small text-secondary">¿Cuánto pagaste?</label>
                     <CurrencyInput
                         id="expense-amount"
                         value={amount}
@@ -173,12 +173,12 @@ export const CreateExpenseSheet = ({
                 />
 
                 {isEdit && hasPaymentsToReset && (
-                    <p className="t-footnote mt-3 rounded-[12px] p-3" style={{ background: 'var(--warning-soft)', color: 'var(--warning)' }}>
+                    <p className="small mt-3 rounded-[12px] p-3" style={{ background: 'var(--warning-soft)', color: 'var(--warning)' }}>
                         Este gasto ya tiene pagos. Si cambias monto o personas, los pagos vuelven a pendiente.
                     </p>
                 )}
 
-                <p className="t-section px-4 pb-2 pt-6">Con quién</p>
+                <p className="heading px-1 pb-2 pt-6">Con quién</p>
                 {friendUsers.length === 0 ? (
                     <EmptyState
                         title="Primero agrega amigos"
@@ -190,15 +190,15 @@ export const CreateExpenseSheet = ({
                         {friendUsers.length > 6 && (
                             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar amigo" aria-label="Buscar amigo" className="field mb-3" />
                         )}
-                        <div className="ios-group">
+                        <div className="stack">
                             {filteredFriends.map((f) => {
                                 const on = selected.includes(f.id);
                                 return (
-                                    <button key={f.id} type="button" className="ios-row" role="checkbox" aria-checked={on} onClick={() => toggle(f.id)}>
+                                    <button key={f.id} type="button" className="row" role="checkbox" aria-checked={on} onClick={() => toggle(f.id)}>
                                         <Avatar name={f.displayName} size={40} />
                                         <span className="min-w-0 flex-1">
-                                            <span className="t-body block truncate font-medium">{f.displayName}</span>
-                                            {f.username && <span className="t-footnote block truncate text-secondary">@{f.username}</span>}
+                                            <span className="body block truncate font-medium">{f.displayName}</span>
+                                            {f.username && <span className="small block truncate text-secondary">@{f.username}</span>}
                                         </span>
                                         <span
                                             className="flex h-6 w-6 items-center justify-center rounded-full transition-all"
@@ -208,26 +208,26 @@ export const CreateExpenseSheet = ({
                                                 transform: on ? 'scale(1)' : 'scale(0.96)',
                                             }}
                                         >
-                                            {on && <Check size={15} color="#fff" strokeWidth={3} />}
+                                            {on && <Check size={15} color="#fff" />}
                                         </span>
                                     </button>
                                 );
                             })}
-                            {filteredFriends.length === 0 && <p className="t-subhead px-4 py-4 text-secondary">Nadie coincide con “{query}”.</p>}
+                            {filteredFriends.length === 0 && <p className="small px-4 py-4 text-secondary">Nadie coincide con “{query}”.</p>}
                         </div>
                     </>
                 )}
 
                 {selected.length > 0 && (
                     <>
-                        <p className="t-section px-4 pb-2 pt-6">Cómo se divide</p>
+                        <p className="heading px-1 pb-2 pt-6">Cómo se divide</p>
                         <div className="segmented" role="group" aria-label="Tipo de división">
                             <button type="button" aria-pressed={splitType === 'equal'} onClick={() => setSplitType('equal')}>Partes iguales</button>
                             <button type="button" aria-pressed={splitType === 'custom'} onClick={() => setSplitType('custom')}>Personalizado</button>
                         </div>
 
                         {splitType === 'equal' ? (
-                            <p className="t-subhead mt-3 px-1 text-secondary">
+                            <p className="small mt-3 px-1 text-secondary">
                                 {amountNumber > 0
                                     ? `Cada uno de los ${selected.length + 1} paga ${formatCurrency(equal.baseAmount)}.`
                                     : `Entre ${selected.length + 1} personas, incluyéndote.`}
@@ -235,11 +235,11 @@ export const CreateExpenseSheet = ({
                             </p>
                         ) : (
                             <>
-                                <div className="ios-group mt-3">
+                                <div className="stack mt-3">
                                     {selected.map((id) => (
-                                        <div key={id} className="ios-row">
+                                        <div key={id} className="row">
                                             <Avatar name={friendsById.get(id)?.displayName} size={36} />
-                                            <span className="t-body min-w-0 flex-1 truncate">{friendsById.get(id)?.displayName}</span>
+                                            <span className="body min-w-0 flex-1 truncate">{friendsById.get(id)?.displayName}</span>
                                             <CurrencyInput
                                                 value={customAmounts[id] ?? ''}
                                                 onChange={(v) => setCustomAmounts((prev) => ({ ...prev, [id]: v }))}
@@ -250,7 +250,7 @@ export const CreateExpenseSheet = ({
                                         </div>
                                     ))}
                                 </div>
-                                <p className="t-subhead mt-3 px-1" style={{ color: customOver ? 'var(--danger)' : 'var(--text-secondary)' }}>
+                                <p className="small mt-3 px-1" style={{ color: customOver ? 'var(--danger)' : 'var(--text-secondary)' }}>
                                     {customOver ? 'La suma supera el total del gasto.' : `Tu parte: ${formatCurrency(Math.max(myCustomShare, 0))}`}
                                 </p>
                             </>
@@ -258,13 +258,13 @@ export const CreateExpenseSheet = ({
                     </>
                 )}
 
-                {error && <p className="t-subhead mt-4 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
+                {error && <p className="small mt-4 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
 
                 <div className="mt-6">
                     <button type="button" className="btn btn-primary btn-block" disabled={Boolean(missing) || isSaving} onClick={submit}>
-                        {isSaving ? <Loader2 size={20} className="animate-spin" /> : isEdit ? 'Guardar cambios' : 'Crear gasto'}
+                        {isSaving ? <CircleNotch size={20} className="animate-spin" /> : isEdit ? 'Guardar cambios' : 'Crear gasto'}
                     </button>
-                    {missing && <p className="t-footnote mt-2 text-center text-secondary">{missing}</p>}
+                    {missing && <p className="small mt-2 text-center text-secondary">{missing}</p>}
                 </div>
             </Sheet>
 

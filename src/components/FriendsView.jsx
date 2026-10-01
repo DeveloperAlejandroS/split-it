@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Plus, Search, UserPlus, Users } from 'lucide-react';
+import { CircleNotch, Plus, MagnifyingGlass, UserPlus, UsersThree } from '@phosphor-icons/react';
 import { ScreenHeader, NavAction } from './ui/ScreenHeader';
 import { Avatar } from './ui/Avatar';
 import { EmptyState } from './ui/EmptyState';
@@ -70,7 +70,7 @@ const AddFriendSheet = ({ isOpen, onClose, token, onRefresh }) => {
     return (
         <Sheet isOpen={isOpen} onClose={onClose} title="Agregar amigo">
             <div className="relative">
-                <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+                <MagnifyingGlass size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input
                     type="search"
                     autoFocus
@@ -86,32 +86,32 @@ const AddFriendSheet = ({ isOpen, onClose, token, onRefresh }) => {
                 />
             </div>
 
-            {error && <p className="t-subhead mt-3 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
+            {error && <p className="small mt-3 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
 
             <div className="mt-4">
-                {searching && <div className="flex justify-center py-6"><Loader2 size={20} className="animate-spin" style={{ color: 'var(--text-muted)' }} /></div>}
-                {!searching && query.trim().length < 2 && <p className="t-subhead px-1 py-4 text-center text-secondary">Escribe al menos 2 letras para buscar.</p>}
-                {!searching && query.trim().length >= 2 && results.length === 0 && <p className="t-subhead px-1 py-4 text-center text-secondary">No encontramos a nadie con “{query.trim()}”.</p>}
+                {searching && <div className="flex justify-center py-6"><CircleNotch size={20} className="animate-spin" style={{ color: 'var(--text-muted)' }} /></div>}
+                {!searching && query.trim().length < 2 && <p className="small px-1 py-4 text-center text-secondary">Escribe al menos 2 letras para buscar.</p>}
+                {!searching && query.trim().length >= 2 && results.length === 0 && <p className="small px-1 py-4 text-center text-secondary">No encontramos a nadie con “{query.trim()}”.</p>}
                 {results.length > 0 && (
-                    <div className="ios-group">
+                    <div className="stack">
                         {results.map((u) => {
                             const status = sentIds.has(u.id) ? 'pending' : u.friendship_status;
                             return (
-                                <div key={u.id} className="ios-row">
+                                <div key={u.id} className="row">
                                     <Avatar name={displayNameOf(u)} size={44} />
                                     <span className="min-w-0 flex-1">
-                                        <span className="t-body block truncate font-medium">{displayNameOf(u)}</span>
-                                        {u.username && <span className="t-footnote block truncate text-secondary">@{u.username}</span>}
+                                        <span className="body block truncate font-medium">{displayNameOf(u)}</span>
+                                        {u.username && <span className="small block truncate text-secondary">@{u.username}</span>}
                                     </span>
                                     {status === 'accepted' ? (
-                                        <span className="t-footnote text-secondary">Ya son amigos</span>
+                                        <span className="small text-secondary">Ya son amigos</span>
                                     ) : status === 'pending' ? (
-                                        <span className="t-footnote text-secondary">Solicitud enviada</span>
+                                        <span className="small text-secondary">Solicitud enviada</span>
                                     ) : status === 'blocked' ? (
-                                        <span className="t-footnote text-secondary">No disponible</span>
+                                        <span className="small text-secondary">No disponible</span>
                                     ) : (
                                         <button type="button" className="btn btn-tinted btn-sm" disabled={sendingId === u.id} onClick={() => send(u.id)}>
-                                            {sendingId === u.id ? <Loader2 size={14} className="animate-spin" /> : <><UserPlus size={15} /> Agregar</>}
+                                            {sendingId === u.id ? <CircleNotch size={14} className="animate-spin" /> : <><UserPlus size={15} /> Agregar</>}
                                         </button>
                                     )}
                                 </div>
@@ -154,27 +154,27 @@ export const FriendsView = ({ friends, pendingRequests, balance, token, onRefres
             <ScreenHeader
                 title="Amigos"
                 subtitle="Con quienes compartes gastos"
-                actions={<NavAction label="Agregar amigo" tint onClick={() => onAddOpenChange(true)}><Plus size={20} strokeWidth={2.4} /></NavAction>}
+                actions={<NavAction label="Agregar amigo" tint onClick={() => onAddOpenChange(true)}><Plus size={20} /></NavAction>}
             />
 
-            {error && <p className="t-subhead mb-4 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
+            {error && <p className="small mb-4 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
 
             {pendingRequests.length > 0 && (
                 <>
-                    <p className="t-section px-4 pb-2">Solicitudes</p>
-                    <div className="ios-group mb-6">
+                    <p className="heading px-1 pb-2">Solicitudes</p>
+                    <div className="stack mb-6">
                         {pendingRequests.map((r) => {
                             const user = userOf(r);
                             const id = requestIdOf(r);
                             return (
-                                <div key={id} className="ios-row">
+                                <div key={id} className="row">
                                     <Avatar name={displayNameOf(user)} size={44} />
                                     <span className="min-w-0 flex-1">
-                                        <span className="t-body block truncate font-medium">{displayNameOf(user)}</span>
-                                        <span className="t-footnote block text-secondary">Quiere ser tu amigo</span>
+                                        <span className="body block truncate font-medium">{displayNameOf(user)}</span>
+                                        <span className="small block text-secondary">Quiere ser tu amigo</span>
                                     </span>
                                     <button type="button" className="btn btn-primary btn-sm" disabled={acceptingId === id} onClick={() => accept(id)}>
-                                        {acceptingId === id ? <Loader2 size={14} className="animate-spin" /> : 'Aceptar'}
+                                        {acceptingId === id ? <CircleNotch size={14} className="animate-spin" /> : 'Aceptar'}
                                     </button>
                                 </div>
                             );
@@ -185,33 +185,33 @@ export const FriendsView = ({ friends, pendingRequests, balance, token, onRefres
 
             {friends.length === 0 ? (
                 <EmptyState
-                    icon={<Users size={26} />}
+                    icon={<UsersThree size={26} />}
                     title="Aún no tienes amigos"
                     message="Agrégalos por nombre, usuario, correo o teléfono para empezar a dividir gastos."
                     action={<button type="button" className="btn btn-primary" onClick={() => onAddOpenChange(true)}>Agregar amigo</button>}
                 />
             ) : (
                 <>
-                    <p className="t-section px-4 pb-2">{friends.length} {friends.length === 1 ? 'amigo' : 'amigos'}</p>
-                    <div className="ios-group">
+                    <p className="heading px-1 pb-2">{friends.length} {friends.length === 1 ? 'amigo' : 'amigos'}</p>
+                    <div className="stack">
                         {friends.map((f, i) => {
                             const user = userOf(f);
                             const net = netByFriend.get(Number(user.id ?? f.user_id ?? f.friend_id)) || 0;
                             return (
-                                <div key={user.id ?? f.id ?? i} className="ios-row">
+                                <div key={user.id ?? f.id ?? i} className="row">
                                     <Avatar name={displayNameOf(user)} size={44} />
                                     <span className="min-w-0 flex-1">
-                                        <span className="t-body block truncate font-medium">{displayNameOf(user)}</span>
-                                        <span className="t-footnote block truncate text-secondary">{user.username ? `@${user.username}` : user.email}</span>
+                                        <span className="body block truncate font-medium">{displayNameOf(user)}</span>
+                                        <span className="small block truncate text-secondary">{user.username ? `@${user.username}` : user.email}</span>
                                     </span>
                                     <span className="shrink-0 text-right">
                                         {Math.abs(net) > 0.5 ? (
                                             <>
-                                                <span className="t-caption block" style={{ color: net > 0 ? 'var(--success)' : 'var(--danger)' }}>{net > 0 ? 'te debe' : 'le debes'}</span>
-                                                <span className="t-headline tabular block" style={{ color: net > 0 ? 'var(--success)' : 'var(--danger)' }}>{formatCurrency(Math.abs(net))}</span>
+                                                <span className="tiny block" style={{ color: net > 0 ? 'var(--success)' : 'var(--danger)' }}>{net > 0 ? 'te debe' : 'le debes'}</span>
+                                                <span className="heading tabular block" style={{ color: net > 0 ? 'var(--success)' : 'var(--danger)' }}>{formatCurrency(Math.abs(net))}</span>
                                             </>
                                         ) : (
-                                            <span className="t-footnote text-secondary">Al día</span>
+                                            <span className="small text-secondary">Al día</span>
                                         )}
                                     </span>
                                 </div>

@@ -15,6 +15,18 @@
     <meta name="apple-mobile-web-app-title" content="Split.it" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
+    <!-- Aplica el tema antes del primer pintado: sin esto, quien usa modo
+         oscuro veía un destello claro mientras React arrancaba. -->
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem('splitit_theme_pref') || 'system';
+          var dark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        } catch (e) {}
+      })();
+    </script>
+
     <title>Split.it</title>
   </head>
   <body>

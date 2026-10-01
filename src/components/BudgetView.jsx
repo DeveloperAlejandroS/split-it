@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Loader2, Plus } from 'lucide-react';
-import { ScreenHeader, NavAction } from './ui/ScreenHeader';
-import { EmptyState } from './ui/EmptyState';
+import { Airplane, CaretLeft, CaretRight, Check, CircleNotch, Money, PiggyBank, Plus, Repeat, ShoppingBag } from '@phosphor-icons/react';
+import { ScreenHeader } from './ui/ScreenHeader';
 import { Sheet } from './ui/Sheet';
+import { ProgressBar } from './ui/ProgressBar';
 import { useHeldValue } from './ui/useHeldValue';
 import { ConfirmDialog } from './ConfirmDialog';
 import { CurrencyInput } from './CurrencyInput';
@@ -12,12 +12,13 @@ import { getCurrentMonthKey, monthKeyToLabel, shiftMonthKey } from '../utils/bud
 
 const TOKEN_KEY = 'splitit_jwt';
 
+// Cada sección tiene su color y su ícono: se leen de un vistazo sin etiqueta.
 const SECTIONS = [
-    { id: 'income', title: 'Ingresos', empty: 'Aún no registras ingresos este mes.', addLabel: 'Agregar ingreso', tone: 'in' },
-    { id: 'fixed_expense', title: 'Gastos fijos', empty: 'Arriendo, servicios, cuotas: lo que se repite cada mes.', addLabel: 'Agregar gasto fijo', tone: 'out', budgeted: true },
-    { id: 'tracked_expense', title: 'Gastos del día a día', empty: 'Comida, salidas, transporte.', addLabel: 'Agregar gasto', tone: 'out', budgeted: true },
-    { id: 'saving', title: 'Ahorros', empty: 'Aparta dinero para una meta. No cuenta como dinero para gastar.', addLabel: 'Agregar ahorro', tone: 'save' },
-    { id: 'debt', title: 'Pagos de deudas', empty: 'Aquí aparecen los pagos que registras en Cuentas → Debo.', tone: 'out' },
+    { id: 'tracked_expense', title: 'Día a día', long: 'Gastos del día a día', empty: 'Comida, salidas, transporte.', addLabel: 'Agregar gasto', budgeted: true, grad: 'tile-violet', icon: ShoppingBag, bubble: ['var(--card-tint)', 'var(--primary)'] },
+    { id: 'fixed_expense', title: 'Fijos', long: 'Gastos fijos', empty: 'Arriendo, servicios, cuotas: lo que se repite cada mes.', addLabel: 'Agregar gasto fijo', budgeted: true, grad: 'tile-lilac', icon: Repeat, bubble: ['var(--card-tint)', 'var(--primary)'] },
+    { id: 'income', title: 'Ingresos', long: 'Ingresos', empty: 'Aún no registras ingresos este mes.', addLabel: 'Agregar ingreso', grad: 'tile-teal', icon: Money, bubble: ['var(--pos-soft)', 'var(--pos)'] },
+    { id: 'saving', title: 'Ahorros', long: 'Ahorros', empty: 'Aparta dinero para una meta. No cuenta como dinero para gastar.', addLabel: 'Agregar ahorro', grad: 'tile-teal', icon: PiggyBank, bubble: ['var(--pos-soft)', 'var(--pos)'] },
+    { id: 'debt', title: 'Deudas', long: 'Pagos de deudas', empty: 'Aquí aparecen los pagos que registras en Cuentas, en Debo.', grad: 'tile-coral', icon: Airplane, bubble: ['var(--neg-soft)', 'var(--neg)'] },
 ];
 
 const api = async (path, method = 'GET', body) => {
@@ -39,15 +40,15 @@ const syncTag = (item) => {
 };
 const isReadOnly = (item) => Boolean(item.is_split_synced || item.libreta_entry_id || item.debt_entry_id);
 
-// ---------- Fila de movimiento ----------
 const ItemRow = ({ item, section, onOpen }) => {
     const actual = numberOrZero(item.actual_amount);
     const planned = numberOrZero(item.budgeted_amount);
     const tag = syncTag(item);
     const pending = item.is_pending;
     const showBar = section.budgeted && planned > 0 && !pending;
-    const pct = showBar ? Math.min(100, (actual / planned) * 100) : 0;
+    const pct = showBar ? (actual / planned) * 100 : 0;
     const over = showBar && actual > planned;
+    const Icon = section.icon;
 
     let sub = tag;
     if (pending) sub = `${tag || 'Pendiente'} · aún no lo pagas`;
@@ -55,21 +56,18 @@ const ItemRow = ({ item, section, onOpen }) => {
     else if (!tag && section.id === 'income' && planned > 0 && planned !== actual) sub = `Esperado ${formatCurrency(planned)}`;
 
     return (
-        <button type="button" className="ios-row" onClick={() => onOpen(item)} style={pending ? { opacity: 0.6 } : undefined}>
+        <button type="button" className="row" onClick={() => onOpen(item)} style={{ flexWrap: 'wrap', opacity: pending ? 0.6 : 1 }}>
+            <span className="bubble h-12 w-12" style={{ background: section.bubble[0], color: section.bubble[1] }}><Icon size={24} weight="duotone" /></span>
             <span className="min-w-0 flex-1">
-                <span className="t-body block truncate font-medium">{item.label}</span>
-                {sub && <span className="t-footnote block truncate" style={{ color: over ? 'var(--danger)' : 'var(--text-secondary)' }}>{sub}</span>}
-                {showBar && (
-                    <span className="mt-1.5 block h-1 w-full overflow-hidden rounded-full" style={{ background: 'var(--fill)' }}>
-                        <span className="block h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: over ? 'var(--danger)' : 'var(--accent)' }} />
-                    </span>
-                )}
+                <span className="body block truncate font-semibold">{item.label}</span>
+                {sub && <span className="small block truncate" style={over ? { color: 'var(--neg)' } : undefined}>{sub}</span>}
             </span>
             <span className="shrink-0 text-right">
-                <span className="t-headline tabular block">{formatCurrency(actual)}</span>
-                {section.budgeted && planned > 0 && <span className="t-caption block text-secondary">de {formatCurrency(planned)}</span>}
+                <span className="money block">{formatCurrency(actual)}</span>
+                {section.budgeted && planned > 0 && <span className="tiny block">de {formatCurrency(planned)}</span>}
             </span>
-            <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} className="shrink-0" />
+            <CaretRight size={16} weight="bold" style={{ color: 'var(--ink-3)' }} className="shrink-0" />
+            {showBar && <span className="block w-full pt-1"><ProgressBar pct={pct} tone={over ? 'neg' : 'primary'} height={7} /></span>}
         </button>
     );
 };
@@ -122,11 +120,11 @@ const ItemSheet = ({ item: liveItem, savings, onClose, onChanged, onViewExpense,
                 {readOnly ? (
                     <>
                         <div className="py-3">
-                            <h3 className="t-title">{item.label}</h3>
-                            <p className="t-money-lg mt-1">{formatCurrency(item.actual_amount)}</p>
-                            <p className="t-subhead mt-1 text-secondary">{syncTag(item)}{item.is_pending ? ' · aún no lo pagas' : ''}</p>
+                            <h3 className="title">{item.label}</h3>
+                            <p className="money-lg mt-1">{formatCurrency(item.actual_amount)}</p>
+                            <p className="small mt-1">{syncTag(item)}{item.is_pending ? ' · aún no lo pagas' : ''}</p>
                         </div>
-                        <p className="t-subhead rounded-[12px] p-3 text-secondary" style={{ background: 'var(--fill)' }}>
+                        <p className="small rounded-[16px] p-3" style={{ background: 'var(--card-soft)' }}>
                             Este movimiento se crea solo desde {item.is_split_synced ? 'un gasto compartido' : 'Cuentas'}, así que aquí no se edita: cámbialo en su origen y se actualiza solo.
                         </p>
                         <div className="mt-5">
@@ -154,12 +152,12 @@ const ItemSheet = ({ item: liveItem, savings, onClose, onChanged, onViewExpense,
                                     <CurrencyInput id="bi-actual" className="field" value={actual} onChange={setActual} />
                                 </div>
                             </div>
-                            <p className="t-footnote px-1 text-secondary">Presupuestado es lo que planeaste; Real, lo que de verdad pasó. Los totales usan Real.</p>
+                            <p className="small px-1">Presupuestado es lo que planeaste; Real, lo que de verdad pasó. Los totales usan Real.</p>
                         </div>
 
                         {sectionId === 'saving' && (
                             <>
-                                <p className="t-section px-4 pb-2 pt-6">Abonar a este ahorro</p>
+                                <p className="heading px-1 pb-3 pt-6">Abonar a este ahorro</p>
                                 <div className="flex items-center gap-2">
                                     <CurrencyInput className="field" value={contribute} onChange={setContribute} />
                                     <button type="button" className="btn btn-tinted shrink-0" disabled={busy || !(Number(contribute) > 0)} onClick={() => run(() => api(`/budget/items/${item.id}/contribute`, 'PATCH', { amount: Number(contribute) }))}>Abonar</button>
@@ -169,25 +167,25 @@ const ItemSheet = ({ item: liveItem, savings, onClose, onChanged, onViewExpense,
 
                         {canLink && savings.length > 0 && (
                             <>
-                                <p className="t-section px-4 pb-2 pt-6">Apartar a un ahorro</p>
-                                <div className="ios-group">
+                                <p className="heading px-1 pb-3 pt-6">Apartar a un ahorro</p>
+                                <div className="stack">
                                     {[{ id: null, label: 'Ninguno' }, ...savings].map((s) => (
-                                        <button key={s.id ?? 'none'} type="button" className="ios-row" onClick={() => setLinkId(s.id)} role="radio" aria-checked={linkId === s.id}>
-                                            <span className="t-body flex-1">{s.label}</span>
-                                            {linkId === s.id && <Check size={20} style={{ color: 'var(--accent)' }} strokeWidth={2.6} />}
+                                        <button key={s.id ?? 'none'} type="button" className="row" style={{ minHeight: 52 }} onClick={() => setLinkId(s.id)} role="radio" aria-checked={linkId === s.id}>
+                                            <span className="body flex-1">{s.label}</span>
+                                            {linkId === s.id && <Check size={20} weight="bold" style={{ color: 'var(--primary)' }} />}
                                         </button>
                                     ))}
                                 </div>
-                                <p className="t-footnote mt-2 px-1 text-secondary">Lo que gastes aquí también suma a ese ahorro.</p>
+                                <p className="small mt-2 px-1">Lo que gastes aquí también suma a ese ahorro.</p>
                             </>
                         )}
 
-                        {error && <p className="t-subhead mt-4 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
+                        {error && <p className="small mt-4 rounded-[16px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
 
                         <div className="mt-6 grid grid-cols-2 gap-3">
                             <button type="button" className="btn btn-danger" onClick={() => setShowDelete(true)}>Eliminar</button>
                             <button type="button" className="btn btn-primary" disabled={busy || !label.trim()} onClick={save}>
-                                {busy ? <Loader2 size={18} className="animate-spin" /> : 'Guardar'}
+                                {busy ? <CircleNotch size={18} className="animate-spin" /> : 'Guardar'}
                             </button>
                         </div>
                     </>
@@ -234,39 +232,40 @@ const OpeningSheet = ({ isOpen, opening, monthKey, onClose, onChanged }) => {
 
     return (
         <Sheet isOpen={isOpen} onClose={onClose} title="Saldos iniciales">
-            <p className="t-subhead pb-4 text-secondary">Con cuánto empiezas este mes. Corrígelos si no coinciden con lo que de verdad tienes: de aquí parte todo el cálculo.</p>
+            <p className="small pb-4">Con cuánto empiezas este mes. Corrígelos si no coinciden con lo que de verdad tienes: de aquí parte todo el cálculo.</p>
             <div className="space-y-4">
                 <div><label className="field-label" htmlFor="op-cash">Dinero en caja (banco y efectivo)</label><CurrencyInput id="op-cash" className="field" value={cash} onChange={setCash} /></div>
                 <div><label className="field-label" htmlFor="op-sav">Ahorros ya juntados</label><CurrencyInput id="op-sav" className="field" value={savings} onChange={setSavings} /></div>
                 <div><label className="field-label" htmlFor="op-debt">Deuda total pendiente</label><CurrencyInput id="op-debt" className="field" value={debt} onChange={setDebt} /></div>
             </div>
-            {error && <p className="t-subhead mt-4 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
-            <button type="button" className="btn btn-primary btn-block mt-6" disabled={busy} onClick={save}>{busy ? <Loader2 size={18} className="animate-spin" /> : 'Guardar'}</button>
+            {error && <p className="small mt-4 rounded-[16px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
+            <button type="button" className="btn btn-primary btn-block mt-6" disabled={busy} onClick={save}>{busy ? <CircleNotch size={18} className="animate-spin" /> : 'Guardar'}</button>
         </Sheet>
     );
 };
 
-const FlowRow = ({ label, value, sign, strong, onClick, hint }) => {
+const Line = ({ label, value, sign, strong, onClick, hint }) => {
     const Tag = onClick ? 'button' : 'div';
     return (
-        <Tag type={onClick ? 'button' : undefined} className="ios-row" onClick={onClick} style={{ minHeight: 48 }}>
+        <Tag type={onClick ? 'button' : undefined} onClick={onClick} className="flex w-full items-center gap-3 px-5 py-3.5 text-left" style={{ borderTop: '1px solid var(--line)' }}>
             <span className="min-w-0 flex-1">
-                <span className={`block ${strong ? 't-headline' : 't-body'}`}>{sign && <span className="mr-2 text-secondary">{sign}</span>}{label}</span>
-                {hint && <span className="t-footnote block text-secondary">{hint}</span>}
+                <span className={`block ${strong ? 'heading' : 'body'}`}>{sign && <span className="mr-2" style={{ color: 'var(--ink-3)' }}>{sign}</span>}{label}</span>
+                {hint && <span className="tiny block">{hint}</span>}
             </span>
-            <span className={`${strong ? 't-headline' : 't-body'} tabular`}>{formatCurrency(value)}</span>
-            {onClick && <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />}
+            <span className="money">{formatCurrency(value)}</span>
+            {onClick && <CaretRight size={14} weight="bold" style={{ color: 'var(--ink-3)' }} />}
         </Tag>
     );
 };
 
-export const BudgetView = ({ onAdd, onAddToSection, onViewSyncedExpense, onViewAccounts, refreshKey }) => {
+export const BudgetView = ({ onAddToSection, onViewSyncedExpense, onViewAccounts, refreshKey }) => {
     const [monthKey, setMonthKey] = useState(() => getCurrentMonthKey());
     const [direction, setDirection] = useState('forward');
     const [data, setData] = useState(null);
     const [error, setError] = useState('');
     const [openId, setOpenId] = useState(null);
     const [showOpening, setShowOpening] = useState(false);
+    const [sectionId, setSectionId] = useState('tracked_expense');
 
     const load = useCallback(async (key) => {
         try { setData(await api(`/budget/${key}`)); setError(''); } catch (err) { setError(err.message); }
@@ -281,75 +280,107 @@ export const BudgetView = ({ onAdd, onAddToSection, onViewSyncedExpense, onViewA
     const allItems = useMemo(() => (data ? Object.entries(data.sections).flatMap(([sid, s]) => s.items.map((i) => ({ ...i, __section: sid }))) : []), [data]);
     const openItem = allItems.find((i) => i.id === openId) || null;
     const savingsChoices = useMemo(() => (data ? data.sections.saving.items.filter((i) => !i.is_split_synced) : []), [data]);
-
     const anim = direction === 'forward' ? 'animate-month-in-forward' : 'animate-month-in-back';
 
-    return (
-        <section className="animate-fade-up">
-            <ScreenHeader
-                title="Presupuesto"
-                subtitle="Tu mes: lo planeado contra lo que de verdad pasó"
-                actions={<NavAction label="Agregar movimiento" tint onClick={onAdd}><Plus size={20} strokeWidth={2.4} /></NavAction>}
-            />
+    const section = SECTIONS.find((s) => s.id === sectionId);
+    const planned = data ? data.sections.fixed_expense.budgeted_total + data.sections.tracked_expense.budgeted_total : 0;
+    const spent = data ? data.sections.fixed_expense.actual_total + data.sections.tracked_expense.actual_total : 0;
 
-            <div className="ios-card flex items-center justify-between p-1.5">
-                <button type="button" onClick={() => go(-1)} className="btn btn-icon" aria-label="Mes anterior"><ChevronLeft size={18} /></button>
-                <span key={monthKey} className={`t-headline ${anim}`}>{monthKeyToLabel(monthKey)}</span>
-                <button type="button" onClick={() => go(1)} className="btn btn-icon" aria-label="Mes siguiente"><ChevronRight size={18} /></button>
+    return (
+        <section>
+            <ScreenHeader title="Presupuesto" subtitle="Lo planeado contra lo que de verdad pasó" />
+
+            <div className="card flex items-center justify-between p-1.5">
+                <button type="button" onClick={() => go(-1)} className="btn btn-icon" aria-label="Mes anterior" style={{ boxShadow: 'none', background: 'var(--card-soft)' }}><CaretLeft size={20} weight="bold" /></button>
+                <span key={monthKey} className={`heading ${anim}`}>{monthKeyToLabel(monthKey)}</span>
+                <button type="button" onClick={() => go(1)} className="btn btn-icon" aria-label="Mes siguiente" style={{ boxShadow: 'none', background: 'var(--card-soft)' }}><CaretRight size={20} weight="bold" /></button>
             </div>
 
-            {error && <p className="t-subhead mt-4 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
-            {!data && !error && <div className="flex justify-center py-20"><Loader2 size={24} className="animate-spin" style={{ color: 'var(--text-muted)' }} /></div>}
+            {error && <p className="small mt-4 rounded-[16px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
+            {!data && !error && <div className="flex justify-center py-20"><CircleNotch size={26} className="animate-spin" style={{ color: 'var(--ink-3)' }} /></div>}
 
             {data && (
-                <div key={monthKey} className={anim}>
-                    <div className="ios-card mt-4 p-5">
-                        <p className="t-footnote text-secondary">Disponible para gastar</p>
-                        <p className="t-money-xl mt-1" style={{ color: data.totals.actual_net >= 0 ? 'var(--text-primary)' : 'var(--danger)' }}>{formatCurrency(data.totals.actual_net)}</p>
-                        <p className="t-subhead mt-2 text-secondary">
-                            Ingresos menos gastos de este mes. No cuenta ahorros ni lo que aún no te pagan.
-                            {data.totals.weekly_actual > 0 && ` Son unos ${formatCurrency(data.totals.weekly_actual)} por semana.`}
-                        </p>
-                    </div>
-
-                    {SECTIONS.map((section) => {
-                        const bucket = data.sections[section.id];
-                        const items = bucket.items;
-                        return (
-                            <div key={section.id}>
-                                <div className="flex items-end justify-between px-4 pb-2 pt-6">
-                                    <p className="t-section">{section.title}</p>
-                                    <div className="flex items-baseline gap-3">
-                                        <span className="t-footnote tabular text-secondary">{formatCurrency(bucket.actual_total)}</span>
-                                        {section.addLabel && <button type="button" className="t-footnote font-semibold" style={{ color: 'var(--accent)' }} onClick={() => onAddToSection(section.id)}>Agregar</button>}
-                                    </div>
+                <div key={monthKey} className={`${anim} mt-5 flex flex-col gap-5`}>
+                    <div className="hero p-6">
+                        <p className="small">Disponible para gastar</p>
+                        <p className="money-xl mt-2">{formatCurrency(data.totals.actual_net)}</p>
+                        <p className="small mt-2">Ingresos menos gastos de este mes. No cuenta ahorros ni lo que aún no te pagan.{data.totals.weekly_actual > 0 ? ` Unos ${formatCurrency(data.totals.weekly_actual)} por semana.` : ''}</p>
+                        {planned > 0 && (
+                            <div className="mt-5">
+                                <div className="mb-2 flex justify-between text-[13px]"><span>Gastaste {formatCurrency(spent)}</span><span style={{ opacity: 0.8 }}>de {formatCurrency(planned)}</span></div>
+                                <div className="h-2.5 w-full overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.22)' }}>
+                                    <div className="h-full rounded-full" style={{ width: `${Math.min(100, (spent / planned) * 100)}%`, background: spent > planned ? 'var(--grad-coral)' : '#fff', transition: 'width 800ms var(--ease-ios)' }} />
                                 </div>
-                                {items.length === 0 ? (
-                                    <div className="ios-card px-5 py-5"><p className="t-subhead text-secondary">{section.empty}</p></div>
-                                ) : (
-                                    <div className="ios-group">{items.map((i) => <ItemRow key={i.id} item={i} section={section} onOpen={(it) => setOpenId(it.id)} />)}</div>
-                                )}
                             </div>
-                        );
-                    })}
-
-                    <p className="t-section px-4 pb-2 pt-8">Flujo de caja del mes</p>
-                    <div className="ios-group">
-                        <FlowRow label="Saldo anterior" value={data.opening.cash_balance} onClick={() => setShowOpening(true)} hint="Con cuánto empezaste el mes" />
-                        <FlowRow label="Ingresos" sign="+" value={data.sections.income.actual_total} />
-                        <FlowRow label="Gastos fijos" sign="−" value={data.sections.fixed_expense.actual_total} />
-                        <FlowRow label="Gastos del día a día" sign="−" value={data.sections.tracked_expense.actual_total} />
-                        <FlowRow label="Ahorros" sign="+" value={data.sections.saving.actual_total} hint="Se suman de vuelta: el gasto vinculado ya los restó arriba" />
-                        <FlowRow label="Pagos de deudas" sign="−" value={data.sections.debt.actual_total} />
-                        <FlowRow label="Caja al cierre" value={data.totals.balance} strong />
+                        )}
                     </div>
 
-                    <p className="t-section px-4 pb-2 pt-6">Acumulado</p>
-                    <div className="ios-group">
-                        <FlowRow label="Ahorros acumulados" value={data.totals.savings_balance} onClick={() => setShowOpening(true)} />
-                        <FlowRow label="Deuda pendiente" value={data.totals.debt_balance} onClick={() => setShowOpening(true)} />
+                    <div>
+                        <h2 className="title mb-3">Tus categorías</h2>
+                        <div className="snap-x-row scrollbar-hide">
+                            {SECTIONS.map((s) => {
+                                const active = s.id === sectionId;
+                                const Icon = s.icon;
+                                return (
+                                    <button
+                                        key={s.id}
+                                        type="button"
+                                        aria-pressed={active}
+                                        onClick={() => setSectionId(s.id)}
+                                        className={`tile ${s.grad} flex h-[124px] w-[132px] flex-col justify-between p-3.5 text-left transition-all active:scale-95`}
+                                        style={{ opacity: active ? 1 : 0.55, transform: active ? 'translateY(-3px)' : 'none', boxShadow: active ? '0 16px 26px -14px rgba(60,30,160,0.6)' : 'none', transitionTimingFunction: 'var(--spring)', transitionDuration: '320ms' }}
+                                    >
+                                        <span className="bubble h-9 w-9 rounded-full" style={{ background: 'rgba(255,255,255,0.28)' }}><Icon size={20} weight="fill" /></span>
+                                        <span>
+                                            <span className="block text-[13px] font-semibold leading-tight">{s.title}</span>
+                                            <span className="money block text-[17px]">{formatCurrency(data.sections[s.id].actual_total)}</span>
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
-                    {items0(data) && <EmptyState title="Mes sin movimientos" message="Toca + para registrar tu primer ingreso o gasto de este mes." />}
+
+                    <div>
+                        <div className="mb-3 flex items-center justify-between">
+                            <h2 className="title">{section.long}</h2>
+                            {section.addLabel && (
+                                <button type="button" className="btn btn-tinted btn-sm" onClick={() => onAddToSection(section.id)}><Plus size={14} weight="bold" /> Agregar</button>
+                            )}
+                        </div>
+                        {data.sections[section.id].items.length === 0 ? (
+                            <div className="card px-5 py-6"><p className="small">{section.empty}</p></div>
+                        ) : (
+                            <div className="stack">{data.sections[section.id].items.map((i) => <ItemRow key={i.id} item={i} section={section} onOpen={(it) => setOpenId(it.id)} />)}</div>
+                        )}
+                    </div>
+
+                    <div>
+                        <h2 className="title mb-3">Flujo de caja</h2>
+                        <div className="card overflow-hidden">
+                            <Line label="Saldo anterior" value={data.opening.cash_balance} onClick={() => setShowOpening(true)} hint="Con cuánto empezaste el mes" />
+                            <Line label="Ingresos" sign="+" value={data.sections.income.actual_total} />
+                            <Line label="Gastos fijos" sign="−" value={data.sections.fixed_expense.actual_total} />
+                            <Line label="Gastos del día a día" sign="−" value={data.sections.tracked_expense.actual_total} />
+                            <Line label="Ahorros" sign="+" value={data.sections.saving.actual_total} hint="Se suman de vuelta: el gasto vinculado ya los restó" />
+                            <Line label="Pagos de deudas" sign="−" value={data.sections.debt.actual_total} />
+                            <div className="flex items-center justify-between px-5 py-4" style={{ background: 'var(--card-tint)' }}>
+                                <span className="heading">Caja al cierre</span>
+                                <span className="money-lg" style={{ color: 'var(--primary)' }}>{formatCurrency(data.totals.balance)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <button type="button" onClick={() => setShowOpening(true)} className="card p-4 text-left transition-transform active:scale-[0.97]">
+                            <span className="small block">Ahorros acumulados</span>
+                            <span className="money-lg block" style={{ color: 'var(--pos)' }}>{formatCurrency(data.totals.savings_balance)}</span>
+                        </button>
+                        <button type="button" onClick={() => setShowOpening(true)} className="card p-4 text-left transition-transform active:scale-[0.97]">
+                            <span className="small block">Deuda pendiente</span>
+                            <span className="money-lg block" style={{ color: 'var(--neg)' }}>{formatCurrency(data.totals.debt_balance)}</span>
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -365,5 +396,3 @@ export const BudgetView = ({ onAdd, onAddToSection, onViewSyncedExpense, onViewA
         </section>
     );
 };
-
-const items0 = (data) => Object.values(data.sections).every((s) => s.items.length === 0);

@@ -1,83 +1,107 @@
 @import "tailwindcss";
+@import "@fontsource-variable/outfit";
+@import "@fontsource-variable/geist";
 
 /* ============================================================
-   Split.it — sistema de diseño estilo Apple (HIG)
+   Split.it - lenguaje visual "fintech lavanda"
    ------------------------------------------------------------
-   - Tipografía: la del sistema (SF Pro en iOS/macOS) primero; trae
-     optical sizing y tabular-nums de fábrica. Inter solo de respaldo.
-   - Color: capas "grouped" de iOS (fondo agrupado + tarjetas), un único
-     tint (morado de marca) para todo lo interactivo, y colores
-     semánticos (verde/rojo/ámbar) que nunca se mezclan con el tint.
-   - Materiales: barras y sheets translúcidos (backdrop-filter), no
-     opacos; las tarjetas son sólidas y se separan por tono, no por borde.
-   - Movimiento: curva iOS (cubic-bezier .32,.72,0,1) para sheets/
-     navegación; feedback en pointer-down (:active) siempre.
+   Lectura: app de consumo (gastos compartidos + presupuesto) para
+   usuarios jóvenes en celular. Referencias: lienzo lavanda, violeta
+   eléctrico como único acento de marca, tarjetas con degradé que
+   hacen de jerarquía, donas y barras de progreso como lenguaje de
+   datos, botón de acción elevado al centro de la barra inferior.
+
+   Reglas que no se rompen:
+   - UN acento (violeta). Turquesa = entra / te deben. Coral = sale /
+     debes. Nunca se usan como decoración.
+   - FORMA: tarjetas 24px, tiles 20px, filas 20px, campos 16px,
+     botones y chips en píldora. Sin excepciones.
+   - Sombras teñidas de violeta, nunca negro puro.
+   - Display en Outfit, cuerpo y cifras en Geist.
    ============================================================ */
 
 :root {
-  /* --- Superficies (iOS grouped) --- */
-  --app-bg: #f2f2f7;
-  --app-bg-2: #e9e9ef;
-  --app-bg-3: #e0e0e8;
+  --bg: #eceaf8;
+  --bg-2: #e2dff5;
   --card: #ffffff;
-  --card-2: #f7f7fa;
-  --surface: #ffffff;
-  --surface-strong: #ffffff;
-  --surface-soft: rgba(120, 120, 128, 0.12);
-  --surface-border: rgba(60, 60, 67, 0.12);
-  --surface-border-strong: rgba(60, 60, 67, 0.24);
-  --separator: rgba(60, 60, 67, 0.16);
-  --fill: rgba(120, 120, 128, 0.12);
-  --fill-2: rgba(120, 120, 128, 0.2);
+  --card-soft: #f4f3fc;
+  --card-tint: #eeeaff;
 
-  /* --- Texto --- */
-  --text-primary: #000000;
-  --text-secondary: rgba(60, 60, 67, 0.7);
-  --text-muted: rgba(60, 60, 67, 0.5);
+  --ink: #14113a;
+  --ink-2: #5a5780;
+  --ink-3: #77739b;
+  --line: rgba(20, 17, 58, 0.08);
+  --line-strong: rgba(20, 17, 58, 0.16);
 
-  /* --- Tint: un solo color interactivo --- */
-  --brand: #7c3aed;
-  --brand-strong: #6425c7;
-  --brand-soft: rgba(124, 58, 237, 0.12);
-  --accent: #7c3aed;
-  --accent-strong: #6425c7;
-  --accent-soft: rgba(124, 58, 237, 0.12);
-  --accent-contrast: #ffffff;
-  --accent-2: #d6249f;
+  --primary: #5b2ee5;
+  --primary-deep: #3b1bb5;
+  --primary-soft: rgba(91, 46, 229, 0.1);
+  --primary-glow: rgba(91, 46, 229, 0.38);
+  --on-primary: #ffffff;
+  --lilac: #b8a8ff;
+  --periwinkle: #8d7bff;
 
-  /* --- Semánticos (iOS system colors) --- */
-  --success: #248a3d;
-  --success-soft: rgba(52, 199, 89, 0.16);
-  --info: #0071e3;
-  --info-soft: rgba(0, 122, 255, 0.12);
-  --danger: #d70015;
-  --danger-soft: rgba(255, 59, 48, 0.12);
-  --warning: #b25000;
-  --warning-soft: rgba(255, 149, 0, 0.16);
-  --neutral-chip: rgba(120, 120, 128, 0.12);
+  --pos: #08857b;
+  --pos-bright: #20d3c2;
+  --pos-soft: rgba(32, 211, 194, 0.16);
+  --neg: #cf4417;
+  --neg-bright: #ff7a3d;
+  --neg-soft: rgba(255, 122, 61, 0.14);
+  --danger: #d6293f;
+  --danger-soft: rgba(214, 41, 63, 0.1);
+  --warn: #9a6200;
+  --warn-soft: rgba(255, 176, 32, 0.18);
+  --info: #3a5bd9;
+  --info-soft: rgba(58, 91, 217, 0.12);
 
-  --material: rgba(249, 249, 251, 0.78);
-  --material-border: rgba(60, 60, 67, 0.14);
-  --scrim: rgba(0, 0, 0, 0.32);
+  --grad-hero: linear-gradient(140deg, #6b3ff2 0%, #4b2cd8 52%, #2f1fa6 100%);
+  --grad-lilac: linear-gradient(140deg, #cfc4ff 0%, #a595ff 100%);
+  --grad-teal: linear-gradient(140deg, #3ee3d1 0%, #14a7c4 100%);
+  --grad-coral: linear-gradient(140deg, #ffa264 0%, #ff6a3d 100%);
 
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px -12px rgba(0, 0, 0, 0.12);
-  --shadow-sheet: 0 -10px 40px rgba(0, 0, 0, 0.16);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 12px 32px -14px rgba(66, 44, 180, 0.28);
+  --shadow-sm: 0 6px 18px -10px rgba(66, 44, 180, 0.3);
+  --shadow-sheet: 0 -18px 50px rgba(40, 24, 120, 0.22);
+
+  --scrim: rgba(20, 12, 70, 0.4);
+  --material: rgba(255, 255, 255, 0.82);
 
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 
-  --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Segoe UI', system-ui, sans-serif;
-  --heading: var(--sans);
-  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, monospace;
+  --font-display: 'Outfit Variable', 'Outfit', system-ui, sans-serif;
+  --font-body: 'Geist Variable', 'Geist', system-ui, sans-serif;
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
-  font: 17px/1.4 var(--sans);
-  letter-spacing: -0.01em;
+  /* Alias de la versión anterior (los componentes que quedan los usan). */
+  --app-bg: var(--bg);
+  --surface: var(--card);
+  --surface-strong: var(--card);
+  --surface-soft: var(--card-soft);
+  --surface-border: var(--line);
+  --surface-border-strong: var(--line-strong);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-muted: var(--ink-3);
+  --accent: var(--primary);
+  --accent-strong: var(--primary-deep);
+  --accent-soft: var(--primary-soft);
+  --accent-contrast: var(--on-primary);
+  --brand: var(--primary);
+  --success: var(--pos);
+  --success-soft: var(--pos-soft);
+  --separator: var(--line);
+  --fill: var(--card-soft);
+  --fill-2: rgba(91, 46, 229, 0.12);
+
+  font: 16px/1.45 var(--font-body);
+  letter-spacing: -0.005em;
   color-scheme: light;
-  color: var(--text-primary);
-  background: var(--app-bg);
+  color: var(--ink);
+  background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -86,50 +110,42 @@
 }
 
 :root[data-theme='dark'] {
-  --app-bg: #000000;
-  --app-bg-2: #0c0c0e;
-  --app-bg-3: #161618;
-  --card: #1c1c1e;
-  --card-2: #2c2c2e;
-  --surface: #1c1c1e;
-  --surface-strong: #2c2c2e;
-  --surface-soft: rgba(120, 120, 128, 0.24);
-  --surface-border: rgba(84, 84, 88, 0.45);
-  --surface-border-strong: rgba(84, 84, 88, 0.7);
-  --separator: rgba(84, 84, 88, 0.55);
-  --fill: rgba(120, 120, 128, 0.24);
-  --fill-2: rgba(120, 120, 128, 0.36);
+  --bg: #0d0a26;
+  --bg-2: #130f35;
+  --card: #1a1545;
+  --card-soft: #231d58;
+  --card-tint: #2a2268;
 
-  --text-primary: #ffffff;
-  --text-secondary: rgba(235, 235, 245, 0.7);
-  --text-muted: rgba(235, 235, 245, 0.45);
+  --ink: #f2f0ff;
+  --ink-2: #b6b2dd;
+  --ink-3: #8f8bbd;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.18);
 
-  --brand: #a66bff;
-  --brand-strong: #8f4dff;
-  --brand-soft: rgba(166, 107, 255, 0.2);
-  --accent: #a66bff;
-  --accent-strong: #8f4dff;
-  --accent-soft: rgba(166, 107, 255, 0.2);
-  --accent-contrast: #ffffff;
-  --accent-2: #ff5fc4;
+  --primary: #8566ff;
+  --primary-deep: #5b2ee5;
+  --primary-soft: rgba(133, 102, 255, 0.2);
+  --primary-glow: rgba(133, 102, 255, 0.5);
+  --lilac: #b8a8ff;
 
-  --success: #30d158;
-  --success-soft: rgba(48, 209, 88, 0.2);
-  --info: #4da3ff;
-  --info-soft: rgba(10, 132, 255, 0.2);
-  --danger: #ff6961;
-  --danger-soft: rgba(255, 69, 58, 0.2);
-  --warning: #ffb340;
-  --warning-soft: rgba(255, 159, 10, 0.2);
-  --neutral-chip: rgba(120, 120, 128, 0.24);
+  --pos: #3fe0cf;
+  --pos-soft: rgba(63, 224, 207, 0.16);
+  --neg: #ff9163;
+  --neg-soft: rgba(255, 145, 99, 0.16);
+  --danger: #ff6b7a;
+  --danger-soft: rgba(255, 107, 122, 0.16);
+  --warn: #ffc24d;
+  --warn-soft: rgba(255, 194, 77, 0.16);
+  --info: #8ea4ff;
+  --info-soft: rgba(142, 164, 255, 0.18);
 
-  --material: rgba(28, 28, 30, 0.72);
-  --material-border: rgba(255, 255, 255, 0.1);
-  --scrim: rgba(0, 0, 0, 0.55);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 14px 34px -16px rgba(0, 0, 0, 0.7);
+  --shadow-sm: 0 8px 20px -12px rgba(0, 0, 0, 0.7);
+  --shadow-sheet: 0 -18px 50px rgba(0, 0, 0, 0.55);
+  --scrim: rgba(5, 3, 25, 0.62);
+  --material: rgba(26, 21, 69, 0.8);
 
-  --shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.04), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
-  --shadow-sheet: 0 -10px 40px rgba(0, 0, 0, 0.5);
-
+  --fill-2: rgba(133, 102, 255, 0.22);
   color-scheme: dark;
 }
 
@@ -138,294 +154,204 @@
 html {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
-  background: var(--app-bg);
+  background: var(--bg);
 }
-
-body {
-  margin: 0;
-  min-height: 100dvh;
-  background: var(--app-bg);
-  color: var(--text-primary);
-}
-
-#root {
-  width: 100%;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  color: var(--text-primary);
-}
-
-/* El Tailwind `min-h-screen` usa 100vh (el viewport más grande en iOS,
-   se corta bajo la URL bar) -- lo sustituimos por dvh en toda la app. */
+body { margin: 0; min-height: 100dvh; background: var(--bg); color: var(--ink); }
+#root { width: 100%; min-height: 100dvh; display: flex; flex-direction: column; }
 .min-h-screen { min-height: 100dvh; }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--heading);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
-  margin: 0;
-}
-
+h1, h2, h3, h4 { margin: 0; font-family: var(--font-display); color: var(--ink); letter-spacing: -0.02em; }
 p { margin: 0; }
 
-/* Los controles no son contenido: nada de selección por long-press ni
-   delay de doble tap. El contenido (textos, montos) sigue seleccionable. */
+/* Controles: no son contenido (sin selección por long-press, sin delay). */
 button, a, [role='button'], select, summary {
   touch-action: manipulation;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-  font-family: inherit;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  font-family: inherit; color: inherit;
 }
+input, textarea, select { font-size: 16px !important; font-family: inherit; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+input:focus-visible { outline: none; }
 
-/* iOS hace zoom al enfocar inputs < 16px y no vuelve atrás. */
-input, textarea, select {
-  font-size: 17px !important;
-  font-family: inherit;
-  letter-spacing: -0.01em;
-}
-
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-input:focus-visible, textarea:focus-visible { outline: none; }
-
-.text-primary { color: var(--text-primary); }
-.text-secondary { color: var(--text-secondary); }
-.text-muted { color: var(--text-muted); }
+.text-primary { color: var(--ink); }
+.text-secondary { color: var(--ink-2); }
+.text-muted { color: var(--ink-3); }
 .tabular { font-variant-numeric: tabular-nums; }
 
-/* ---------- Tipografía (tracking/leading dependen del tamaño) ---------- */
-.t-large-title { font-size: 34px; line-height: 1.1; font-weight: 700; letter-spacing: -0.026em; }
-.t-title { font-size: 22px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; }
-.t-headline { font-size: 17px; line-height: 1.3; font-weight: 600; letter-spacing: -0.012em; }
-.t-body { font-size: 17px; line-height: 1.4; letter-spacing: -0.01em; }
-.t-callout { font-size: 16px; line-height: 1.35; }
-.t-subhead { font-size: 15px; line-height: 1.35; letter-spacing: -0.006em; }
-.t-footnote { font-size: 13px; line-height: 1.35; letter-spacing: 0; }
-.t-caption { font-size: 12px; line-height: 1.3; letter-spacing: 0.005em; }
-.t-section {
-  font-size: 13px; line-height: 1.3; font-weight: 400; letter-spacing: 0;
-  text-transform: uppercase; color: var(--text-secondary);
-}
-.t-money-xl { font-size: 48px; line-height: 1; font-weight: 700; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
-.t-money-lg { font-size: 28px; line-height: 1.1; font-weight: 700; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; }
+/* ---------- Tipografía ---------- */
+.display-1 { font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1.05; letter-spacing: -0.035em; }
+.display-2 { font-family: var(--font-display); font-weight: 600; font-size: 26px; line-height: 1.1; letter-spacing: -0.03em; }
+.title { font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 1.2; letter-spacing: -0.02em; }
+.heading { font-family: var(--font-display); font-weight: 600; font-size: 17px; line-height: 1.25; letter-spacing: -0.015em; }
+.body { font-size: 15px; line-height: 1.4; }
+.small { font-size: 13px; line-height: 1.35; color: var(--ink-2); }
+.tiny { font-size: 12px; line-height: 1.3; color: var(--ink-3); }
+.money-xl { font-family: var(--font-display); font-weight: 600; font-size: 44px; line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.money-lg { font-family: var(--font-display); font-weight: 600; font-size: 26px; line-height: 1.05; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.money { font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 
-/* ---------- Tarjetas / agrupaciones ---------- */
-.glass-shell,
-.glass-shell-strong,
-.ios-card {
-  background: var(--card);
-  border: 0;
-  box-shadow: var(--shadow);
-}
-.glass-border { position: relative; }
-.glass-border::before { content: none; }
+/* ---------- Superficies ---------- */
+.card { background: var(--card); border-radius: 24px; box-shadow: var(--shadow); }
+.ios-card { background: var(--card); border-radius: 24px; box-shadow: var(--shadow); }
+.glass-shell, .glass-shell-strong { background: var(--card); box-shadow: var(--shadow); }
+.soft { background: var(--card-soft); border-radius: 18px; }
 
-.ios-card { border-radius: 20px; }
-
-/* Lista agrupada inset: filas dentro de una tarjeta, con separador inset. */
-.ios-group { background: var(--card); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); }
-.ios-row {
-  position: relative;
-  display: flex; align-items: center; gap: 12px;
-  min-height: 56px; padding: 10px 16px;
-  width: 100%; text-align: left;
-  background: transparent; border: 0; color: inherit;
+/* Tarjeta héroe: degradé violeta con brillo suave arriba a la derecha. */
+.hero {
+  position: relative; overflow: hidden; color: #fff; border-radius: 28px;
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 55%),
+    var(--grad-hero);
+  box-shadow: 0 22px 44px -18px var(--primary-glow);
 }
-.ios-row + .ios-row::before,
-.ios-group > * + *::before {
-  content: '';
-  position: absolute; top: 0; left: 16px; right: 0; height: 0.5px;
-  background: var(--separator);
-}
-.ios-group > * { position: relative; }
-button.ios-row, a.ios-row { cursor: pointer; transition: background-color 120ms var(--ease-out); }
-button.ios-row:active, a.ios-row:active { background: var(--fill); }
+.hero h1, .hero h2, .hero h3, .hero .small, .hero .tiny { color: inherit; }
+.hero .small { opacity: 0.82; }
 
-/* ---------- Botones ---------- */
+/* Tiles de color (acciones rápidas, secciones). */
+.tile { position: relative; overflow: hidden; border-radius: 20px; color: #fff; }
+.tile .small, .tile .tiny { color: inherit; }
+.tile-lilac { background: var(--grad-lilac); color: #1c1050; }
+.tile-teal { background: var(--grad-teal); color: #0b1f3a; }
+.tile-coral { background: var(--grad-coral); color: #3a0f06; }
+.tile-violet { background: var(--grad-hero); }
+
+/* Fila como bloque propio (no lista agrupada). */
+.row, .ios-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  min-height: 64px; padding: 12px 14px; border: 0; color: inherit;
+  background: var(--card); border-radius: 20px; box-shadow: var(--shadow-sm);
+}
+button.row, a.row, button.ios-row { cursor: pointer; transition: transform 140ms var(--ease-out), box-shadow 140ms; }
+button.row:active, a.row:active, button.ios-row:active { transform: scale(0.985); }
+.stack, .ios-group { display: flex; flex-direction: column; gap: 10px; }
+
+/* Burbuja de icono (categoría). */
+.bubble { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 16px; }
+
+/* ---------- Botones: siempre píldora ---------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  height: 50px; padding: 0 20px; border-radius: 14px; border: 0;
-  font-size: 17px; font-weight: 600; letter-spacing: -0.012em;
+  height: 52px; padding: 0 24px; border-radius: 999px; border: 0;
+  font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: -0.01em;
   cursor: pointer; white-space: nowrap;
-  transition: transform 120ms var(--ease-out), opacity 120ms, background-color 120ms;
+  transition: transform 140ms var(--ease-out), opacity 140ms, box-shadow 200ms;
 }
-.btn:active { transform: scale(0.97); opacity: 0.85; }
+.btn:active { transform: translateY(1px) scale(0.98); }
 .btn:disabled { opacity: 0.4; pointer-events: none; }
-.btn-primary { background: var(--accent); color: var(--accent-contrast); }
-.btn-tinted { background: var(--accent-soft); color: var(--accent); }
-.btn-gray { background: var(--fill); color: var(--text-primary); }
+.btn-primary { background: var(--grad-hero); color: #fff; box-shadow: 0 12px 24px -10px var(--primary-glow); }
+.btn-tinted { background: var(--primary-soft); color: var(--primary); }
+.btn-gray { background: var(--card-soft); color: var(--ink); }
 .btn-danger { background: var(--danger-soft); color: var(--danger); }
-.btn-success { background: var(--success); color: #fff; }
-.btn-plain { background: transparent; color: var(--accent); padding: 0 8px; }
+.btn-success { background: var(--pos-bright); color: #06332e; }
+.btn-plain { background: transparent; color: var(--primary); padding: 0 10px; }
 .btn-block { width: 100%; }
-.btn-sm { height: 34px; padding: 0 14px; border-radius: 999px; font-size: 15px; }
+.btn-sm { height: 36px; padding: 0 16px; font-size: 14px; }
 .btn-icon {
-  width: 36px; height: 36px; padding: 0; border-radius: 999px;
-  background: var(--fill); color: var(--text-primary);
+  width: 44px; height: 44px; padding: 0; border-radius: 999px;
+  background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm);
 }
-.btn-icon.is-tint { background: var(--accent); color: var(--accent-contrast); }
+.btn-icon.is-tint { background: var(--grad-hero); color: #fff; box-shadow: 0 10px 20px -8px var(--primary-glow); }
 
 /* ---------- Campos ---------- */
-.field {
-  width: 100%; height: 50px; padding: 0 16px;
-  background: var(--fill); border: 1.5px solid transparent; border-radius: 12px;
-  color: var(--text-primary); outline: none;
-  transition: border-color 140ms, background-color 140ms;
+.field, .input-underline {
+  width: 100%; height: 54px; padding: 0 18px; border-radius: 16px;
+  background: var(--card-soft); border: 1.5px solid transparent; color: var(--ink); outline: none;
+  transition: border-color 140ms, background-color 140ms, box-shadow 140ms;
 }
-.field::placeholder { color: var(--text-muted); }
-.field:focus { border-color: var(--accent); background: var(--accent-soft); }
-/* Monto protagonista (sheet de nuevo gasto). */
+.field::placeholder, .input-underline::placeholder { color: var(--ink-3); }
+.field:focus, .input-underline:focus { border-color: var(--primary); background: var(--card); box-shadow: 0 0 0 4px var(--primary-soft); }
+.field-label { display: block; margin: 0 0 8px 4px; font-size: 13px; font-weight: 500; color: var(--ink-2); }
+
 input.input-amount {
-  width: 100%; height: 64px; margin-top: 2px; padding: 0;
-  background: transparent; border: 0; outline: none; text-align: center;
-  color: var(--text-primary); caret-color: var(--accent);
-  font-size: 52px !important; font-weight: 700; letter-spacing: -0.035em;
+  width: 100%; height: 72px; padding: 0; background: transparent; border: 0; outline: none; text-align: center;
+  color: var(--ink); caret-color: var(--primary);
+  font-family: var(--font-display) !important; font-size: 56px !important; font-weight: 600; letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
 }
-input.input-amount::placeholder { color: var(--text-muted); }
+input.input-amount::placeholder { color: var(--lilac); }
 
-.field-label { display: block; margin: 0 0 6px 4px; font-size: 13px; color: var(--text-secondary); }
-
-.input-underline {
-  width: 100%; height: 50px; padding: 0 16px;
-  background: var(--fill); border: 1.5px solid transparent; border-radius: 12px;
-  color: var(--text-primary); outline: none;
-  transition: border-color 140ms, background-color 140ms;
-}
-.input-underline::placeholder { color: var(--text-muted); }
-.input-underline:focus { border-color: var(--accent); background: var(--accent-soft); }
-
-/* ---------- Control segmentado ---------- */
-.segmented {
-  position: relative; display: flex; padding: 2px; gap: 2px;
-  background: var(--fill); border-radius: 10px;
-}
+/* ---------- Segmentado en píldora ---------- */
+.segmented { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow-sm); }
 .segmented > button {
-  position: relative; z-index: 1; flex: 1; height: 32px; padding: 0 10px;
-  border: 0; background: transparent; color: var(--text-primary);
-  font-size: 13px; font-weight: 500; border-radius: 8px;
-  transition: background-color 200ms var(--ease-ios), box-shadow 200ms var(--ease-ios);
+  flex: 1; height: 38px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent;
+  font-size: 14px; font-weight: 500; color: var(--ink-2);
+  transition: background-color 220ms var(--ease-ios), color 220ms, transform 140ms;
 }
-.segmented > button[aria-pressed='true'],
-.segmented > button[aria-selected='true'] {
-  background: var(--card); font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 0 0 0.5px rgba(0,0,0,.04);
+.segmented > button:active { transform: scale(0.97); }
+.segmented > button[aria-pressed='true'], .segmented > button[aria-selected='true'] {
+  background: var(--grad-hero); color: #fff; font-weight: 600; box-shadow: 0 8px 16px -8px var(--primary-glow);
 }
-:root[data-theme='dark'] .segmented > button[aria-pressed='true'],
-:root[data-theme='dark'] .segmented > button[aria-selected='true'] { background: #636366; }
 
-/* ---------- Materiales (barras translúcidas) ---------- */
-.material {
-  background: var(--material);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
-  border-color: var(--material-border);
-}
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
 
 /* ---------- Sheets ---------- */
-.sheet-backdrop {
-  position: fixed; inset: 0; z-index: 90; background: var(--scrim);
-  animation: scrim-in 280ms var(--ease-ios) both;
-}
+.material { background: var(--material); -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%); border-color: var(--line); }
+.sheet-backdrop { position: fixed; inset: 0; z-index: 90; background: var(--scrim); animation: scrim-in 260ms var(--ease-ios) both; }
 .sheet-backdrop[data-closing='true'] { animation: scrim-out 220ms var(--ease-ios) both; }
-.sheet-panel {
-  background: var(--card); color: var(--text-primary);
-  border-radius: 28px 28px 0 0; box-shadow: var(--shadow-sheet);
-  will-change: transform;
-}
-@media (min-width: 640px) {
-  .sheet-panel { border-radius: 28px; }
-}
+.sheet-panel { background: var(--bg); color: var(--ink); border-radius: 32px 32px 0 0; box-shadow: var(--shadow-sheet); will-change: transform; }
+@media (min-width: 640px) { .sheet-panel { border-radius: 32px; } }
 
-/* ---------- Animaciones ---------- */
-.animate-fade-in { animation: fade-in 280ms var(--ease-out) both; }
-.animate-fade-up { animation: fade-up 420ms var(--ease-ios) both; }
-.animate-island-in { animation: fade-up 420ms var(--ease-ios) both; }
-.animate-balance-float { animation: fade-up 420ms var(--ease-ios) both; }
+/* ---------- Movimiento ---------- */
+.animate-fade-in { animation: fade-in 260ms var(--ease-out) both; }
+.animate-fade-up { animation: fade-up 480ms var(--ease-ios) both; }
+.animate-balance-float, .animate-island-in { animation: fade-up 480ms var(--ease-ios) both; }
 .animate-row-in { animation: row-in 280ms var(--ease-ios) both; }
-.animate-row-out { animation: row-out 200ms ease-in both; }
-.animate-pulse-save { animation: pulse-save 900ms ease-out both; }
-.animate-pulse-error { animation: pulse-error 700ms ease-out both; }
-.animate-month-in-forward { animation: month-in-forward 260ms var(--ease-ios) both; }
-.animate-month-in-back { animation: month-in-back 260ms var(--ease-ios) both; }
-/* backwards: al terminar NO se queda aplicando transform (si no, pisaría el arrastre inline). */
-.animate-sheet-in { animation: sheet-in 420ms var(--ease-ios) backwards; }
+.animate-month-in-forward { animation: month-in-forward 280ms var(--ease-ios) both; }
+.animate-month-in-back { animation: month-in-back 280ms var(--ease-ios) both; }
+.animate-sheet-in { animation: sheet-in 460ms var(--ease-ios) backwards; }
 .animate-sheet-out { animation: sheet-out 260ms var(--ease-ios) both; }
-.animate-pop-in { animation: pop-in 260ms var(--ease-ios) both; }
+.animate-pop-in { animation: pop-in 320ms var(--spring) both; }
+/* Entrada escalonada: cada bloque entra 60ms después del anterior. */
+.stagger > * { animation: fade-up 520ms var(--ease-ios) both; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+.stagger > *:nth-child(6) { animation-delay: 300ms; }
+.stagger > *:nth-child(n+7) { animation-delay: 340ms; }
 
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes scrim-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes sheet-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes sheet-out { from { transform: translateY(0); } to { transform: translateY(100%); } }
-@keyframes pop-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
 @keyframes row-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes row-out { from { opacity: 1; transform: translateX(0); max-height: 60px; } to { opacity: 0; transform: translateX(12px); max-height: 0; } }
-@keyframes pulse-save { 0% { background-color: rgba(52, 199, 89, 0.22); } 100% { background-color: transparent; } }
-@keyframes pulse-error { 0% { background-color: rgba(255, 59, 48, 0.22); } 100% { background-color: transparent; } }
 @keyframes month-in-forward { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes month-in-back { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
 
-/* Reduced motion: no se quita el feedback, se cambia por fundidos suaves. */
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-up, .animate-island-in, .animate-balance-float, .animate-row-in,
-  .animate-month-in-forward, .animate-month-in-back, .animate-pop-in { animation: fade-in 200ms ease both; }
-  .animate-sheet-in { animation: fade-in 200ms ease both; }
+  .animate-fade-up, .animate-island-in, .animate-balance-float, .animate-row-in, .animate-month-in-forward,
+  .animate-month-in-back, .animate-pop-in, .animate-sheet-in, .stagger > * { animation: fade-in 200ms ease both; animation-delay: 0ms !important; }
   .animate-sheet-out { animation: scrim-out 160ms ease both; }
-  .animate-pulse-save, .animate-pulse-error { animation: none; }
-  .btn:active { transform: none; }
+  .btn:active, button.row:active { transform: none; }
 }
 @media (prefers-reduced-transparency: reduce) {
   .material { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--card); }
 }
 @media (prefers-contrast: more) {
-  :root { --separator: rgba(60, 60, 67, 0.5); --surface-border: rgba(60, 60, 67, 0.4); }
-  :root[data-theme='dark'] { --separator: rgba(235, 235, 245, 0.45); }
-  .material { background: var(--card); }
+  :root { --line: rgba(20, 17, 58, 0.4); --ink-3: #4f4b78; }
+  :root[data-theme='dark'] { --line: rgba(255, 255, 255, 0.4); --ink-3: #c3bfe8; }
 }
-
-/* ---------- Switch de tema (control tipo iOS) ---------- */
-.theme-switch {
-  position: relative; width: 51px; height: 31px; border-radius: 999px;
-  background: var(--fill-2); transition: background-color 220ms var(--ease-ios);
-}
-.theme-switch-thumb {
-  position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 999px;
-  background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.25);
-  transition: transform 260ms var(--ease-ios);
-}
-.theme-switch[data-active='true'] { background: var(--success); }
-.theme-switch[data-active='true'] .theme-switch-thumb { transform: translateX(20px); }
 
 .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
+.snap-x-row { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; -webkit-overflow-scrolling: touch; padding: 4px 16px 18px; margin: 0 -16px; }
+.snap-x-row > * { scroll-snap-align: start; flex-shrink: 0; }
 
-/* Scrollbar fina y discreta (solo desktop). */
 @media (hover: hover) and (pointer: fine) {
-  * { scrollbar-width: thin; scrollbar-color: var(--fill-2) transparent; }
+  * { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background-color: var(--fill-2); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
-  ::-webkit-scrollbar-thumb:hover { background-color: var(--text-muted); }
+  ::-webkit-scrollbar-thumb { background-color: var(--line-strong); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+  button.row:hover, a.row:hover, button.ios-row:hover { box-shadow: var(--shadow); }
+  .btn-icon:hover { box-shadow: var(--shadow); }
 }
 
-/* ============================================================
-   Capa de compatibilidad: varios componentes (presupuesto, etc.)
-   todavía usan utilidades pensadas para fondo oscuro
-   (border-white/10, bg-white/5...). Las mapeamos a los tokens
-   semánticos para que se lean bien en ambos temas.
-   ============================================================ */
-.border-white\/5, .border-white\/10, .border-white\/15, .border-white\/20 { border-color: var(--separator) !important; }
-.bg-white\/5, .bg-white\/8 { background-color: var(--fill) !important; }
-.bg-white\/10 { background-color: var(--fill-2) !important; }
-.bg-black\/20 { background-color: var(--fill) !important; }
-.divide-white\/5 > :not([hidden]) ~ :not([hidden]) { border-color: var(--separator) !important; }
-@media (hover: hover) and (pointer: fine) {
-  .hover\:bg-white\/5:hover, .hover\:bg-white\/10:hover { background-color: var(--fill-2) !important; }
+/* Barra inferior con botón central elevado: la muesca se recorta con una
+   máscara radial, así el fondo de la página se ve a través de ella. */
+.tabbar {
+  background: var(--card); border-radius: 30px 30px 0 0; box-shadow: 0 -10px 30px -12px rgba(66, 44, 180, 0.25);
+  -webkit-mask: radial-gradient(circle 41px at 50% 0, transparent 98%, #000 100%);
+  mask: radial-gradient(circle 41px at 50% 0, transparent 98%, #000 100%);
 }

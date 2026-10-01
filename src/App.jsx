@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Coins, X } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
+import { Logo } from './components/ui/Logo';
 import { ExpensesView } from './components/ExpensesView';
 import { FriendsView } from './components/FriendsView';
 import { HomeView } from './components/HomeView';
@@ -245,15 +246,14 @@ const App = () => {
     const closeExpense = useCallback(() => setSelectedExpenseId(null), []);
 
     const userName = displayNameOf(currentUser);
+    const addLabel = activeTab === 'expenses' ? 'Nuevo gasto' : activeTab === 'personal' ? 'Agregar movimiento' : activeTab === 'accounts' ? (accountsSegment === 'owed' ? 'Alguien me debe' : 'Yo debo') : activeTab === 'friends' ? 'Agregar amigo' : 'Agregar';
     const badges = { friends: pendingFriendRequests.length };
 
     if (isBooting) {
         return (
             <div className="flex min-h-screen flex-col items-center justify-center gap-4 animate-fade-in">
-                <div className="flex h-16 w-16 items-center justify-center rounded-[18px]" style={{ background: 'linear-gradient(135deg, var(--brand), var(--accent-2))' }}>
-                    <Coins size={30} color="#fff" />
-                </div>
-                <span className="t-footnote text-secondary">Split.it</span>
+                <Logo size={68} />
+                <span className="small">Split.it</span>
             </div>
         );
     }
@@ -264,18 +264,18 @@ const App = () => {
 
     return (
         <div className="min-h-screen">
-            <Sidebar activeTab={activeTab} onChange={setActiveTab} badges={badges} userName={userName} userEmail={currentUser?.email} onOpenAccount={() => setShowAccount(true)} />
+            <Sidebar activeTab={activeTab} onChange={setActiveTab} badges={badges} userName={userName} userEmail={currentUser?.email} onOpenAccount={() => setShowAccount(true)} onAdd={handleAdd} addLabel={addLabel} />
 
             {toast && (
                 <div className="fixed inset-x-0 z-[110] flex justify-center px-4 animate-pop-in" style={{ top: 'calc(var(--safe-top) + 12px)' }} role="alert">
-                    <div className="material flex max-w-md items-center gap-3 rounded-[16px] border py-3 pl-4 pr-2 shadow-lg">
-                        <p className="t-subhead flex-1">{toast}</p>
-                        <button type="button" onClick={() => setToast('')} aria-label="Cerrar aviso" className="btn btn-icon" style={{ width: 30, height: 30 }}><X size={15} /></button>
+                    <div className="card flex max-w-md items-center gap-3 py-3 pl-5 pr-2">
+                        <p className="small flex-1" style={{ color: 'var(--ink)' }}>{toast}</p>
+                        <button type="button" onClick={() => setToast('')} aria-label="Cerrar aviso" className="btn btn-icon" style={{ width: 34, height: 34, boxShadow: 'none', background: 'var(--card-soft)' }}><X size={15} weight="bold" /></button>
                     </div>
                 </div>
             )}
 
-            <main className="xl:pl-64 pb-[calc(96px+var(--safe-bottom))] xl:pb-16">
+            <main className="xl:pl-[17rem] pb-[calc(120px+var(--safe-bottom))] xl:pb-16">
                 <div className="mx-auto max-w-3xl px-4 sm:px-6">
                 {activeTab === 'home' && (
                     <HomeView
@@ -299,12 +299,13 @@ const App = () => {
                         onFilterChange={setExpenseFilter}
                         onOpen={openExpense}
                         onAdd={handleAdd}
+                        onOpenFriends={() => setActiveTab('friends')}
+                        friendBadge={pendingFriendRequests.length}
                     />
                 )}
                 {activeTab === 'personal' && (
                     <BudgetView
                         refreshKey={dataVersion}
-                        onAdd={handleAdd}
                         onAddToSection={(section) => { setBudgetSection(section); setShowAddBudgetItem(true); }}
                         onViewSyncedExpense={(id) => setSelectedExpenseId(id)}
                         onViewAccounts={() => setActiveTab('accounts')}
@@ -327,7 +328,7 @@ const App = () => {
                 </div>
             </main>
 
-            <TabBar activeTab={activeTab} onChange={setActiveTab} badges={badges} />
+            <TabBar activeTab={activeTab} onChange={setActiveTab} onAdd={handleAdd} addLabel={addLabel} />
 
             <AddMenuSheet isOpen={showAddMenu} onClose={() => setShowAddMenu(false)} onPick={handleAddMenuPick} />
 

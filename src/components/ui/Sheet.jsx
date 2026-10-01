@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Loader2 } from 'lucide-react';
+import { CircleNotch } from '@phosphor-icons/react';
 
 // Sheet estilo iOS: en móvil sube desde abajo y se arrastra para cerrar; en
 // pantallas anchas es un diálogo centrado. Reglas de movimiento (Apple,
@@ -145,25 +145,25 @@ export const Sheet = ({
                     onPointerCancel={onPointerUp}
                 >
                     <div className="flex justify-center pt-2.5 sm:hidden">
-                        <span className="block h-[5px] w-9 rounded-full" style={{ background: 'var(--fill-2)' }} />
+                        <span className="block h-[5px] w-10 rounded-full" style={{ background: 'var(--lilac)', opacity: 0.7 }} />
                     </div>
                     <div className="grid grid-cols-[1fr_auto_1fr] items-center px-4 pt-2 pb-3 min-h-14">
                         <div className="justify-self-start">
-                            <button type="button" className="btn btn-plain btn-sm" style={{ height: 40, fontSize: 17, fontWeight: 400 }} onClick={onClose}>
+                            <button type="button" className="btn btn-plain btn-sm" style={{ height: 40, fontSize: 15, fontWeight: 500 }} onClick={onClose}>
                                 {closeLabel}
                             </button>
                         </div>
-                        <h2 className="t-headline text-center truncate max-w-[55vw]">{title}</h2>
+                        <h2 className="heading text-center truncate max-w-[55vw]">{title}</h2>
                         <div className="justify-self-end">
                             {action && (
                                 <button
                                     type="button"
                                     className="btn btn-plain btn-sm"
-                                    style={{ height: 40, fontSize: 17, fontWeight: 600 }}
+                                    style={{ height: 40, fontSize: 15, fontWeight: 700 }}
                                     disabled={action.disabled || action.loading}
                                     onClick={action.onClick}
                                 >
-                                    {action.loading ? <Loader2 size={18} className="animate-spin" /> : action.label}
+                                    {action.loading ? <CircleNotch size={18} className="animate-spin" /> : action.label}
                                 </button>
                             )}
                         </div>

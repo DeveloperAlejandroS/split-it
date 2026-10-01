@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useHeldValue } from './ui/useHeldValue';
-import { Loader2 } from 'lucide-react';
+import { CircleNotch } from '@phosphor-icons/react';
 import { Sheet } from './ui/Sheet';
 import { Avatar } from './ui/Avatar';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -59,20 +59,20 @@ export const AddLedgerEntrySheet = ({ isOpen, kind, onClose, onCreated }) => {
     return (
         <Sheet isOpen={isOpen} onClose={onClose} title={cfg.addTitle}>
             <div className="py-4 text-center">
-                <label htmlFor="ledger-amount" className="t-footnote text-secondary">Monto</label>
+                <label htmlFor="ledger-amount" className="small text-secondary">Monto</label>
                 <CurrencyInput id="ledger-amount" value={amount} onChange={setAmount} autoFocus placeholder="$0" echo className="input-amount" />
             </div>
             <div className="space-y-3">
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder={cfg.nameLabel} aria-label={cfg.nameLabel} autoCapitalize="words" className="field" />
                 <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Motivo (opcional)" aria-label="Motivo" className="field" />
             </div>
-            <p className="t-footnote mt-3 px-1 text-secondary">{cfg.createEffect}</p>
-            {error && <p className="t-subhead mt-3 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
+            <p className="small mt-3 px-1 text-secondary">{cfg.createEffect}</p>
+            {error && <p className="small mt-3 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
             <div className="mt-5">
                 <button type="button" className="btn btn-primary btn-block" disabled={Boolean(missing) || saving} onClick={save}>
-                    {saving ? <Loader2 size={20} className="animate-spin" /> : 'Guardar'}
+                    {saving ? <CircleNotch size={20} className="animate-spin" /> : 'Guardar'}
                 </button>
-                {missing && <p className="t-footnote mt-2 text-center text-secondary">{missing}</p>}
+                {missing && <p className="small mt-2 text-center text-secondary">{missing}</p>}
             </div>
         </Sheet>
     );
@@ -123,15 +123,15 @@ export const LedgerEntrySheet = ({ entry, kind, onClose, onChanged }) => {
             <Sheet isOpen={Boolean(entry)} onClose={onClose} title={kind === 'owed' ? 'Me debe' : 'Debo'} closeLabel="Cerrar">
                 <div className="flex flex-col items-center pb-4 pt-2 text-center">
                     <Avatar name={name} size={64} />
-                    <h3 className="t-title mt-3">{name}</h3>
-                    {shown.description && <p className="t-subhead text-secondary">{shown.description}</p>}
+                    <h3 className="title mt-3">{name}</h3>
+                    {shown.description && <p className="small text-secondary">{shown.description}</p>}
                 </div>
 
                 <div className="ios-card p-4">
                     <div className="grid grid-cols-3 text-center">
-                        <div><p className="t-caption text-secondary">Total</p><p className="t-headline tabular">{formatCurrency(shown.amount_owed)}</p></div>
-                        <div><p className="t-caption text-secondary">{kind === 'owed' ? 'Pagado' : 'Abonado'}</p><p className="t-headline tabular" style={{ color: 'var(--success)' }}>{formatCurrency(shown.amount_paid)}</p></div>
-                        <div><p className="t-caption text-secondary">Falta</p><p className="t-headline tabular">{formatCurrency(shown.remaining)}</p></div>
+                        <div><p className="tiny text-secondary">Total</p><p className="heading tabular">{formatCurrency(shown.amount_owed)}</p></div>
+                        <div><p className="tiny text-secondary">{kind === 'owed' ? 'Pagado' : 'Abonado'}</p><p className="heading tabular" style={{ color: 'var(--success)' }}>{formatCurrency(shown.amount_paid)}</p></div>
+                        <div><p className="tiny text-secondary">Falta</p><p className="heading tabular">{formatCurrency(shown.remaining)}</p></div>
                     </div>
                     <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--fill)' }}>
                         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${paidPct}%`, background: 'var(--success)' }} />
@@ -140,25 +140,25 @@ export const LedgerEntrySheet = ({ entry, kind, onClose, onChanged }) => {
 
                 {!isPaid && !editing && (
                     <>
-                        <p className="t-section px-4 pb-2 pt-6">{cfg.abonoTitle}</p>
+                        <p className="heading px-1 pb-2 pt-6">{cfg.abonoTitle}</p>
                         <div className="flex items-center gap-2">
                             <CurrencyInput value={amount} onChange={setAmount} className="field" />
                             <button type="button" className="btn btn-primary shrink-0" disabled={!abonoValid || busy} onClick={() => act(() => callApi(`${cfg.base}/${shown.id}/contribute`, 'PATCH', { amount: abonoValue }))}>
-                                {busy ? <Loader2 size={18} className="animate-spin" /> : 'Registrar'}
+                                {busy ? <CircleNotch size={18} className="animate-spin" /> : 'Registrar'}
                             </button>
                         </div>
-                        <p className="t-footnote mt-2 px-1 text-secondary">{cfg.effect}</p>
+                        <p className="small mt-2 px-1 text-secondary">{cfg.effect}</p>
                     </>
                 )}
 
-                {isPaid && <p className="t-subhead mt-4 rounded-[12px] p-3 text-center" style={{ background: 'var(--success-soft)', color: 'var(--success)' }}>Saldada por completo ✓</p>}
+                {isPaid && <p className="small mt-4 rounded-[12px] p-3 text-center" style={{ background: 'var(--success-soft)', color: 'var(--success)' }}>Saldada por completo ✓</p>}
 
                 {editing && (
                     <div className="mt-6 space-y-3">
                         <input className="field" value={editName} onChange={(e) => setEditName(e.target.value)} aria-label="Nombre" />
                         <input className="field" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} placeholder="Motivo (opcional)" aria-label="Motivo" />
                         <CurrencyInput className="field" value={editTotal} onChange={setEditTotal} />
-                        <p className="t-footnote px-1 text-secondary">No puedes bajar el total por debajo de lo ya {kind === 'owed' ? 'pagado' : 'abonado'} ({formatCurrency(shown.amount_paid)}).</p>
+                        <p className="small px-1 text-secondary">No puedes bajar el total por debajo de lo ya {kind === 'owed' ? 'pagado' : 'abonado'} ({formatCurrency(shown.amount_paid)}).</p>
                         <div className="grid grid-cols-2 gap-3">
                             <button type="button" className="btn btn-gray" onClick={() => setEditing(false)}>Cancelar</button>
                             <button
@@ -176,7 +176,7 @@ export const LedgerEntrySheet = ({ entry, kind, onClose, onChanged }) => {
                     </div>
                 )}
 
-                {error && <p className="t-subhead mt-4 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
+                {error && <p className="small mt-4 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
 
                 {!editing && (
                     <div className="mt-6 grid grid-cols-2 gap-3">

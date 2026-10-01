@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bell, ChevronRight, Clock, HandCoins, Loader2, PieChart, PiggyBank, Plus, Receipt, Wallet } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Bell, CaretRight, ChartPieSlice, CircleNotch, Clock, HandCoins, Money, PiggyBank, Receipt, Wallet, UsersThree } from '@phosphor-icons/react';
 import { ScreenHeader, NavAction } from './ui/ScreenHeader';
 import { Avatar } from './ui/Avatar';
+import { Donut } from './ui/Donut';
 import { AnimatedNumber } from './AnimatedNumber';
 import { API_URL } from '../config/api';
 import { getCurrentMonthKey } from '../utils/budgetHelpers';
@@ -17,21 +18,16 @@ import {
 
 const TOKEN_KEY = 'splitit_jwt';
 
-const IconSquare = ({ color, children }) => (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px]" style={{ background: color }}>{children}</span>
-);
-
-const BreakdownRow = ({ icon, color, label, hint, value, tone, onClick }) => (
-    <button type="button" className="ios-row" onClick={onClick}>
-        <IconSquare color={color}>{icon}</IconSquare>
-        <span className="min-w-0 flex-1">
-            <span className="t-body block font-medium">{label}</span>
-            {hint && <span className="t-footnote block text-secondary">{hint}</span>}
-        </span>
-        <span className="t-headline tabular" style={{ color: tone || 'var(--text-primary)' }}>{value}</span>
-        <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
-    </button>
-);
+const Bubble = ({ children, tone = 'violet', size = 44 }) => {
+    const tones = {
+        violet: { bg: 'var(--card-tint)', fg: 'var(--primary)' },
+        teal: { bg: 'var(--pos-soft)', fg: 'var(--pos)' },
+        coral: { bg: 'var(--neg-soft)', fg: 'var(--neg)' },
+        warn: { bg: 'var(--warn-soft)', fg: 'var(--warn)' },
+    };
+    const t = tones[tone] || tones.violet;
+    return <span className="bubble" style={{ width: size, height: size, background: t.bg, color: t.fg }}>{children}</span>;
+};
 
 export const HomeView = ({
     currentUser,
@@ -40,7 +36,6 @@ export const HomeView = ({
     balance,
     onNavigate,
     onOpenExpense,
-    onAdd,
     onOpenAccount,
 }) => {
     const [budget, setBudget] = useState(null);
@@ -75,20 +70,31 @@ export const HomeView = ({
     const cash = numberOrZero(budget?.totals?.balance);
     const savings = numberOrZero(budget?.totals?.savings_balance);
     const monthlyMargin = numberOrZero(budget?.totals?.actual_net);
-    const splitNet = numberOrZero(balance?.net_balance);
     const libretaPending = numberOrZero(libreta.total_pending);
     const debtPending = numberOrZero(debts.total_pending);
+    const owedToMe = numberOrZero(balance?.owed_to_me) + libretaPending;
+    const iOwe = numberOrZero(balance?.i_owe) + debtPending;
 
-    // Patrimonio neto: todo lo que es tuyo (caja, ahorros, lo que te deben
-    // por Split y por Cuentas) menos lo que debes. "Disponible para gastar"
-    // se muestra aparte y NUNCA cuenta lo que aún no te han pagado.
-    const receivable = splitNet + libretaPending;
-    const netWorth = cash + savings + receivable - debtPending;
+    // Patrimonio neto: todo lo tuyo (caja, ahorros, lo que te deben) menos lo
+    // que debes. "Disponible" se muestra aparte y nunca cuenta lo que aún no
+    // te pagan.
+    const netWorth = cash + savings + owedToMe - iOwe;
 
     const today = new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
-    const subtitle = `Hola, ${firstNameOf(currentUser)} · ${today}`;
 
-    // Cosas que esperan una acción tuya, ordenadas por urgencia.
+    const spending = useMemo(() => {
+        const s = budget?.sections;
+        if (!s) return [];
+        return [
+            { label: 'Fijos', value: numberOrZero(s.fixed_expense.actual_total), color: '#5b2ee5' },
+            { label: 'Día a día', value: numberOrZero(s.tracked_expense.actual_total), color: '#a595ff' },
+            { label: 'Deudas', value: numberOrZero(s.debt.actual_total), color: '#ff7a3d' },
+            { label: 'Ahorros', value: numberOrZero(s.saving.actual_total), color: '#20d3c2' },
+        ];
+    }, [budget]);
+    const spendingTotal = spending.reduce((sum, s) => sum + s.value, 0);
+
+    // Lo que espera una acción tuya, ordenado por urgencia.
     const attention = useMemo(() => {
         const items = [];
         expenses.forEach((expense) => {
@@ -96,11 +102,10 @@ export const HomeView = ({
                 if (expense.paid_by_me && getParticipantStatus(p) === 'awaiting_confirmation') {
                     items.push({
                         key: `c-${expense.id}-${p.user_id}`,
-                        who: displayNameOf(p),
-                        title: `${displayNameOf(p)} dice que te pagó ${formatCurrency(p.pending_claim_amount)}`,
-                        hint: `${expense.description} · confírmalo`,
-                        color: '#34c759',
-                        icon: <Clock size={19} color="#fff" />,
+                        title: `${firstNameOf(p)} dice que te pagó`,
+                        amount: formatCurrency(p.pending_claim_amount),
+                        hint: `${expense.description}. Confírmalo.`,
+                        icon: <Clock size={22} weight="fill" />,
                         run: () => onOpenExpense(expense),
                     });
                 }
@@ -110,11 +115,10 @@ export const HomeView = ({
                 if (stake.kind === 'owe') {
                     items.push({
                         key: `o-${expense.id}`,
-                        who: displayNameOf(expense.paid_by),
-                        title: `Debes ${formatCurrency(stake.amount)} a ${displayNameOf(expense.paid_by)}`,
+                        title: `Le debes a ${firstNameOf(expense.paid_by)}`,
+                        amount: formatCurrency(stake.amount),
                         hint: expense.description,
-                        color: '#ff3b30',
-                        icon: <Receipt size={19} color="#fff" />,
+                        icon: <Receipt size={22} weight="fill" />,
                         run: () => onOpenExpense(expense),
                     });
                 }
@@ -123,14 +127,14 @@ export const HomeView = ({
         if (pendingFriendRequests.length > 0) {
             items.unshift({
                 key: 'fr',
-                title: `${pendingFriendRequests.length} ${pendingFriendRequests.length === 1 ? 'solicitud de amistad' : 'solicitudes de amistad'}`,
-                hint: 'Acéptalas para dividir gastos',
-                color: '#0a84ff',
-                icon: <Bell size={19} color="#fff" />,
+                title: pendingFriendRequests.length === 1 ? 'Solicitud de amistad' : `${pendingFriendRequests.length} solicitudes de amistad`,
+                amount: '',
+                hint: 'Acéptalas para dividir gastos.',
+                icon: <Bell size={22} weight="fill" />,
                 run: () => onNavigate('friends'),
             });
         }
-        return items.slice(0, 5);
+        return items.slice(0, 6);
     }, [expenses, pendingFriendRequests, currentUser?.id, onOpenExpense, onNavigate]);
 
     // Feed cronológico que cruza gastos compartidos, presupuesto y cuentas.
@@ -141,12 +145,12 @@ export const HomeView = ({
             if (!ts) return;
             const stake = getExpenseStake(e, currentUser?.id);
             rows.push({
-                key: `e${e.id}`, ts, title: e.description,
-                meta: `${e.paid_by_me ? 'Pagaste tú' : `Pagó ${displayNameOf(e.paid_by)}`} · ${relativeDay(ts)}`,
-                tag: 'Gastos', color: '#af52de', onClick: () => onOpenExpense(e),
+                key: `e${e.id}`, ts, title: e.description, icon: <Receipt size={22} weight="duotone" />, tone: 'violet',
+                meta: `${e.paid_by_me ? 'Pagaste tú' : `Pagó ${firstNameOf(e.paid_by)}`} · ${relativeDay(ts)}`,
                 // Lo que importa de un gasto compartido es TU posición, no el total.
                 display: stake.kind === 'owed' ? `+${formatCurrency(stake.amount)}` : stake.kind === 'owe' || stake.kind === 'waiting' ? `−${formatCurrency(stake.amount)}` : formatCurrency(e.amount),
-                tone: stake.kind === 'owed' ? 'var(--success)' : stake.kind === 'owe' ? 'var(--danger)' : stake.kind === 'waiting' ? 'var(--info)' : 'var(--text-muted)',
+                color: stake.kind === 'owed' ? 'var(--pos)' : stake.kind === 'owe' ? 'var(--neg)' : stake.kind === 'waiting' ? 'var(--info)' : 'var(--ink-3)',
+                onClick: () => onOpenExpense(e),
             });
         });
         Object.values(budget?.sections || {}).forEach((bucket) => {
@@ -155,93 +159,133 @@ export const HomeView = ({
                 const ts = item.created_at || item.updated_at;
                 const amt = numberOrZero(item.actual_amount);
                 if (!ts || amt === 0) return;
-                const base = { key: `b${item.id}`, ts, title: item.label, amount: amt };
-                const out = (r) => ({ ...r, display: `${r.positive ? '+' : '−'}${formatCurrency(amt)}`, tone: r.positive ? 'var(--success)' : 'var(--text-primary)' });
-                if (item.libreta_entry_id) rows.push(out({ ...base, meta: `Me deben · ${relativeDay(ts)}`, tag: 'Cuentas', positive: true, color: '#0a84ff', onClick: () => onNavigate('accounts') }));
-                else if (item.debt_entry_id) rows.push(out({ ...base, meta: `Debo · ${relativeDay(ts)}`, tag: 'Cuentas', positive: false, color: '#ff9500', onClick: () => onNavigate('accounts') }));
-                else rows.push(out({ ...base, meta: `Presupuesto · ${relativeDay(ts)}`, tag: 'Presupuesto', positive: item.section === 'income' || item.section === 'saving', color: '#34c759', onClick: () => onNavigate('personal') }));
+                const mk = (positive, meta, tone, icon, go) => ({
+                    key: `b${item.id}`, ts, title: item.label, icon, tone, meta: `${meta} · ${relativeDay(ts)}`,
+                    display: `${positive ? '+' : '−'}${formatCurrency(amt)}`, color: positive ? 'var(--pos)' : 'var(--ink)', onClick: () => onNavigate(go),
+                });
+                if (item.libreta_entry_id) rows.push(mk(true, 'Abono que te hicieron', 'teal', <HandCoins size={22} weight="duotone" />, 'accounts'));
+                else if (item.debt_entry_id) rows.push(mk(false, 'Pago de una deuda', 'coral', <HandCoins size={22} weight="duotone" />, 'accounts'));
+                else rows.push(mk(item.section === 'income' || item.section === 'saving', item.section === 'saving' ? 'Ahorro' : 'Presupuesto', item.section === 'income' ? 'teal' : item.section === 'saving' ? 'violet' : 'coral', item.section === 'saving' ? <PiggyBank size={22} weight="duotone" /> : <Money size={22} weight="duotone" />, 'personal'));
             });
         });
         return rows.sort((a, b) => new Date(b.ts) - new Date(a.ts)).slice(0, 7);
     }, [expenses, budget, currentUser?.id, onOpenExpense, onNavigate]);
 
     return (
-        <section className="animate-fade-up">
+        <section>
             <ScreenHeader
-                title="Inicio"
-                subtitle={subtitle}
-                leading={
-                    <button type="button" onClick={onOpenAccount} aria-label="Cuenta" className="rounded-full transition-transform active:scale-95 xl:hidden">
-                        <Avatar name={displayNameOf(currentUser)} size={34} />
-                    </button>
+                kicker="Hola,"
+                title={firstNameOf(currentUser)}
+                subtitle={today}
+                actions={
+                    <>
+                        <NavAction label="Amigos" badge={pendingFriendRequests.length} onClick={() => onNavigate('friends')}><UsersThree size={22} weight="bold" /></NavAction>
+                        <button type="button" onClick={onOpenAccount} aria-label="Tu cuenta" className="rounded-full transition-transform active:scale-90 xl:hidden"><Avatar name={displayNameOf(currentUser)} size={44} /></button>
+                    </>
                 }
-                actions={<NavAction label="Agregar" tint onClick={onAdd}><Plus size={20} strokeWidth={2.4} /></NavAction>}
             />
 
-            <div className="ios-card p-5">
-                <p className="t-footnote text-secondary">Patrimonio neto</p>
-                <p className="t-money-xl mt-1" style={{ color: netWorth >= 0 ? 'var(--text-primary)' : 'var(--danger)' }}>
-                    <AnimatedNumber value={netWorth} />
-                </p>
-                <p className="t-subhead mt-2 text-secondary">Todo lo tuyo menos lo que debes. Lo que aún no te pagan cuenta aquí, pero no como dinero disponible.</p>
-            </div>
-
-            <p className="t-section px-4 pb-2 pt-6">De qué se compone</p>
-            <div className="ios-group">
-                <BreakdownRow icon={<Wallet size={19} color="#fff" />} color="#34c759" label="Caja" hint="Tu saldo este mes" value={formatCurrency(cash)} onClick={() => onNavigate('personal')} />
-                <BreakdownRow icon={<PiggyBank size={19} color="#fff" />} color="#ff9f0a" label="Ahorros" hint="Con meta, no es para gastar" value={formatCurrency(savings)} onClick={() => onNavigate('personal')} />
-                <BreakdownRow icon={<HandCoins size={19} color="#fff" />} color="#0a84ff" label="Te deben" hint="Gastos compartidos y préstamos" value={formatCurrency(receivable)} tone={receivable >= 0 ? 'var(--success)' : 'var(--danger)'} onClick={() => onNavigate(libretaPending > Math.abs(splitNet) ? 'accounts' : 'expenses')} />
-                <BreakdownRow icon={<Receipt size={19} color="#fff" />} color="#ff3b30" label="Debes" hint="Tus deudas registradas" value={formatCurrency(debtPending)} tone={debtPending > 0 ? 'var(--danger)' : undefined} onClick={() => onNavigate('accounts')} />
-            </div>
-
-            <button type="button" onClick={() => onNavigate('personal')} className="ios-card mt-4 flex w-full items-center gap-3 p-4 text-left transition-transform active:scale-[0.99]">
-                <IconSquare color="#af52de"><PieChart size={19} color="#fff" /></IconSquare>
-                <span className="min-w-0 flex-1">
-                    <span className="t-footnote block text-secondary">Disponible para gastar este mes</span>
-                    <span className="t-money-lg block" style={{ color: monthlyMargin >= 0 ? 'var(--text-primary)' : 'var(--danger)' }}>{formatCurrency(monthlyMargin)}</span>
-                </span>
-                <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
-            </button>
-
-            {attention.length > 0 && (
-                <>
-                    <p className="t-section px-4 pb-2 pt-6">Requiere tu atención</p>
-                    <div className="ios-group">
-                        {attention.map((a) => (
-                            <button key={a.key} type="button" className="ios-row" onClick={a.run}>
-                                <IconSquare color={a.color}>{a.icon}</IconSquare>
-                                <span className="min-w-0 flex-1">
-                                    <span className="t-body block font-medium">{a.title}</span>
-                                    <span className="t-footnote block truncate text-secondary">{a.hint}</span>
-                                </span>
-                                <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
-                            </button>
-                        ))}
-                    </div>
-                </>
-            )}
-
-            <p className="t-section px-4 pb-2 pt-6">Movimientos recientes</p>
-            {isLoading && feed.length === 0 ? (
-                <div className="ios-card flex justify-center py-10"><Loader2 size={20} className="animate-spin" style={{ color: 'var(--text-muted)' }} /></div>
-            ) : feed.length === 0 ? (
-                <div className="ios-card px-6 py-10 text-center">
-                    <p className="t-subhead text-secondary">Todavía no hay movimientos. Toca + para registrar un gasto, un ingreso o una deuda.</p>
-                </div>
-            ) : (
-                <div className="ios-group">
-                    {feed.map((r) => (
-                        <button key={r.key} type="button" className="ios-row" onClick={r.onClick}>
-                            <IconSquare color={r.color}><span className="text-[11px] font-bold text-white">{r.tag.slice(0, 1)}</span></IconSquare>
-                            <span className="min-w-0 flex-1">
-                                <span className="t-body block truncate font-medium">{r.title}</span>
-                                <span className="t-footnote block truncate text-secondary">{r.meta}</span>
-                            </span>
-                            <span className="t-headline tabular" style={{ color: r.tone }}>{r.display}</span>
+            <div className="stagger flex flex-col gap-5">
+                <div className="hero p-6">
+                    <p className="small">Patrimonio neto</p>
+                    <p className="money-xl mt-2"><AnimatedNumber value={netWorth} /></p>
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+                        <button type="button" onClick={() => onNavigate('personal')} className="rounded-[18px] p-3 text-left transition-transform active:scale-[0.97]" style={{ background: 'rgba(255,255,255,0.16)' }}>
+                            <span className="flex items-center gap-1.5 tiny" style={{ color: 'rgba(255,255,255,0.8)' }}><Wallet size={14} weight="fill" /> Disponible</span>
+                            <span className="money mt-1 block text-[18px]">{formatCurrency(monthlyMargin)}</span>
                         </button>
-                    ))}
+                        <button type="button" onClick={() => onNavigate('personal')} className="rounded-[18px] p-3 text-left transition-transform active:scale-[0.97]" style={{ background: 'rgba(255,255,255,0.16)' }}>
+                            <span className="flex items-center gap-1.5 tiny" style={{ color: 'rgba(255,255,255,0.8)' }}><PiggyBank size={14} weight="fill" /> Ahorros</span>
+                            <span className="money mt-1 block text-[18px]">{formatCurrency(savings)}</span>
+                        </button>
+                    </div>
                 </div>
-            )}
+
+                <div className="grid grid-cols-2 gap-3">
+                    <button type="button" onClick={() => onNavigate('accounts')} className="tile tile-teal p-4 text-left transition-transform active:scale-[0.97]" style={{ boxShadow: '0 16px 28px -16px rgba(20, 167, 196, 0.7)' }}>
+                        <span className="bubble h-9 w-9 rounded-full" style={{ background: 'rgba(255,255,255,0.28)' }}><ArrowDownLeft size={18} weight="bold" /></span>
+                        <span className="small mt-3 block" style={{ opacity: 0.85 }}>Te deben</span>
+                        <span className="money-lg block">{formatCurrency(owedToMe)}</span>
+                    </button>
+                    <button type="button" onClick={() => onNavigate('expenses')} className="tile tile-coral p-4 text-left transition-transform active:scale-[0.97]" style={{ boxShadow: '0 16px 28px -16px rgba(255, 106, 61, 0.7)' }}>
+                        <span className="bubble h-9 w-9 rounded-full" style={{ background: 'rgba(255,255,255,0.28)' }}><ArrowUpRight size={18} weight="bold" /></span>
+                        <span className="small mt-3 block" style={{ opacity: 0.85 }}>Debes</span>
+                        <span className="money-lg block">{formatCurrency(iOwe)}</span>
+                    </button>
+                </div>
+
+                {attention.length > 0 && (
+                    <div>
+                        <h2 className="title mb-3">Requiere tu atención</h2>
+                        <div className="snap-x-row scrollbar-hide">
+                            {attention.map((a, i) => (
+                                <button
+                                    key={a.key}
+                                    type="button"
+                                    onClick={a.run}
+                                    className={`${i === 0 ? 'tile tile-violet' : 'card'} flex w-[250px] flex-col gap-3 p-4 text-left transition-transform active:scale-[0.97]`}
+                                    style={i === 0 ? { boxShadow: '0 18px 30px -16px var(--primary-glow)' } : undefined}
+                                >
+                                    <span className="bubble h-11 w-11 rounded-full" style={i === 0 ? { background: 'rgba(255,255,255,0.22)' } : { background: 'var(--card-tint)', color: 'var(--primary)' }}>{a.icon}</span>
+                                    <span>
+                                        <span className="heading block">{a.title}</span>
+                                        {a.amount && <span className="money-lg mt-1 block">{a.amount}</span>}
+                                        <span className="mt-1 block text-[13px] leading-tight" style={{ opacity: 0.8 }}>{a.hint}</span>
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="card p-5">
+                    <div className="mb-4 flex items-center justify-between">
+                        <h2 className="title">Tu mes</h2>
+                        <button type="button" className="btn btn-plain btn-sm" onClick={() => onNavigate('personal')}>Ver más <CaretRight size={14} weight="bold" /></button>
+                    </div>
+                    {spendingTotal > 0 ? (
+                        <div className="flex items-center gap-5">
+                            <Donut segments={spending} size={148} thickness={20}>
+                                <span className="tiny">Salió</span>
+                                <span className="money text-[17px]">{formatCurrency(spendingTotal)}</span>
+                            </Donut>
+                            <ul className="min-w-0 flex-1 space-y-2.5">
+                                {spending.filter((s) => s.value > 0).map((s) => (
+                                    <li key={s.label} className="flex items-center gap-2">
+                                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: s.color }} />
+                                        <span className="small min-w-0 flex-1 truncate">{s.label}</span>
+                                        <span className="money text-[14px]">{formatCurrency(s.value)}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ) : (
+                        <p className="small">Aún no hay movimientos este mes. Toca el botón + para registrar el primero.</p>
+                    )}
+                </div>
+
+                <div>
+                    <h2 className="title mb-3">Movimientos recientes</h2>
+                    {isLoading && feed.length === 0 ? (
+                        <div className="card flex justify-center py-10"><CircleNotch size={22} className="animate-spin" style={{ color: 'var(--ink-3)' }} /></div>
+                    ) : feed.length === 0 ? (
+                        <div className="card px-6 py-8 text-center"><p className="small">Todavía no hay movimientos.</p></div>
+                    ) : (
+                        <div className="stack">
+                            {feed.map((r) => (
+                                <button key={r.key} type="button" className="row" onClick={r.onClick}>
+                                    <Bubble tone={r.tone}>{r.icon}</Bubble>
+                                    <span className="min-w-0 flex-1">
+                                        <span className="body block truncate font-semibold">{r.title}</span>
+                                        <span className="small block truncate">{r.meta}</span>
+                                    </span>
+                                    <span className="money" style={{ color: r.color }}>{r.display}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
         </section>
     );
 };

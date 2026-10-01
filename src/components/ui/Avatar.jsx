@@ -16,7 +16,7 @@ const initialsOf = (name) => {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
-export const Avatar = ({ name, size = 40, className = '' }) => (
+export const Avatar = ({ name, src, size = 40, className = '' }) => (
     <span
         aria-hidden="true"
         className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white ${className}`}
@@ -26,8 +26,9 @@ export const Avatar = ({ name, size = 40, className = '' }) => (
             fontSize: Math.round(size * 0.38),
             background: PALETTE[hash(String(name || '?')) % PALETTE.length],
             letterSpacing: 0,
+            overflow: 'hidden',
         }}
     >
-        {initialsOf(name)}
+        {src ? <img src={src} alt="" className="h-full w-full rounded-full object-cover" draggable="false" /> : initialsOf(name)}
     </span>
 );

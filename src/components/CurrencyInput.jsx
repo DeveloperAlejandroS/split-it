@@ -16,9 +16,16 @@ export const CurrencyInput = ({ value, onChange, onBlur, className = '', placeho
     }, [value, isFocused]);
     /* eslint-enable react-hooks/set-state-in-effect */
 
+    // Al enfocar, seleccionar todo para reemplazar un valor existente (sin
+    // esto en móvil toca borrar a mano). Solo si hay algo escrito y solo si
+    // quien escribe aún no empezó: un select() tardío se comía el primer
+    // dígito ("30000" quedaba en "3").
     const handleFocus = (e) => {
+        const el = e.target;
+        const before = el.value;
         setIsFocused(true);
-        requestAnimationFrame(() => e.target.select());
+        if (before === '') return;
+        setTimeout(() => { if (document.activeElement === el && el.value === before) el.select(); }, 0);
     };
 
     const handleBlur = (e) => {
@@ -27,7 +34,10 @@ export const CurrencyInput = ({ value, onChange, onBlur, className = '', placeho
     };
 
     const handleChange = (e) => {
-        const next = e.target.value;
+        // Solo dígitos y un separador decimal (acepta coma o punto).
+        const cleaned = e.target.value.replace(',', '.').replace(/[^\d.]/g, '');
+        const [whole, ...rest] = cleaned.split('.');
+        const next = rest.length ? `${whole}.${rest.join('').slice(0, 2)}` : whole;
         setRaw(next);
         onChange?.(next);
     };
@@ -38,7 +48,7 @@ export const CurrencyInput = ({ value, onChange, onBlur, className = '', placeho
 
     const input = (
         <input
-            type={isFocused ? 'number' : 'text'}
+            type="text"
             inputMode="decimal"
             value={displayValue}
             onChange={handleChange}
@@ -47,8 +57,6 @@ export const CurrencyInput = ({ value, onChange, onBlur, className = '', placeho
             className={className}
             placeholder={placeholder}
             autoFocus={autoFocus}
-            min="0"
-            step="0.01"
             autoComplete="off"
             {...rest}
         />

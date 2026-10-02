@@ -1,7 +1,7 @@
-// Avatar con iniciales. El color sale de un hash del nombre (paleta de
-// colores de sistema de Apple), así una misma persona siempre se ve igual
+// Avatar con iniciales. El color sale de un hash del nombre (paleta con
+// contraste de 4.5:1 o más con el texto blanco), así una misma persona siempre se ve igual
 // en toda la app.
-const PALETTE = ['#5b2ee5', '#8d7bff', '#14a7c4', '#ff7a3d', '#3b1bb5', '#a595ff', '#12a594', '#e0558a'];
+const PALETTE = ['#5b2ee5', '#3b1bb5', '#7e2a9e', '#b91c5c', '#c2410c', '#0e7490', '#047857', '#2563eb'];
 
 const hash = (str) => {
     let h = 0;

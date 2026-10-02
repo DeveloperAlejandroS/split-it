@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-02T00:14:13.385800+00:00",
+  "generatedAt": "2026-10-02T00:28:07.475205+00:00",
   "title": "Design System: Split.it",
   "extensions": {
     "colorMeta": {
@@ -172,16 +172,16 @@
       "ink-3": {
         "role": "neutral",
         "displayName": "Tinta 3",
-        "canonical": "#77739b",
+        "canonical": "#66628c",
         "tonalRamp": [
-          "#21202d",
+          "#211f2d",
           "#3a384f",
-          "#545071",
-          "#6d6993",
-          "#8d8aac",
-          "#aeacc4",
-          "#d0cedc",
-          "#f1f0f4"
+          "#534f72",
+          "#6c6894",
+          "#8d89ac",
+          "#aeabc4",
+          "#cfcedc",
+          "#f0f0f4"
         ]
       },
       "owed-teal": {
@@ -453,7 +453,7 @@
       "refersTo": "field",
       "description": "Campo de 54px, hoja suave, halo violeta al enfocar.",
       "html": "<input class=\"ds-field\" placeholder=\"Nombre, usuario, correo o teléfono\" />",
-      "css": ".ds-field{width:100%;height:54px;padding:0 18px;border:1.5px solid transparent;border-radius:16px;background:#f4f3fc;color:#14113a;font:16px 'Geist Variable',Geist,system-ui,sans-serif;outline:none;transition:border-color 140ms,background-color 140ms,box-shadow 140ms;}.ds-field::placeholder{color:#77739b;}.ds-field:focus{border-color:#5b2ee5;background:#fff;box-shadow:0 0 0 4px rgba(91,46,229,0.1);}"
+      "css": ".ds-field{width:100%;height:54px;padding:0 18px;border:1.5px solid transparent;border-radius:16px;background:#f4f3fc;color:#14113a;font:16px 'Geist Variable',Geist,system-ui,sans-serif;outline:none;transition:border-color 140ms,background-color 140ms,box-shadow 140ms;}.ds-field::placeholder{color:#66628c;}.ds-field:focus{border-color:#5b2ee5;background:#fff;box-shadow:0 0 0 4px rgba(91,46,229,0.1);}"
     },
     {
       "name": "Fila de gasto",
@@ -537,6 +537,8 @@
       }
     ],
     "dos": [
+      "**Do** dar a todas las tarjetas de atención el mismo tratamiento (hoja blanca); la urgencia la dicen el texto y el botón, no un color distinto para la primera.",
+      "**Do** comprobar el contraste de todo texto de apoyo (mínimo 4.5:1) y de los avatares con texto blanco; la paleta de avatares está calibrada para eso.",
       "**Do** usar el violeta solo para acciones, selección y marca; todo lo demás con significado usa turquesa, coral o semánticos.",
       "**Do** mostrar tu posición, no el total: \"te deben $48.000\", no el monto bruto del gasto.",
       "**Do** poner signo a los montos negativos y numerales tabulares a toda cifra.",

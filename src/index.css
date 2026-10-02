@@ -29,7 +29,7 @@
 
   --ink: #14113a;
   --ink-2: #5a5780;
-  --ink-3: #77739b;
+  --ink-3: #66628c;
   --line: rgba(20, 17, 58, 0.08);
   --line-strong: rgba(20, 17, 58, 0.16);
 
@@ -232,7 +232,7 @@ input:focus-visible { outline: none; }
   box-shadow: 0 22px 44px -18px var(--primary-glow);
 }
 .hero h1, .hero h2, .hero h3, .hero .small, .hero .tiny { color: inherit; }
-.hero .small { opacity: 0.82; }
+.hero .small { opacity: 0.92; }
 
 /* Tiles de color (acciones rápidas, secciones). */
 .tile { position: relative; overflow: hidden; border-radius: 20px; color: #fff; }

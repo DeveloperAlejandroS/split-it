@@ -41,6 +41,7 @@ export const HomeView = ({
     refreshKey = 0,
     friendCount = 0,
     onAddFriend,
+    onConfirmPayment,
 }) => {
     const [budget, setBudget] = useState(null);
     const [libreta, setLibreta] = useState({ total_pending: 0 });
@@ -49,6 +50,7 @@ export const HomeView = ({
     // Si alguna fuente de cifras falla, se conservan los últimos valores buenos
     // y se avisa: mostrar $0 como si fuera real sería peor que no mostrar nada.
     const [loadFailed, setLoadFailed] = useState(false);
+    const [busyKey, setBusyKey] = useState(null);
 
     const loadAll = useCallback(async (silent = false) => {
         if (!silent) setIsLoading(true);
@@ -123,6 +125,7 @@ export const HomeView = ({
                         hint: `${expense.description}. Confírmalo.`,
                         icon: <Clock size={22} weight="fill" />,
                         run: () => onOpenExpense(expense),
+                        action: { label: 'Confirmar', run: () => onConfirmPayment?.(expense.id, p.user_id) },
                     });
                 }
             });
@@ -151,7 +154,12 @@ export const HomeView = ({
             });
         }
         return items.slice(0, 6);
-    }, [expenses, pendingFriendRequests, currentUser?.id, onOpenExpense, onNavigate]);
+    }, [expenses, pendingFriendRequests, currentUser?.id, onOpenExpense, onNavigate, onConfirmPayment]);
+
+    const runAction = async (item) => {
+        setBusyKey(item.key);
+        try { await item.action.run(); } finally { setBusyKey(null); }
+    };
 
     // Feed cronológico que cruza gastos compartidos, presupuesto y cuentas.
     const feed = useMemo(() => {
@@ -214,7 +222,7 @@ export const HomeView = ({
             )}
 
             <div className="stagger flex flex-col gap-5 xl:grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] xl:items-start xl:gap-x-6">
-              <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-5 xl:order-1">
                 <div className="hero p-6">
                     <p className="small">Lo que tienes</p>
                     {cashKnown ? (
@@ -227,27 +235,32 @@ export const HomeView = ({
                     <p className="small mt-2">Caja y ahorros. Lo que te deben no suma hasta que te paguen.</p>
                     <div className="mt-5 grid grid-cols-2 gap-3">
                         <button type="button" onClick={() => onNavigate('personal')} className="rounded-[18px] p-3 text-left transition-transform active:scale-[0.97]" style={{ background: 'rgba(255,255,255,0.16)' }}>
-                            <span className="flex items-center gap-1.5 tiny" style={{ color: 'rgba(255,255,255,0.8)' }}><Wallet size={14} weight="fill" /> En caja</span>
+                            <span className="flex items-center gap-1.5 tiny" style={{ color: 'rgba(255,255,255,0.92)' }}><Wallet size={14} weight="fill" /> En caja</span>
                             <span className="money-md mt-1 block">{cashKnown ? formatCurrency(cash) : '—'}</span>
                         </button>
                         <button type="button" onClick={() => onNavigate('personal')} className="rounded-[18px] p-3 text-left transition-transform active:scale-[0.97]" style={{ background: 'rgba(255,255,255,0.16)' }}>
-                            <span className="flex items-center gap-1.5 tiny" style={{ color: 'rgba(255,255,255,0.8)' }}><PiggyBank size={14} weight="fill" /> Ahorros</span>
+                            <span className="flex items-center gap-1.5 tiny" style={{ color: 'rgba(255,255,255,0.92)' }}><PiggyBank size={14} weight="fill" /> Ahorros</span>
                             <span className="money-md mt-1 block">{cashKnown ? formatCurrency(savings) : '—'}</span>
                         </button>
                     </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                    <button type="button" onClick={() => onNavigate('accounts')} className="tile tile-teal tile-shadow-teal p-4 text-left transition-transform active:scale-[0.97]">
-                        <span className="bubble h-9 w-9 rounded-full" style={{ background: 'rgba(255,255,255,0.28)' }}><ArrowDownLeft size={18} weight="bold" /></span>
-                        <span className="small mt-3 block" style={{ opacity: 0.85 }}>Te deben</span>
-                        <span className="money-lg block">{formatCurrency(owedToMe)}</span>
-                    </button>
-                    <button type="button" onClick={() => onNavigate('expenses')} className="tile tile-coral tile-shadow-coral p-4 text-left transition-transform active:scale-[0.97]">
-                        <span className="bubble h-9 w-9 rounded-full" style={{ background: 'rgba(255,255,255,0.28)' }}><ArrowUpRight size={18} weight="bold" /></span>
-                        <span className="small mt-3 block" style={{ opacity: 0.85 }}>Debes</span>
-                        <span className="money-lg block">{formatCurrency(iOwe)}</span>
-                    </button>
+                    {/* Lo que está en juego pero aún no es tuyo: va pegado a la cifra, en voz baja. */}
+                    <div className="mt-4 grid grid-cols-2 gap-3 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                        <button type="button" onClick={() => onNavigate('expenses')} className="flex min-h-[44px] items-center gap-2.5 text-left transition-transform active:scale-[0.97]">
+                            <span className="bubble h-9 w-9 rounded-full" style={{ background: 'var(--pos-bright)', color: '#0b1f3a' }}><ArrowDownLeft size={18} weight="bold" /></span>
+                            <span className="min-w-0">
+                                <span className="tiny block" style={{ color: 'rgba(255,255,255,0.92)' }}>Te deben</span>
+                                <span className="money-md block">{formatCurrency(owedToMe)}</span>
+                            </span>
+                        </button>
+                        <button type="button" onClick={() => onNavigate('expenses')} className="flex min-h-[44px] items-center gap-2.5 text-left transition-transform active:scale-[0.97]">
+                            <span className="bubble h-9 w-9 rounded-full" style={{ background: 'var(--neg-bright)', color: '#3a0f06' }}><ArrowUpRight size={18} weight="bold" /></span>
+                            <span className="min-w-0">
+                                <span className="tiny block" style={{ color: 'rgba(255,255,255,0.92)' }}>Debes</span>
+                                <span className="money-md block">{formatCurrency(iOwe)}</span>
+                            </span>
+                        </button>
+                    </div>
                 </div>
 
                 {friendCount === 0 && (
@@ -264,22 +277,23 @@ export const HomeView = ({
                 {attention.length > 0 && (
                     <div>
                         <h2 className="title mb-3">Requiere tu atención</h2>
-                        <div className="snap-x-row snap-grow scrollbar-hide">
-                            {attention.map((a, i) => (
-                                <button
-                                    key={a.key}
-                                    type="button"
-                                    onClick={a.run}
-                                    className={`${i === 0 ? 'tile tile-violet' : 'card'} flex w-[min(260px,calc(100vw-96px))] flex-col gap-3 p-4 text-left transition-transform active:scale-[0.97]`}
-                                    style={i === 0 ? { boxShadow: '0 18px 30px -16px var(--primary-glow)' } : undefined}
-                                >
-                                    <span className="bubble h-11 w-11 rounded-full" style={i === 0 ? { background: 'rgba(255,255,255,0.22)' } : { background: 'var(--card-tint)', color: 'var(--primary)' }}>{a.icon}</span>
-                                    <span>
-                                        <span className="heading block">{a.title}</span>
-                                        {a.amount && <span className="money-lg mt-1 block">{a.amount}</span>}
-                                        <span className="mt-1 block text-[13px] leading-tight" style={{ opacity: 0.8 }}>{a.hint}</span>
-                                    </span>
-                                </button>
+                        <div className="snap-x-row snap-grow scrollbar-hide" role="region" aria-label={`Requiere tu atención, ${attention.length} ${attention.length === 1 ? 'aviso' : 'avisos'}`}>
+                            {attention.map((a) => (
+                                <div key={a.key} className="card flex w-[min(260px,calc(100vw-96px))] flex-col gap-3 p-4">
+                                    <button type="button" onClick={a.run} className="flex flex-col gap-3 text-left transition-transform active:scale-[0.98]">
+                                        <span className="bubble h-11 w-11 rounded-full" style={{ background: 'var(--card-tint)', color: 'var(--primary)' }}>{a.icon}</span>
+                                        <span>
+                                            <span className="heading block">{a.title}</span>
+                                            {a.amount && <span className="money-lg mt-1 block">{a.amount}</span>}
+                                            <span className="small mt-1 block leading-tight">{a.hint}</span>
+                                        </span>
+                                    </button>
+                                    {a.action && (
+                                        <button type="button" className="btn btn-primary btn-sm mt-auto w-full" style={{ height: 44 }} disabled={busyKey === a.key} onClick={() => runAction(a)}>
+                                            {busyKey === a.key ? '…' : a.action.label}
+                                        </button>
+                                    )}
+                                </div>
                             ))}
                         </div>
                     </div>
@@ -287,33 +301,33 @@ export const HomeView = ({
 
               </div>
 
-              <div className="flex flex-col gap-5">
-                <div className="card p-5">
-                    <div className="mb-4 flex items-center justify-between">
-                        <h2 className="title">Tu mes</h2>
-                        <button type="button" className="btn btn-plain btn-sm" style={{ height: 44 }} onClick={() => onNavigate('personal')}>Ver más <CaretRight size={14} weight="bold" /></button>
-                    </div>
-                    {spendingTotal > 0 ? (
-                        <div className="flex items-center gap-5">
-                            <Donut segments={spending} size={148} thickness={20}>
-                                <span className="tiny">Salió</span>
-                                <span className="money text-[17px]">{formatCurrency(spendingTotal)}</span>
-                            </Donut>
-                            <ul className="min-w-0 flex-1 space-y-2.5">
-                                {spending.filter((s) => s.value > 0).map((s) => (
-                                    <li key={s.label} className="flex items-center gap-2">
-                                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: s.color }} />
-                                        <span className="small min-w-0 flex-1 truncate">{s.label}</span>
-                                        <span className="money">{formatCurrency(s.value)}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ) : (
-                        <p className="small">Aún no hay movimientos este mes. Toca el botón + para registrar el primero.</p>
-                    )}
-                </div>
+              <div className="card p-5 xl:order-3 xl:col-span-2">
+                  <div className="mb-4 flex items-center justify-between">
+                      <h2 className="title">Tu mes</h2>
+                      <button type="button" className="btn btn-plain btn-sm" style={{ height: 44 }} onClick={() => onNavigate('personal')}>Ver más <CaretRight size={14} weight="bold" /></button>
+                  </div>
+                  {spendingTotal > 0 ? (
+                      <div className="flex items-center gap-5">
+                          <Donut segments={spending} size={148} thickness={20}>
+                              <span className="tiny">Salió</span>
+                              <span className="money text-[17px]">{formatCurrency(spendingTotal)}</span>
+                          </Donut>
+                          <ul className="min-w-0 flex-1 space-y-2.5">
+                              {spending.filter((s) => s.value > 0).map((s) => (
+                                  <li key={s.label} className="flex items-center gap-2">
+                                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: s.color }} />
+                                      <span className="small min-w-0 flex-1 truncate">{s.label}</span>
+                                      <span className="money">{formatCurrency(s.value)}</span>
+                                  </li>
+                              ))}
+                          </ul>
+                      </div>
+                  ) : (
+                      <p className="small">Aún no hay movimientos este mes. Toca el botón + para registrar el primero.</p>
+                  )}
+              </div>
 
+              <div className="flex flex-col gap-5 xl:order-2">
                 <div>
                     <h2 className="title mb-3">Movimientos recientes</h2>
                     {isLoading && feed.length === 0 ? (

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-02T00:50:12.662379+00:00",
+  "generatedAt": "2026-10-02T01:03:53.116128+00:00",
   "title": "Design System: Split.it",
   "extensions": {
     "colorMeta": {
@@ -540,6 +540,9 @@
       "**Do** usar texto oscuro propio sobre un tinte (`--pos-ink`, `--primary-ink`) cuando el tinte va sobre vidrio: el color base de significado no alcanza 4.5:1 ahí.",
       "**Do** mantener todo objetivo táctil de 44px o más: los botones pequeños de hojas y filtros usan la variante `btn-44` o `segmented-lg`; el tamaño pequeño global no cambia.",
       "**Do** devolver el foco al elemento que abrió una hoja o diálogo al cerrarla, aunque un campo con autoFocus lo haya tomado al abrir.",
+      "**Do** colorear una categoría solo por su significado y solo cuando está seleccionada: turquesa entra, coral sale, violeta es lo apartado (ahorros). Las demás son hojas neutras con su ícono; bajar la opacidad para marcar \"inactivo\" rompe el contraste.",
+      "**Do** definir cada cifra de dinero de una sola manera: \"Caja al cierre\" es la caja real (sin lo apartado a ahorros); lo apartado vive en \"Ahorros acumulados\". Nunca dos números de \"plata\" distintos con nombres parecidos en una misma pantalla.",
+      "**Do** animar barras de progreso con `clip-path` (no con `width`) y apagar esa transición con reduced-motion.",
       "**Do** dar a toda acción que mueve dinero una red de seguridad: estado de carga, error visible en el mismo lugar, confirmación y un \"Deshacer\" de unos segundos.",
       "**Do** no repetir un mismo hecho en dos listas de la misma pantalla.",
       "**Do** separar lo que es una cuenta abierta (sin signo, con la cara de la otra persona) de lo que es plata que se movió (con signo): son dos listas, no una.",
@@ -554,6 +557,8 @@
       "**Do** limitar el movimiento a lo que comunica (aparecer, confirmar, orientar) con duraciones bajo 300ms para lo frecuente."
     ],
     "donts": [
+      "**Don't** inventar un dato que la persona no dio: al agregar un gasto, el plan es lo que ella escriba (o, si lo deja vacío, el propio monto), y se dice en qué mes se está escribiendo.",
+      "**Don't** dejar navegar meses sin tope: abrir un mes lo crea en el servidor (hasta 12 adelante y 36 atrás).",
       "**Don't** mostrar el neto con amigos como si fuera plata en mano: va con \"Aún no es tuyo\" y el verde azulado de \"te deben\" solo en los montos que lo son.",
       "**Don't** contar los ahorros como gasto: apartar plata no es gastarla, y se muestra aparte de \"Gastaste\".",
       "**Don't** usar vidrio en tarjetas de contenido ni sobre cifras.",

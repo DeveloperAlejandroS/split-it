@@ -423,6 +423,7 @@ input.input-amount::placeholder { color: var(--lilac); }
   .animate-sheet-out { animation: scrim-out 160ms ease both; }
   .btn:active, button.row:active, .glass-interactive:active { transform: none; }
   .skeleton::after { animation: none; }
+  .bar-fill { transition: none !important; }
   .tabbar-lens { transition: opacity 200ms; }
 }
 @media (prefers-reduced-transparency: reduce) {

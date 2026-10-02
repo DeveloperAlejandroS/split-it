@@ -11,7 +11,7 @@ export const shiftMonthKey = (monthKey, delta) => {
 
 export const monthKeyToLabel = (monthKey) => {
     const [year, month] = monthKey.split('-').map(Number);
-    const label = new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('es-CL', {
+    const label = new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('es-CO', {
         month: 'long',
         year: 'numeric',
         timeZone: 'UTC',

@@ -58,6 +58,8 @@ const App = () => {
     const [editingExpense, setEditingExpense] = useState(null);
     const [showAddBudgetItem, setShowAddBudgetItem] = useState(false);
     const [budgetSection, setBudgetSection] = useState(null);
+    // Mes que se está viendo en Presupuesto: el modal de agregar escribe en ESE mes.
+    const [budgetMonth, setBudgetMonth] = useState(null);
     const [showAddLedger, setShowAddLedger] = useState(false);
     const [showAddFriend, setShowAddFriend] = useState(false);
     const [showAccount, setShowAccount] = useState(false);
@@ -343,7 +345,7 @@ const App = () => {
             )}
 
             <main className="xl:pl-[17rem] pb-[calc(140px+var(--safe-bottom))] xl:pb-16">
-                <div className={`mx-auto max-w-3xl px-4 sm:px-6 ${activeTab === 'home' ? 'xl:max-w-6xl' : ''}`}>
+                <div className={`mx-auto max-w-3xl px-4 sm:px-6 ${activeTab === 'home' || activeTab === 'personal' ? 'xl:max-w-6xl' : ''}`}>
                 {activeTab === 'home' && (
                     <HomeView
                         key={dataVersion}
@@ -379,6 +381,7 @@ const App = () => {
                     <BudgetView
                         refreshKey={dataVersion + liveVersion}
                         onAddToSection={(section) => { setBudgetSection(section); setShowAddBudgetItem(true); }}
+                        onMonthChange={setBudgetMonth}
                         onViewSyncedExpense={(id) => setSelectedExpenseId(id)}
                         onViewAccounts={() => setActiveTab('accounts')}
                         onOpenFriends={() => setActiveTab('friends')}
@@ -419,6 +422,7 @@ const App = () => {
             <AddBudgetItemModal
                 isOpen={showAddBudgetItem}
                 initialSection={budgetSection}
+                monthKey={activeTab === 'personal' ? budgetMonth : null}
                 onClose={() => setShowAddBudgetItem(false)}
                 onCreated={() => { setShowAddBudgetItem(false); afterCreate('personal'); }}
             />

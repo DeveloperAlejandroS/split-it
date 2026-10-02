@@ -3,7 +3,7 @@ import { CircleNotch, Money, PiggyBank, Repeat, ShoppingBag } from '@phosphor-ic
 import { Sheet } from './ui/Sheet';
 import { CurrencyInput } from './CurrencyInput';
 import { formatCurrency } from '../utils/helpers';
-import { getCurrentMonthKey } from '../utils/budgetHelpers';
+import { getCurrentMonthKey, monthKeyToLabel } from '../utils/budgetHelpers';
 import { API_URL } from '../config/api';
 
 const TOKEN_KEY = 'splitit_jwt';
@@ -14,9 +14,9 @@ const TOKEN_KEY = 'splitit_jwt';
 // cierto y confundía.
 const CATEGORIES = [
     { section: 'income', label: 'Ingreso', hint: 'Sueldo, pago extra, dinero que entra', tile: 'tile-teal', icon: Money, placeholder: 'Ej. Sueldo' },
-    { section: 'tracked_expense', label: 'Gasto del día a día', hint: 'Comida, salidas, transporte', tile: 'tile-violet', icon: ShoppingBag, placeholder: 'Ej. Almuerzo' },
-    { section: 'fixed_expense', label: 'Gasto fijo', hint: 'Arriendo, servicios, cuotas. Se repite', tile: 'tile-lilac', icon: Repeat, placeholder: 'Ej. Arriendo' },
-    { section: 'saving', label: 'Ahorro', hint: 'Aparta dinero para una meta', tile: 'tile-coral', icon: PiggyBank, placeholder: 'Ej. Fondo de emergencia' },
+    { section: 'tracked_expense', label: 'Gasto del día a día', hint: 'Comida, salidas, transporte', tile: 'tile-coral', icon: ShoppingBag, placeholder: 'Ej. Almuerzo' },
+    { section: 'fixed_expense', label: 'Gasto fijo', hint: 'Arriendo, servicios, cuotas. Se repite', tile: 'tile-coral', icon: Repeat, placeholder: 'Ej. Arriendo' },
+    { section: 'saving', label: 'Ahorro', hint: 'Aparta dinero para una meta', tile: 'tile-violet', icon: PiggyBank, placeholder: 'Ej. Fondo de emergencia' },
 ];
 
 const authHeaders = (json) => ({
@@ -25,19 +25,23 @@ const authHeaders = (json) => ({
     ...(json ? { 'Content-Type': 'application/json' } : {}),
 });
 
-export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, initialSection = null }) => {
+export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, initialSection = null, monthKey: monthKeyProp = null }) => {
     const [step, setStep] = useState('category'); // 'category' | 'savings-pick' | 'form'
     const [category, setCategory] = useState(null);
     const [existingSavings, setExistingSavings] = useState([]);
     const [loadingSavings, setLoadingSavings] = useState(false);
     const [label, setLabel] = useState('');
     const [amount, setAmount] = useState('');
+    const [planned, setPlanned] = useState('');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [contributingId, setContributingId] = useState(null);
     const [contributeAmount, setContributeAmount] = useState('');
 
-    const monthKey = getCurrentMonthKey();
+    // Se agrega al mes que se está viendo; si el modal se abre desde otra pantalla, al actual.
+    const monthKey = monthKeyProp || getCurrentMonthKey();
+    const monthLabel = monthKeyToLabel(monthKey).toLowerCase();
+    const fromPreset = Boolean(initialSection && CATEGORIES.some((c) => c.section === initialSection));
 
     async function pick(cat) {
         setCategory(cat);
@@ -62,7 +66,7 @@ export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, initialSection 
     /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (!isOpen) return;
-        setStep('category'); setCategory(null); setLabel(''); setAmount(''); setError(''); setContributingId(null); setContributeAmount('');
+        setStep('category'); setCategory(null); setLabel(''); setAmount(''); setPlanned(''); setError(''); setContributingId(null); setContributeAmount('');
         const preset = initialSection && CATEGORIES.find((c) => c.section === initialSection);
         if (preset) pick(preset);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -85,46 +89,57 @@ export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, initialSection 
     };
 
     const value = Number(amount);
+    // Gastos: se puede indicar lo que planeabas gastar. Si no, el plan es el propio monto (como antes).
+    const plannedValue = Number(planned) > 0 ? Number(planned) : value;
+    const canPlan = category?.section === 'tracked_expense' || category?.section === 'fixed_expense';
     const missing = !label.trim() ? 'Escribe el nombre' : !(value > 0) ? 'Escribe el monto' : '';
 
     const create = async () => {
         if (missing) return;
         setSaving(true); setError('');
         try {
-            await post(`/budget/${monthKey}/items`, 'POST', { section: category.section, label: label.trim(), budgeted_amount: value, actual_amount: value });
+            await post(`/budget/${monthKey}/items`, 'POST', { section: category.section, label: label.trim(), budgeted_amount: canPlan ? plannedValue : value, actual_amount: value });
             onCreated?.();
         } catch (err) { setError(err.message); }
         finally { setSaving(false); }
     };
 
-    const back = () => { setError(''); setStep('category'); setCategory(null); setContributingId(null); };
+    const backToSavings = step === 'form' && category?.section === 'saving';
+    const back = () => {
+        setError('');
+        if (backToSavings) { setStep('savings-pick'); return; }
+        // Abierto desde una categoría concreta: no hay selector al que volver.
+        if (fromPreset) { onClose(); return; }
+        setStep('category'); setCategory(null); setContributingId(null);
+    };
     const atRoot = step === 'category';
+    const backCloses = atRoot || (fromPreset && !backToSavings);
 
     return (
         <Sheet
             isOpen={isOpen}
             onClose={atRoot ? onClose : back}
             title={atRoot ? 'Movimiento personal' : category?.label}
-            closeLabel={atRoot ? 'Cancelar' : 'Atrás'}
+            closeLabel={backCloses ? 'Cancelar' : 'Atrás'}
         >
             {error && <p className="small mb-3 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
 
             {step === 'category' && (
                 <>
-                    <p className="small mb-3 px-1">Se registra en tu presupuesto de este mes.</p>
+                    <p className="small mb-3 px-1">Se registra en tu presupuesto de {monthLabel}.</p>
                     <div className="grid grid-cols-2 gap-3">
                         {CATEGORIES.map(({ section, label: l, hint, tile, icon: Icon, ...rest }) => (
                             <button
                                 key={section}
                                 type="button"
                                 className={`tile ${tile} flex min-h-[140px] flex-col justify-between p-4 text-left transition-transform active:scale-[0.96]`}
-                                style={{ boxShadow: '0 16px 30px -16px rgba(60, 30, 160, 0.5)' }}
+                                style={{ boxShadow: '0 16px 30px -16px rgb(var(--shadow-rgb) / 0.5)' }}
                                 onClick={() => pick({ section, label: l, hint, tile, icon: Icon, ...rest })}
                             >
                                 <span className="bubble h-11 w-11 rounded-full" style={{ background: 'rgba(255,255,255,0.28)' }}><Icon size={24} weight="fill" /></span>
                                 <span>
                                     <span className="heading block">{l}</span>
-                                    <span className="block text-[13px] leading-tight opacity-85">{hint}</span>
+                                    <span className="block text-[13px] leading-tight opacity-95">{hint}</span>
                                 </span>
                             </button>
                         ))}
@@ -176,8 +191,15 @@ export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, initialSection 
                     <div className="py-4 text-center">
                         <label htmlFor="budget-amount" className="small text-secondary">Monto</label>
                         <CurrencyInput id="budget-amount" value={amount} onChange={setAmount} autoFocus placeholder="$0" echo className="input-amount" />
+                        <p className="tiny mt-1">En {monthLabel}</p>
                     </div>
                     <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={category?.placeholder || 'Descripción'} aria-label="Nombre" autoCapitalize="sentences" className="field" />
+                    {canPlan && (
+                        <div className="mt-3">
+                            <label className="field-label" htmlFor="budget-planned">Lo que planeabas gastar (opcional)</label>
+                            <CurrencyInput id="budget-planned" value={planned} onChange={setPlanned} placeholder="Igual al monto" className="field" />
+                        </div>
+                    )}
                     <div className="mt-5">
                         <button type="button" className="btn btn-primary btn-block" disabled={Boolean(missing) || saving} onClick={create}>
                             {saving ? <CircleNotch size={20} className="animate-spin" /> : 'Agregar'}

@@ -44,7 +44,7 @@ export const CurrencyInput = ({ value, onChange, onBlur, className = '', placeho
 
     const displayValue = isFocused
         ? raw
-        : (raw !== '' && Number.isFinite(Number(raw)) && Number(raw) !== 0 ? formatCurrency(Number(raw)) : raw);
+        : (raw !== '' && Number.isFinite(Number(raw)) ? formatCurrency(Number(raw)) : raw);
 
     const input = (
         <input

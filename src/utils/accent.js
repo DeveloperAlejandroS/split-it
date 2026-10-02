@@ -83,7 +83,7 @@ export const buildAccentCss = (hex) => {
         ['--card-soft', hsl(h, tintS + 5, 97)],
         ['--card-tint', hsl(h, s < 12 ? s : 100, 95)],
         ['--shadow-rgb', hslToRgbTriplet(h, s < 12 ? s : 60, 38)],
-        ['--sheet-bg', hsl(h, tintS, 94, 0.8)],
+        ['--sheet-bg', hsl(h, tintS, 94, 0.92)],
         ['--fill-2', hsl(h, s, l, 0.12)],
     ];
     const dark = [
@@ -99,7 +99,7 @@ export const buildAccentCss = (hex) => {
         ['--card-soft', hsl(h, s < 12 ? 10 : 45, 21)],
         ['--card-tint', hsl(h, s < 12 ? 10 : 45, 26)],
         ['--shadow-rgb', '0 0 0'],
-        ['--sheet-bg', hsl(h, s < 12 ? 10 : 58, 8, 0.8)],
+        ['--sheet-bg', hsl(h, s < 12 ? 10 : 58, 8, 0.92)],
         ['--material', hsl(h, s < 12 ? 10 : 52, 15, 0.8)],
         ['--glass-bg', hsl(h, s < 12 ? 10 : 48, 20, 0.56)],
         ['--glass-bg-strong', hsl(h, s < 12 ? 10 : 45, 26, 0.78)],

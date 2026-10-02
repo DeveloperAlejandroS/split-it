@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-02T00:39:26.624858+00:00",
+  "generatedAt": "2026-10-02T00:50:12.662379+00:00",
   "title": "Design System: Split.it",
   "extensions": {
     "colorMeta": {
@@ -247,16 +247,16 @@
       "danger": {
         "role": "semantic",
         "displayName": "Peligro",
-        "canonical": "#d6293f",
+        "canonical": "#b3203a",
         "tonalRamp": [
-          "#400c13",
-          "#711621",
-          "#a21f30",
-          "#d3283e",
-          "#df5768",
-          "#e88894",
-          "#f2b9c0",
-          "#fbeaec"
+          "#410c15",
+          "#721425",
+          "#a41d35",
+          "#d52645",
+          "#e1556e",
+          "#e98698",
+          "#f2b8c2",
+          "#fbe9ed"
         ]
       },
       "warn": {
@@ -461,7 +461,7 @@
       "refersTo": "row",
       "description": "Fila táctil de 64px: título, contexto y tu posición a la derecha.",
       "html": "<div class=\"ds-row\"><span class=\"ds-row-icon\">•</span><span class=\"ds-row-text\"><b>Cena en Andrés Carne</b><small>Pagaste tú · Hoy</small></span><span class=\"ds-row-money\">$ 92.000</span></div>",
-      "css": ".ds-row{display:flex;align-items:center;gap:12px;min-height:64px;padding:12px 14px;border-radius:20px;background:#fff;box-shadow:0 6px 18px -10px rgba(66,44,180,0.3);font-family:'Geist Variable',Geist,system-ui,sans-serif;color:#14113a;}.ds-row-icon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:16px;background:#eeeaff;color:#5b2ee5;}.ds-row-text{flex:1;display:flex;flex-direction:column;font-size:15px;}.ds-row-text small{font-size:13px;color:#5a5780;}.ds-row-money{font-family:'Outfit Variable',Outfit,system-ui,sans-serif;font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;color:#066f67;}"
+      "css": ".ds-row{display:flex;align-items:center;gap:12px;min-height:64px;padding:12px 14px;border-radius:20px;background:#fff;box-shadow:0 6px 18px -10px rgba(66,44,180,0.3);font-family:'Geist Variable',Geist,system-ui,sans-serif;color:#14113a;}.ds-row-icon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:16px;background:#eeeaff;color:#5b2ee5;}.ds-row-text{flex:1;display:flex;flex-direction:column;font-size:15px;}.ds-row-text small{font-size:13px;color:#5a5780;}.ds-row-money{font-family:'Outfit Variable',Outfit,system-ui,sans-serif;font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;color:#08857b;}"
     },
     {
       "name": "Ficha \"Te deben\"",
@@ -485,7 +485,7 @@
       "refersTo": "chip",
       "description": "Píldora de 28px con el color de significado.",
       "html": "<span class=\"ds-chip\">Te deben $ 48.000</span>",
-      "css": ".ds-chip{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;background:rgba(32,211,194,0.16);color:#066f67;font:600 12px 'Geist Variable',Geist,system-ui,sans-serif;}"
+      "css": ".ds-chip{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;background:rgba(32,211,194,0.16);color:#08857b;font:600 12px 'Geist Variable',Geist,system-ui,sans-serif;}"
     }
   ],
   "narrative": {
@@ -537,6 +537,9 @@
       }
     ],
     "dos": [
+      "**Do** usar texto oscuro propio sobre un tinte (`--pos-ink`, `--primary-ink`) cuando el tinte va sobre vidrio: el color base de significado no alcanza 4.5:1 ahí.",
+      "**Do** mantener todo objetivo táctil de 44px o más: los botones pequeños de hojas y filtros usan la variante `btn-44` o `segmented-lg`; el tamaño pequeño global no cambia.",
+      "**Do** devolver el foco al elemento que abrió una hoja o diálogo al cerrarla, aunque un campo con autoFocus lo haya tomado al abrir.",
       "**Do** dar a toda acción que mueve dinero una red de seguridad: estado de carga, error visible en el mismo lugar, confirmación y un \"Deshacer\" de unos segundos.",
       "**Do** no repetir un mismo hecho en dos listas de la misma pantalla.",
       "**Do** separar lo que es una cuenta abierta (sin signo, con la cara de la otra persona) de lo que es plata que se movió (con signo): son dos listas, no una.",
@@ -551,6 +554,7 @@
       "**Do** limitar el movimiento a lo que comunica (aparecer, confirmar, orientar) con duraciones bajo 300ms para lo frecuente."
     ],
     "donts": [
+      "**Don't** mostrar el neto con amigos como si fuera plata en mano: va con \"Aún no es tuyo\" y el verde azulado de \"te deben\" solo en los montos que lo son.",
       "**Don't** contar los ahorros como gasto: apartar plata no es gastarla, y se muestra aparte de \"Gastaste\".",
       "**Don't** usar vidrio en tarjetas de contenido ni sobre cifras.",
       "**Don't** usar el violeta, ni su degradado, para estados semánticos (peligro, advertencia, éxito).",

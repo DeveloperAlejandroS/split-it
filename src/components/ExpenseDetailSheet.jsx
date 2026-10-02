@@ -34,10 +34,10 @@ const AbonoForm = ({ remaining, busy, onSubmit, onCancel }) => {
     return (
         <div className="mt-3 flex items-center gap-2">
             <CurrencyInput value={amount} onChange={setAmount} autoFocus className="field" />
-            <button type="button" className="btn btn-success btn-sm shrink-0" disabled={!valid || busy} onClick={() => onSubmit(value)}>
+            <button type="button" className="btn btn-success btn-sm btn-44 shrink-0" disabled={!valid || busy} onClick={() => onSubmit(value)}>
                 {busy ? <CircleNotch size={16} className="animate-spin" /> : 'Registrar'}
             </button>
-            <button type="button" className="btn btn-gray btn-sm shrink-0" onClick={onCancel}>Cancelar</button>
+            <button type="button" className="btn btn-gray btn-sm btn-44 shrink-0" onClick={onCancel}>Cancelar</button>
         </div>
     );
 };
@@ -45,7 +45,7 @@ const AbonoForm = ({ remaining, busy, onSubmit, onCancel }) => {
 // Resumen en una frase de "dónde estás parado" + la acción principal.
 const PositionCard = ({ expense, stake, payerName, busy, onClaim }) => {
     const copy = {
-        owed: { title: `Te deben ${formatCurrency(stake.amount)}`, sub: stake.awaiting > 0 ? `${stake.awaiting} ${stake.awaiting === 1 ? 'persona avisó' : 'personas avisaron'} que ya pagó. Confírmalo abajo.` : 'Cuando alguien te pague, márcalo como pagado.', color: 'var(--pos)', bg: 'var(--pos-soft)' },
+        owed: { title: `Te deben ${formatCurrency(stake.amount)}`, sub: stake.awaiting > 0 ? `${stake.awaiting} ${stake.awaiting === 1 ? 'persona avisó' : 'personas avisaron'} que ya pagó. Confírmalo abajo.` : 'Cuando alguien te pague, márcalo como pagado.', color: 'var(--pos-ink)', bg: 'var(--pos-soft)' },
         owe: { title: `Le debes ${formatCurrency(stake.amount)} a ${payerName}`, sub: 'Cuando le pagues, avísale para que lo confirme.', color: 'var(--neg)', bg: 'var(--neg-soft)' },
         waiting: { title: `Avisaste que pagaste ${formatCurrency(stake.amount)}`, sub: `Falta que ${payerName} lo confirme.`, color: 'var(--info)', bg: 'var(--info-soft)' },
         settled: { title: 'Todo saldado', sub: 'Nadie debe nada en este gasto.', color: 'var(--success)', bg: 'var(--success-soft)' },
@@ -108,9 +108,8 @@ export const ExpenseDetailSheet = ({
                     <>
                         <div className="pb-4 pt-1">
                             <h3 className="title">{expense.description}</h3>
-                            <p className="money-lg mt-1">{formatCurrency(expense.amount)}</p>
                             <p className="small mt-1 text-secondary">
-                                {isOwner ? 'Pagaste tú' : `Pagó ${payerName}`} · {relativeDay(expense.created_at)}
+                                {isOwner ? 'Pagaste' : `Pagó ${payerName}`} · {relativeDay(expense.created_at)} · Total del gasto {formatCurrency(expense.amount)}
                             </p>
                         </div>
 
@@ -159,24 +158,24 @@ export const ExpenseDetailSheet = ({
 
                                         {isOwner && !isPayer && status === PARTICIPANT_STATUS.AWAITING_CONFIRMATION && (
                                             <div className="mt-3 flex gap-2">
-                                                <button type="button" className="btn btn-success btn-sm flex-1" disabled={busy} onClick={() => run(key, () => onConfirmPayment(expense.id, p.user_id))}>
+                                                <button type="button" className="btn btn-success btn-sm btn-44 flex-1" disabled={busy} onClick={() => run(key, () => onConfirmPayment(expense.id, p.user_id))}>
                                                     {busy ? <CircleNotch size={16} className="animate-spin" /> : `Confirmar ${formatCurrency(claim)}`}
                                                 </button>
-                                                <button type="button" className="btn btn-gray btn-sm" disabled={busy} onClick={() => run(key, () => onRejectPayment(expense.id, p.user_id))}>No me pagó</button>
+                                                <button type="button" className="btn btn-gray btn-sm btn-44" disabled={busy} onClick={() => run(key, () => onRejectPayment(expense.id, p.user_id))}>No me pagó</button>
                                             </div>
                                         )}
 
                                         {isOwner && !isPayer && status === PARTICIPANT_STATUS.PENDING && abonoKey !== key && (
                                             <div className="mt-3 flex gap-2">
-                                                <button type="button" className="btn btn-tinted btn-sm flex-1" disabled={busy} onClick={() => run(key, () => onMarkPaid(expense.id, p.user_id))}>
+                                                <button type="button" className="btn btn-tinted btn-sm btn-44 flex-1" disabled={busy} onClick={() => run(key, () => onMarkPaid(expense.id, p.user_id))}>
                                                     {busy ? <CircleNotch size={16} className="animate-spin" /> : `Me pagó ${formatCurrency(remaining)}`}
                                                 </button>
-                                                {remaining > 1 && <button type="button" className="btn btn-gray btn-sm" onClick={() => setAbonoKey(key)}>Otro monto</button>}
+                                                {remaining > 1 && <button type="button" className="btn btn-gray btn-sm btn-44" onClick={() => setAbonoKey(key)}>Otro monto</button>}
                                             </div>
                                         )}
 
                                         {!isOwner && isMe && status === PARTICIPANT_STATUS.PENDING && remaining > 1 && abonoKey !== key && (
-                                            <button type="button" className="btn btn-gray btn-sm mt-3" onClick={() => setAbonoKey(key)}>Pagar solo una parte</button>
+                                            <button type="button" className="btn btn-gray btn-sm btn-44 mt-3" onClick={() => setAbonoKey(key)}>Pagar solo una parte</button>
                                         )}
 
                                         {abonoKey === key && (
@@ -196,9 +195,9 @@ export const ExpenseDetailSheet = ({
                         </div>
 
                         {isOwner && (
-                            <div className="mt-6 grid grid-cols-2 gap-3">
-                                <button type="button" className="btn btn-gray" onClick={() => onEdit(expense)}>Editar</button>
-                                <button type="button" className="btn btn-danger" onClick={() => setShowDelete(true)}>Eliminar</button>
+                            <div className="mt-6 flex flex-col gap-2">
+                                <button type="button" className="btn btn-gray btn-block" onClick={() => onEdit(expense)}>Editar</button>
+                                <button type="button" className="btn btn-plain btn-block" style={{ color: 'var(--danger)' }} onClick={() => setShowDelete(true)}>Eliminar gasto</button>
                             </div>
                         )}
                     </>

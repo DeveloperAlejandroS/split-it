@@ -47,19 +47,28 @@ export const Sheet = ({
     const drag = useRef(null);
     const [draggedOut, setDraggedOut] = useState(false);
     const returnFocusRef = useRef(null);
+    // Una apertura = un solo registro del opener. El efecto de abajo se vuelve a
+    // ejecutar cuando `mounted` cambia, y para entonces un campo con autoFocus
+    // ya tiene el foco: sin esta guarda se anotaba el campo y no el botón que
+    // abrió la hoja, y al cerrar el foco caía en <body>.
+    const openSession = useRef(false);
 
     /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (isOpen) {
-            // Se anota antes de montar el panel: un campo con autoFocus se
-            // lleva el foco al aparecer y ya no sabríamos qué lo abrió.
-            returnFocusRef.current = document.activeElement;
+            if (!openSession.current) {
+                openSession.current = true;
+                returnFocusRef.current = document.activeElement;
+            }
             setMounted(true);
             setClosing(false);
             setDraggedOut(false);
             return undefined;
         }
-        if (!mounted) return undefined;
+        if (!mounted) {
+            openSession.current = false;
+            return undefined;
+        }
         setClosing(true);
         const t = setTimeout(() => { setMounted(false); setClosing(false); }, EXIT_MS);
         return () => clearTimeout(t);
@@ -178,7 +187,7 @@ export const Sheet = ({
                     </div>
                     <div className="grid grid-cols-[1fr_auto_1fr] items-center px-4 pt-2 pb-3 min-h-14">
                         <div className="justify-self-start">
-                            <button type="button" className="btn btn-plain btn-sm" style={{ height: 40, fontSize: 15, fontWeight: 500 }} onClick={backAction ? backAction.onClick : onClose}>
+                            <button type="button" className="btn btn-plain btn-sm" style={{ height: 44, fontSize: 15, fontWeight: 500 }} onClick={backAction ? backAction.onClick : onClose}>
                                 {backAction ? backAction.label : closeLabel}
                             </button>
                         </div>
@@ -189,7 +198,7 @@ export const Sheet = ({
                                     type="button"
                                     data-sheet-action
                                     className="btn btn-plain btn-sm"
-                                    style={{ height: 40, fontSize: 15, fontWeight: 700 }}
+                                    style={{ height: 44, fontSize: 15, fontWeight: 700 }}
                                     disabled={action.disabled || action.loading}
                                     onClick={action.onClick}
                                 >

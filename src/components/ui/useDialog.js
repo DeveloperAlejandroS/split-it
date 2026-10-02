@@ -7,6 +7,19 @@ import { useEffect, useRef } from 'react';
 //  - Al cerrar, el foco vuelve a lo que lo abrió.
 const stack = [];
 
+// Último elemento enfocado FUERA de cualquier diálogo: respaldo para devolver el
+// foco cuando el opener registrado no sirve (por ejemplo, un campo con autoFocus).
+let lastOutside = null;
+if (typeof document !== 'undefined') {
+    const isInDialog = (el) => Boolean(el?.closest?.('[role="dialog"], [role="alertdialog"]'));
+    document.addEventListener('focusin', (e) => { if (!isInDialog(e.target)) lastOutside = e.target; });
+    // Safari no enfoca los botones al hacer clic: se registra también el toque.
+    document.addEventListener('pointerdown', (e) => {
+        const el = e.target?.closest?.('button, a, [tabindex]');
+        if (el && !isInDialog(el)) lastOutside = el;
+    }, true);
+}
+
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 const focusablesIn = (panel) => [...panel.querySelectorAll(FOCUSABLE)].filter((el) => el.getClientRects().length > 0);
@@ -21,7 +34,9 @@ export const useDialog = (active, panelRef, { onEscape, onEnter, returnFocusRef 
         stack.push(token);
 
         const panel = panelRef.current;
-        const opener = returnFocusRef?.current ?? (panel?.contains(document.activeElement) ? null : document.activeElement);
+        const recorded = returnFocusRef?.current;
+        const usable = (el) => el instanceof HTMLElement && !panel?.contains(el);
+        const opener = usable(recorded) ? recorded : usable(document.activeElement) ? document.activeElement : lastOutside;
         // Si un campo con autoFocus ya tiene el foco, no se lo quitamos.
         if (panel && !panel.contains(document.activeElement)) {
             (panel.querySelector('[data-autofocus]') || panel).focus({ preventScroll: true });

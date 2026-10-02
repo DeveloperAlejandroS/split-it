@@ -28,3 +28,7 @@ DESIGN.md
 ENDPOINTS.md
 
 package-lock.json
+
+# Estado local del servidor de iteracion visual de Impeccable (contiene un token)
+.impeccable/live/
+.impeccable/config.local.json

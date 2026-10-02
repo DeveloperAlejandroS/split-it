@@ -41,10 +41,10 @@
   --lilac: #b8a8ff;
   --periwinkle: #8d7bff;
 
-  --pos: #08857b;
+  --pos: #066f67;
   --pos-bright: #20d3c2;
   --pos-soft: rgba(32, 211, 194, 0.16);
-  --neg: #cf4417;
+  --neg: #b8380f;
   --neg-bright: #ff7a3d;
   --neg-soft: rgba(255, 122, 61, 0.14);
   --danger: #d6293f;
@@ -136,10 +136,10 @@
   --line: rgba(255, 255, 255, 0.08);
   --line-strong: rgba(255, 255, 255, 0.18);
 
-  --primary: #8566ff;
+  --primary: #9a80ff;
   --primary-deep: #5b2ee5;
   --primary-soft: rgba(133, 102, 255, 0.2);
-  --primary-glow: rgba(133, 102, 255, 0.5);
+  --primary-glow: rgba(154, 128, 255, 0.5);
   --lilac: #b8a8ff;
 
   --pos: #3fe0cf;

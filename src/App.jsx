@@ -359,7 +359,7 @@ const App = () => {
                         banner={<InstallBanner />}
                         friendCount={friends.length}
                         onAddFriend={() => { setActiveTab('friends'); setShowAddFriend(true); }}
-                        onConfirmPayment={handleConfirm}
+                        onRefreshData={() => loadData(localStorage.getItem(TOKEN_KEY), { silent: true })}
                     />
                 )}
                 {activeTab === 'expenses' && (

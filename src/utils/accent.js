@@ -87,10 +87,10 @@ export const buildAccentCss = (hex) => {
         ['--fill-2', hsl(h, s, l, 0.12)],
     ];
     const dark = [
-        ['--primary', hsl(h, s, 66)],
+        ['--primary', hsl(h, s, 72)],
         ['--primary-deep', hsl(h, s, l)],
-        ['--primary-soft', hsl(h, s, 66, 0.2)],
-        ['--primary-glow', hsl(h, s, 66, 0.5)],
+        ['--primary-soft', hsl(h, s, 72, 0.2)],
+        ['--primary-glow', hsl(h, s, 72, 0.5)],
         ['--lilac', hsl(h, s < 12 ? s : 90, 82)],
         ['--grad-hero', `linear-gradient(140deg, ${hsl(h, s, l + 8)} 0%, ${hsl(h, s, l)} 52%, ${hsl(h, s, l - 16)} 100%)`],
         ['--bg', hsl(h, s < 12 ? 10 : 58, 8)],
@@ -103,7 +103,7 @@ export const buildAccentCss = (hex) => {
         ['--material', hsl(h, s < 12 ? 10 : 52, 15, 0.8)],
         ['--glass-bg', hsl(h, s < 12 ? 10 : 48, 20, 0.56)],
         ['--glass-bg-strong', hsl(h, s < 12 ? 10 : 45, 26, 0.78)],
-        ['--fill-2', hsl(h, s, 66, 0.22)],
+        ['--fill-2', hsl(h, s, 72, 0.22)],
     ];
     const block = (sel, rows) => `${sel}{${rows.map(([k, v]) => `${k}:${v}`).join(';')}}`;
     return block(":root[data-accent][data-theme='light']", light) + block(":root[data-accent][data-theme='dark']", dark);

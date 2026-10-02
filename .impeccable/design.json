@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-02T00:31:12.827361+00:00",
+  "generatedAt": "2026-10-02T00:39:26.624858+00:00",
   "title": "Design System: Split.it",
   "extensions": {
     "colorMeta": {
@@ -187,15 +187,15 @@
       "owed-teal": {
         "role": "secondary",
         "displayName": "Turquesa te deben",
-        "canonical": "#08857b",
+        "canonical": "#066f67",
         "tonalRamp": [
-          "#044843",
-          "#087f76",
-          "#0bb6a8",
-          "#0eeddb",
-          "#42f4e5",
-          "#79f7ed",
-          "#b0faf4",
+          "#044943",
+          "#078077",
+          "#0ab7aa",
+          "#0deedd",
+          "#41f5e7",
+          "#78f8ee",
+          "#b0fbf5",
           "#e7fefc"
         ]
       },
@@ -217,16 +217,16 @@
       "owe-coral": {
         "role": "tertiary",
         "displayName": "Coral debes",
-        "canonical": "#cf4417",
+        "canonical": "#b8380f",
         "tonalRamp": [
-          "#451708",
-          "#79280d",
-          "#ae3913",
-          "#e24a19",
-          "#eb724b",
-          "#f19b7f",
-          "#f7c4b4",
-          "#fcede8"
+          "#471606",
+          "#7d260a",
+          "#b3360f",
+          "#e84713",
+          "#f06f46",
+          "#f4997c",
+          "#f9c3b2",
+          "#fdede7"
         ]
       },
       "owe-coral-bright": {
@@ -337,13 +337,13 @@
       "night-violet": {
         "role": "primary",
         "displayName": "Violeta Noche",
-        "canonical": "#8566ff",
+        "canonical": "#9a80ff",
         "tonalRamp": [
-          "#0f004c",
-          "#1b0087",
-          "#2700c1",
+          "#10004c",
+          "#1c0087",
+          "#2800c1",
           "#3300fb",
-          "#5f37ff",
+          "#6037ff",
           "#8e71ff",
           "#bcabff",
           "#ebe5ff"
@@ -453,7 +453,7 @@
       "refersTo": "field",
       "description": "Campo de 54px, hoja suave, halo violeta al enfocar.",
       "html": "<input class=\"ds-field\" placeholder=\"Nombre, usuario, correo o teléfono\" />",
-      "css": ".ds-field{width:100%;height:54px;padding:0 18px;border:1.5px solid transparent;border-radius:16px;background:#f4f3fc;color:#14113a;font:16px 'Geist Variable',Geist,system-ui,sans-serif;outline:none;transition:border-color 140ms,background-color 140ms,box-shadow 140ms;}.ds-field::placeholder{color:#66628c;}.ds-field:focus{border-color:#5b2ee5;background:#fff;box-shadow:0 0 0 4px rgba(91,46,229,0.1);}"
+      "css": ".ds-field{width:100%;height:54px;padding:0 18px;border:1.5px solid transparent;border-radius:16px;background:#f4f3fc;color:#14113a;font:16px 'Geist Variable',Geist,system-ui,sans-serif;outline:none;transition:border-color 140ms,background-color 140ms,box-shadow 140ms;}.ds-field::placeholder{color:#77739b;}.ds-field:focus{border-color:#5b2ee5;background:#fff;box-shadow:0 0 0 4px rgba(91,46,229,0.1);}"
     },
     {
       "name": "Fila de gasto",
@@ -461,7 +461,7 @@
       "refersTo": "row",
       "description": "Fila táctil de 64px: título, contexto y tu posición a la derecha.",
       "html": "<div class=\"ds-row\"><span class=\"ds-row-icon\">•</span><span class=\"ds-row-text\"><b>Cena en Andrés Carne</b><small>Pagaste tú · Hoy</small></span><span class=\"ds-row-money\">$ 92.000</span></div>",
-      "css": ".ds-row{display:flex;align-items:center;gap:12px;min-height:64px;padding:12px 14px;border-radius:20px;background:#fff;box-shadow:0 6px 18px -10px rgba(66,44,180,0.3);font-family:'Geist Variable',Geist,system-ui,sans-serif;color:#14113a;}.ds-row-icon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:16px;background:#eeeaff;color:#5b2ee5;}.ds-row-text{flex:1;display:flex;flex-direction:column;font-size:15px;}.ds-row-text small{font-size:13px;color:#5a5780;}.ds-row-money{font-family:'Outfit Variable',Outfit,system-ui,sans-serif;font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;color:#08857b;}"
+      "css": ".ds-row{display:flex;align-items:center;gap:12px;min-height:64px;padding:12px 14px;border-radius:20px;background:#fff;box-shadow:0 6px 18px -10px rgba(66,44,180,0.3);font-family:'Geist Variable',Geist,system-ui,sans-serif;color:#14113a;}.ds-row-icon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:16px;background:#eeeaff;color:#5b2ee5;}.ds-row-text{flex:1;display:flex;flex-direction:column;font-size:15px;}.ds-row-text small{font-size:13px;color:#5a5780;}.ds-row-money{font-family:'Outfit Variable',Outfit,system-ui,sans-serif;font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;color:#066f67;}"
     },
     {
       "name": "Ficha \"Te deben\"",
@@ -485,7 +485,7 @@
       "refersTo": "chip",
       "description": "Píldora de 28px con el color de significado.",
       "html": "<span class=\"ds-chip\">Te deben $ 48.000</span>",
-      "css": ".ds-chip{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;background:rgba(32,211,194,0.16);color:#08857b;font:600 12px 'Geist Variable',Geist,system-ui,sans-serif;}"
+      "css": ".ds-chip{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;background:rgba(32,211,194,0.16);color:#066f67;font:600 12px 'Geist Variable',Geist,system-ui,sans-serif;}"
     }
   ],
   "narrative": {
@@ -537,6 +537,8 @@
       }
     ],
     "dos": [
+      "**Do** dar a toda acción que mueve dinero una red de seguridad: estado de carga, error visible en el mismo lugar, confirmación y un \"Deshacer\" de unos segundos.",
+      "**Do** no repetir un mismo hecho en dos listas de la misma pantalla.",
       "**Do** separar lo que es una cuenta abierta (sin signo, con la cara de la otra persona) de lo que es plata que se movió (con signo): son dos listas, no una.",
       "**Do** diseñar el estado \"Todo al día\" como un momento, con su propia tarjeta, y no dejar que la pantalla simplemente se vacíe.",
       "**Do** dar a todas las tarjetas de atención el mismo tratamiento (hoja blanca); la urgencia la dicen el texto y el botón, no un color distinto para la primera.",

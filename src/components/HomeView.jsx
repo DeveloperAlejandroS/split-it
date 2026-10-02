@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Bell, CaretRight, ChartPieSlice, CheckCircle, Clock, HandCoins, Money, PiggyBank, Receipt, UserPlus, Wallet, UsersThree, WarningCircle } from '@phosphor-icons/react';
+import { ArrowDownLeft, ArrowUpRight, ArrowCounterClockwise, Bell, CaretRight, ChartPieSlice, CheckCircle, Clock, HandCoins, Money, PiggyBank, Receipt, UserPlus, Wallet, UsersThree, WarningCircle } from '@phosphor-icons/react';
 import { ScreenHeader, NavAction } from './ui/ScreenHeader';
 import { Avatar } from './ui/Avatar';
 import { Donut } from './ui/Donut';
@@ -41,7 +41,7 @@ export const HomeView = ({
     refreshKey = 0,
     friendCount = 0,
     onAddFriend,
-    onConfirmPayment,
+    onRefreshData,
 }) => {
     const [budget, setBudget] = useState(null);
     const [libreta, setLibreta] = useState({ total_pending: 0 });
@@ -51,6 +51,9 @@ export const HomeView = ({
     // y se avisa: mostrar $0 como si fuera real sería peor que no mostrar nada.
     const [loadFailed, setLoadFailed] = useState(false);
     const [busyKey, setBusyKey] = useState(null);
+    const [actionError, setActionError] = useState({});
+    // Pagos recién confirmados: se quedan unos segundos con "Deshacer".
+    const [confirmed, setConfirmed] = useState([]);
 
     const loadAll = useCallback(async (silent = false) => {
         if (!silent) setIsLoading(true);
@@ -74,11 +77,9 @@ export const HomeView = ({
         }
     }, []);
 
-    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => { loadAll(); }, [loadAll]);
     // Cambios en vivo: se recarga sin estado de carga (nada parpadea).
     useEffect(() => { if (refreshKey > 0) loadAll(true); }, [refreshKey, loadAll]);
-    /* eslint-enable react-hooks/set-state-in-effect */
 
     // Caja real: `carry_forward_cash` es el saldo sin lo que ya se apartó a
     // ahorros este mes (`balance` lo incluye, y sumarlo a `savings_balance`
@@ -126,8 +127,9 @@ export const HomeView = ({
                         hint: `${expense.description}. Confírmalo.`,
                         icon: <Clock size={22} weight="fill" />,
                         person: p,
+                        expenseId: expense.id,
                         run: () => onOpenExpense(expense),
-                        action: { label: 'Confirmar', run: () => onConfirmPayment?.(expense.id, p.user_id) },
+                        action: { label: 'Confirmar', expenseId: expense.id, userId: p.user_id, amount: numberOrZero(p.pending_claim_amount) },
                     });
                 }
             });
@@ -141,6 +143,7 @@ export const HomeView = ({
                         hint: expense.description,
                         icon: <Receipt size={22} weight="fill" />,
                         person: expense.paid_by,
+                        expenseId: expense.id,
                         run: () => onOpenExpense(expense),
                     });
                 }
@@ -157,11 +160,47 @@ export const HomeView = ({
             });
         }
         return items.slice(0, 6);
-    }, [expenses, pendingFriendRequests, currentUser?.id, onOpenExpense, onNavigate, onConfirmPayment]);
+    }, [expenses, pendingFriendRequests, currentUser?.id, onOpenExpense, onNavigate]);
+
+    const patchPayment = async (expenseId, userId, verb) => {
+        const res = await fetch(`${API_URL}/expenses/${expenseId}/participants/${userId}/${verb}`, {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}`, Accept: 'application/json' },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || 'No se pudo completar la acción.');
+    };
+
+    const refreshAll = () => Promise.all([onRefreshData?.(), loadAll(true)]);
 
     const runAction = async (item) => {
+        const { expenseId, userId, amount } = item.action;
         setBusyKey(item.key);
-        try { await item.action.run(); } finally { setBusyKey(null); }
+        setActionError((prev) => ({ ...prev, [item.key]: '' }));
+        try {
+            await patchPayment(expenseId, userId, 'confirm');
+            const entry = { key: item.key, person: item.person, amount, expenseId, userId };
+            setConfirmed((prev) => [...prev.filter((c) => c.key !== entry.key), entry]);
+            setTimeout(() => setConfirmed((prev) => prev.filter((c) => c.key !== entry.key)), 8000);
+            await refreshAll();
+        } catch (err) {
+            setActionError((prev) => ({ ...prev, [item.key]: err instanceof TypeError ? 'Sin conexión. Intenta de nuevo.' : err.message }));
+        } finally {
+            setBusyKey(null);
+        }
+    };
+
+    const undoConfirm = async (entry) => {
+        setBusyKey(entry.key);
+        try {
+            await patchPayment(entry.expenseId, entry.userId, 'reject');
+            setConfirmed((prev) => prev.filter((c) => c.key !== entry.key));
+            await refreshAll();
+        } catch (err) {
+            setActionError((prev) => ({ ...prev, [entry.key]: err instanceof TypeError ? 'Sin conexión. Intenta de nuevo.' : err.message }));
+        } finally {
+            setBusyKey(null);
+        }
     };
 
     // Dos listas con significado distinto, que antes iban mezcladas:
@@ -171,6 +210,7 @@ export const HomeView = ({
     const { openAccounts, cashMoves } = useMemo(() => {
         const open = [];
         const cash = [];
+        const inAttention = new Set(attention.map((a) => a.expenseId).filter(Boolean));
         expenses.slice(0, 12).forEach((e) => {
             const ts = e.updated_at || e.created_at;
             if (!ts) return;
@@ -179,10 +219,11 @@ export const HomeView = ({
                 cash.push({
                     key: `e${e.id}`, ts, title: e.description, icon: <Receipt size={22} weight="duotone" />, tone: 'violet',
                     meta: `${e.paid_by_me ? 'Pagaste tú' : `Pagó ${firstNameOf(e.paid_by)}`} · ${relativeDay(ts)}`,
-                    display: formatCurrency(e.amount), color: 'var(--ink-3)', onClick: () => onOpenExpense(e),
+                    display: 'Saldado', color: 'var(--ink-3)', onClick: () => onOpenExpense(e),
                 });
                 return;
             }
+            if (inAttention.has(e.id)) return; // ya está arriba, con su acción
             const others = (e.participants || []).filter((pt) => numberOrZero(pt.user_id) !== numberOrZero(currentUser?.id));
             const person = stake.kind === 'owed' ? (others.find((pt) => getParticipantStatus(pt) !== 'paid') || others[0]) : e.paid_by;
             open.push({
@@ -199,21 +240,23 @@ export const HomeView = ({
                 const ts = item.created_at || item.updated_at;
                 const amt = Math.abs(numberOrZero(item.actual_amount));
                 if (!ts || amt === 0) return;
-                const mk = (positive, meta, tone, icon, go) => ({
+                // Apartar a ahorros mueve plata de la caja al ahorro: no entra ni sale, así que va sin signo.
+                const mk = (positive, meta, tone, icon, go, neutral = false) => ({
                     key: `b${item.id}`, ts, title: item.label, icon, tone, meta: `${meta} · ${relativeDay(ts)}`,
-                    display: `${positive ? '+' : '−'}${formatCurrency(amt)}`, color: positive ? 'var(--pos)' : 'var(--ink)', onClick: () => onNavigate(go),
+                    display: neutral ? formatCurrency(amt) : `${positive ? '+' : '−'}${formatCurrency(amt)}`,
+                    color: neutral ? 'var(--primary)' : positive ? 'var(--pos)' : 'var(--ink)', onClick: () => onNavigate(go),
                 });
                 if (item.libreta_entry_id) cash.push(mk(true, 'Abono que te hicieron', 'teal', <HandCoins size={22} weight="duotone" />, 'accounts'));
                 else if (item.debt_entry_id) cash.push(mk(false, 'Pago de una deuda', 'coral', <HandCoins size={22} weight="duotone" />, 'accounts'));
-                else cash.push(mk(item.section === 'income' || item.section === 'saving', item.section === 'saving' ? 'Ahorro' : 'Presupuesto', item.section === 'income' ? 'teal' : item.section === 'saving' ? 'violet' : 'coral', item.section === 'saving' ? <PiggyBank size={22} weight="duotone" /> : <Money size={22} weight="duotone" />, 'personal'));
+                else cash.push(mk(item.section === 'income', item.section === 'saving' ? 'Apartado a ahorros' : 'Presupuesto', item.section === 'income' ? 'teal' : item.section === 'saving' ? 'violet' : 'coral', item.section === 'saving' ? <PiggyBank size={22} weight="duotone" /> : <Money size={22} weight="duotone" />, 'personal', item.section === 'saving'));
             });
         });
         const byDate = (x, y) => new Date(y.ts) - new Date(x.ts);
         return { openAccounts: open.sort(byDate).slice(0, 4), cashMoves: cash.sort(byDate).slice(0, 6) };
-    }, [expenses, budget, currentUser?.id, onOpenExpense, onNavigate]);
+    }, [expenses, budget, attention, currentUser?.id, onOpenExpense, onNavigate]);
 
     // Todo al día: un estado pensado, no una pantalla que simplemente se vacía.
-    const allClear = !isLoading && cashKnown && attention.length === 0 && openAccounts.length === 0 && friendCount > 0;
+    const allClear = !isLoading && cashKnown && attention.length === 0 && confirmed.length === 0 && openAccounts.length === 0 && friendCount > 0;
 
     return (
         <section>
@@ -251,34 +294,36 @@ export const HomeView = ({
                         <p className="money-xl mt-2" aria-label="Sin datos">—</p>
                     )}
                     <p className="small mt-2">Caja y ahorros. Lo que te deben no suma hasta que te paguen.</p>
-                    <div className="mt-5 grid grid-cols-2 gap-3">
-                        <button type="button" onClick={() => onNavigate('personal')} className="rounded-[18px] p-3 text-left transition-transform active:scale-[0.97]" style={{ background: 'rgba(255,255,255,0.16)' }}>
-                            <span className="flex items-center gap-1.5 tiny" style={{ color: 'rgba(255,255,255,0.92)' }}><Wallet size={14} weight="fill" /> En caja</span>
-                            <span className="money-md mt-1 block">{cashKnown ? formatCurrency(cash) : '—'}</span>
-                        </button>
-                        <button type="button" onClick={() => onNavigate('personal')} className="rounded-[18px] p-3 text-left transition-transform active:scale-[0.97]" style={{ background: 'rgba(255,255,255,0.16)' }}>
-                            <span className="flex items-center gap-1.5 tiny" style={{ color: 'rgba(255,255,255,0.92)' }}><PiggyBank size={14} weight="fill" /> Ahorros</span>
-                            <span className="money-md mt-1 block">{cashKnown ? formatCurrency(savings) : '—'}</span>
-                        </button>
-                    </div>
+                    <button type="button" onClick={() => onNavigate('personal')} className="mt-4 flex min-h-[44px] w-full items-center justify-between gap-2 rounded-[18px] px-3 text-left transition-transform active:scale-[0.98]" style={{ background: 'rgba(255,255,255,0.16)' }}>
+                        <span className="small flex flex-wrap items-center gap-x-4 gap-y-0.5 py-1.5" style={{ color: 'rgba(255,255,255,0.95)' }}>
+                            <span className="whitespace-nowrap"><Wallet size={14} weight="fill" className="mr-1 inline align-[-2px]" />En caja <strong className="money-md" style={{ fontSize: 15 }}>{cashKnown ? formatCurrency(cash) : '—'}</strong></span>
+                            <span className="whitespace-nowrap"><PiggyBank size={14} weight="fill" className="mr-1 inline align-[-2px]" />Ahorros <strong className="money-md" style={{ fontSize: 15 }}>{cashKnown ? formatCurrency(savings) : '—'}</strong></span>
+                        </span>
+                        <CaretRight size={14} weight="bold" className="shrink-0" />
+                    </button>
 
-                    {/* Lo que está en juego pero aún no es tuyo: va pegado a la cifra, en voz baja. */}
-                    <div className="mt-4 grid grid-cols-2 gap-3 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
-                        <button type="button" onClick={() => onNavigate('expenses')} className="flex min-h-[44px] items-center gap-2.5 text-left transition-transform active:scale-[0.97]">
-                            <span className="bubble h-9 w-9 rounded-full" style={{ background: 'var(--pos-bright)', color: '#0b1f3a' }}><ArrowDownLeft size={18} weight="bold" /></span>
-                            <span className="min-w-0">
-                                <span className="tiny block" style={{ color: 'rgba(255,255,255,0.92)' }}>Te deben</span>
-                                <span className="money-md block">{formatCurrency(owedToMe)}</span>
+                    {/* Lo que está en juego pero aún no es tuyo: una sola franja, con su neto firmado. */}
+                    <button type="button" onClick={() => onNavigate('expenses')} className="mt-3 block w-full pt-3 text-left transition-transform active:scale-[0.98]" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                        <span className="flex items-center justify-between gap-3">
+                            <span className="flex min-w-0 items-center gap-2.5">
+                                <span className="bubble h-9 w-9 rounded-full" style={{ background: 'var(--pos-bright)', color: '#0b1f3a' }}><ArrowDownLeft size={18} weight="bold" /></span>
+                                <span className="min-w-0">
+                                    <span className="tiny block" style={{ color: 'rgba(255,255,255,0.92)' }}>Te deben</span>
+                                    <span className="money-md block">{formatCurrency(owedToMe)}</span>
+                                </span>
                             </span>
-                        </button>
-                        <button type="button" onClick={() => onNavigate('expenses')} className="flex min-h-[44px] items-center gap-2.5 text-left transition-transform active:scale-[0.97]">
-                            <span className="bubble h-9 w-9 rounded-full" style={{ background: 'var(--neg-bright)', color: '#3a0f06' }}><ArrowUpRight size={18} weight="bold" /></span>
-                            <span className="min-w-0">
-                                <span className="tiny block" style={{ color: 'rgba(255,255,255,0.92)' }}>Debes</span>
-                                <span className="money-md block">{formatCurrency(iOwe)}</span>
+                            <span className="flex min-w-0 items-center gap-2.5">
+                                <span className="bubble h-9 w-9 rounded-full" style={{ background: 'var(--neg-bright)', color: '#3a0f06' }}><ArrowUpRight size={18} weight="bold" /></span>
+                                <span className="min-w-0">
+                                    <span className="tiny block" style={{ color: 'rgba(255,255,255,0.92)' }}>Debes</span>
+                                    <span className="money-md block">{formatCurrency(iOwe)}</span>
+                                </span>
                             </span>
-                        </button>
-                    </div>
+                        </span>
+                        <span className="tiny mt-2 block" style={{ color: 'rgba(255,255,255,0.92)' }}>
+                            {Math.abs(owedToMe - iOwe) < 0.5 ? 'Quedarían a mano si todo se paga.' : `Si todo se paga: ${formatCurrency(owedToMe - iOwe, true)} (neto)`}
+                        </span>
+                    </button>
                 </div>
 
                 {allClear && (
@@ -302,10 +347,23 @@ export const HomeView = ({
                     </div>
                 )}
 
-                {attention.length > 0 && (
+                {(attention.length > 0 || confirmed.length > 0) && (
                     <div>
                         <h2 className="title mb-3">Requiere tu atención</h2>
-                        <div className="snap-x-row snap-grow scrollbar-hide" role="region" aria-label={`Requiere tu atención, ${attention.length} ${attention.length === 1 ? 'aviso' : 'avisos'}`}>
+                        <div className="snap-x-row snap-grow scrollbar-hide" role="region" aria-label={`Requiere tu atención, ${attention.length} ${attention.length === 1 ? 'aviso' : 'avisos'}`} aria-live="polite">
+                            {confirmed.map((c) => (
+                                <div key={`ok-${c.key}`} role="status" className="card flex w-[min(260px,calc(100vw-96px))] flex-col gap-3 p-4" style={{ background: 'var(--pos-soft)' }}>
+                                    <span className="bubble h-11 w-11 rounded-full" style={{ background: 'var(--pos-bright)', color: '#0b1f3a' }}><CheckCircle size={24} weight="fill" /></span>
+                                    <span>
+                                        <span className="heading block">Confirmado</span>
+                                        <span className="small mt-1 block" style={{ color: 'var(--ink)' }}>{displayNameOf(c.person)} te pagó{c.amount ? ` ${formatCurrency(c.amount)}` : ''}.</span>
+                                        {actionError[c.key] && <span role="alert" className="small mt-1 block" style={{ color: 'var(--danger)' }}>{actionError[c.key]}</span>}
+                                    </span>
+                                    <button type="button" className="btn btn-gray btn-sm mt-auto w-full" style={{ height: 44 }} disabled={busyKey === c.key} onClick={() => undoConfirm(c)}>
+                                        <ArrowCounterClockwise size={16} weight="bold" /> {busyKey === c.key ? 'Deshaciendo…' : 'Deshacer'}
+                                    </button>
+                                </div>
+                            ))}
                             {attention.map((a) => (
                                 <div key={a.key} className="card flex w-[min(260px,calc(100vw-96px))] flex-col gap-3 p-4">
                                     <button type="button" onClick={a.run} className="flex flex-col gap-3 text-left transition-transform active:scale-[0.98]">
@@ -320,9 +378,10 @@ export const HomeView = ({
                                             <span className="small mt-1 block leading-tight">{a.hint}</span>
                                         </span>
                                     </button>
+                                    {actionError[a.key] && <p role="alert" className="small" style={{ color: 'var(--danger)' }}>{actionError[a.key]}</p>}
                                     {a.action && (
-                                        <button type="button" className="btn btn-primary btn-sm mt-auto w-full" style={{ height: 44 }} disabled={busyKey === a.key} onClick={() => runAction(a)}>
-                                            {busyKey === a.key ? '…' : a.action.label}
+                                        <button type="button" className="btn btn-primary btn-sm mt-auto w-full" style={{ height: 44 }} disabled={busyKey === a.key} aria-label={`${a.action.label} pago de ${firstNameOf(a.person)}`} onClick={() => runAction(a)}>
+                                            {busyKey === a.key ? 'Confirmando…' : a.action.label}
                                         </button>
                                     )}
                                 </div>
@@ -331,33 +390,6 @@ export const HomeView = ({
                     </div>
                 )}
 
-              </div>
-
-              <div className="card p-5 xl:order-3 xl:col-span-2">
-                  <div className="mb-4 flex items-center justify-between">
-                      <h2 className="title">Tu mes</h2>
-                      <button type="button" className="btn btn-plain btn-sm" style={{ height: 44 }} onClick={() => onNavigate('personal')}>Ver más <CaretRight size={14} weight="bold" /></button>
-                  </div>
-                  {spendingTotal > 0 ? (
-                      <div className="flex items-center gap-5">
-                          <Donut segments={spending} size={148} thickness={20}>
-                              <span className="tiny">Gastaste</span>
-                              <span className="money text-[17px]">{formatCurrency(spendingTotal)}</span>
-                          </Donut>
-                          <ul className="min-w-0 flex-1 space-y-2.5">
-                              {spending.filter((s) => s.value > 0).map((s) => (
-                                  <li key={s.label} className="flex items-center gap-2">
-                                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: s.color }} />
-                                      <span className="small min-w-0 flex-1 truncate">{s.label}</span>
-                                      <span className="money">{formatCurrency(s.value)}</span>
-                                  </li>
-                              ))}
-                          </ul>
-                      </div>
-                  ) : (
-                      <p className="small">Aún no has gastado nada este mes. Toca el botón + para registrar el primer movimiento.</p>
-                  )}
-                  {saved > 0 && <p className="small mt-4 flex items-center gap-2"><PiggyBank size={16} weight="fill" style={{ color: "var(--primary)" }} /> Apartaste {formatCurrency(saved)} en ahorros este mes.</p>}
               </div>
 
               <div className="flex flex-col gap-5 xl:order-2">
@@ -402,6 +434,33 @@ export const HomeView = ({
                         </div>
                     )}
                 </div>
+              </div>
+
+              <div className="card p-5 xl:order-3 xl:col-span-2">
+                  <div className="mb-4 flex items-center justify-between">
+                      <h2 className="title">Tu mes</h2>
+                      <button type="button" className="btn btn-plain btn-sm" style={{ height: 44 }} onClick={() => onNavigate('personal')}>Ver más <CaretRight size={14} weight="bold" /></button>
+                  </div>
+                  {spendingTotal > 0 ? (
+                      <div className="flex items-center gap-5">
+                          <Donut segments={spending} size={148} thickness={20}>
+                              <span className="tiny">Gastaste</span>
+                              <span className="money text-[17px]">{formatCurrency(spendingTotal)}</span>
+                          </Donut>
+                          <ul className="min-w-0 flex-1 space-y-2.5">
+                              {spending.filter((s) => s.value > 0).map((s) => (
+                                  <li key={s.label} className="flex items-center gap-2">
+                                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: s.color }} />
+                                      <span className="small min-w-0 flex-1 truncate">{s.label}</span>
+                                      <span className="money">{formatCurrency(s.value)}</span>
+                                  </li>
+                              ))}
+                          </ul>
+                      </div>
+                  ) : (
+                      <p className="small">Aún no has gastado nada este mes. Toca el botón + para registrar el primer movimiento.</p>
+                  )}
+                  {saved > 0 && <p className="small mt-4 flex items-center gap-2"><PiggyBank size={16} weight="fill" style={{ color: "var(--primary)" }} /> Apartaste {formatCurrency(saved)} en ahorros este mes.</p>}
               </div>
             </div>
         </section>

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useHeldValue } from './ui/useHeldValue';
-import { CircleNotch } from '@phosphor-icons/react';
+import { Check, CircleNotch } from '@phosphor-icons/react';
 import { Sheet } from './ui/Sheet';
 import { Avatar } from './ui/Avatar';
+import { ProgressBar } from './ui/ProgressBar';
 import { ConfirmDialog } from './ConfirmDialog';
 import { CurrencyInput } from './CurrencyInput';
 import { API_URL } from '../config/api';
@@ -67,7 +68,7 @@ export const AddLedgerEntrySheet = ({ isOpen, kind, onClose, onCreated }) => {
                 <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Motivo (opcional)" aria-label="Motivo" className="field" />
             </div>
             <p className="small mt-3 px-1 text-secondary">{cfg.createEffect}</p>
-            {error && <p className="small mt-3 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
+            {error && <p role="alert" className="small mt-3 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
             <div className="mt-5">
                 <button type="button" className="btn btn-primary btn-block" disabled={Boolean(missing) || saving} onClick={save}>
                     {saving ? <CircleNotch size={20} className="animate-spin" /> : 'Guardar'}
@@ -83,6 +84,8 @@ export const LedgerEntrySheet = ({ entry, kind, onClose, onChanged }) => {
     const shown = useHeldValue(entry);
 
     const [amount, setAmount] = useState('');
+    // Registrar un abono mueve plata en el presupuesto y no se puede deshacer: pide una confirmación con el monto.
+    const [confirming, setConfirming] = useState(false);
     const [editing, setEditing] = useState(false);
     const [editName, setEditName] = useState('');
     const [editDescription, setEditDescription] = useState('');
@@ -94,7 +97,9 @@ export const LedgerEntrySheet = ({ entry, kind, onClose, onChanged }) => {
     /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (!entry) return;
-        setAmount(String(entry.remaining));
+        // Vacío a propósito: antes venía con el saldo completo y un toque lo registraba entero.
+        setAmount('');
+        setConfirming(false);
         setEditing(false);
         setError('');
         setEditName(entry[cfg.nameKey] || '');
@@ -115,7 +120,7 @@ export const LedgerEntrySheet = ({ entry, kind, onClose, onChanged }) => {
     const act = async (fn) => {
         setBusy(true);
         setError('');
-        try { await fn(); await onChanged(); } catch (err) { setError(err.message); } finally { setBusy(false); }
+        try { await fn(); await onChanged(); } catch (err) { setError(err instanceof TypeError ? 'No hay conexión con el servidor. Revisa tu internet.' : err.message); } finally { setBusy(false); setConfirming(false); }
     };
 
     return (
@@ -130,28 +135,42 @@ export const LedgerEntrySheet = ({ entry, kind, onClose, onChanged }) => {
                 <div className="ios-card p-4">
                     <div className="grid grid-cols-3 text-center">
                         <div><p className="tiny text-secondary">Total</p><p className="heading tabular">{formatCurrency(shown.amount_owed)}</p></div>
-                        <div><p className="tiny text-secondary">{kind === 'owed' ? 'Pagado' : 'Abonado'}</p><p className="heading tabular" style={{ color: 'var(--success)' }}>{formatCurrency(shown.amount_paid)}</p></div>
+                        <div><p className="tiny text-secondary">{kind === 'owed' ? 'Pagado' : 'Abonado'}</p><p className="heading tabular">{formatCurrency(shown.amount_paid)}</p></div>
                         <div><p className="tiny text-secondary">Falta</p><p className="heading tabular">{formatCurrency(shown.remaining)}</p></div>
                     </div>
-                    <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--fill)' }}>
-                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${paidPct}%`, background: 'var(--success)' }} />
+                    <div className="mt-3">
+                        <ProgressBar pct={paidPct} tone="primary" height={6} label={`${Math.round(paidPct)} % ${kind === 'owed' ? 'pagado' : 'abonado'}`} />
                     </div>
                 </div>
 
                 {!isPaid && !editing && (
                     <>
                         <p className="heading px-1 pb-2 pt-6">{cfg.abonoTitle}</p>
-                        <div className="flex items-center gap-2">
-                            <CurrencyInput value={amount} onChange={setAmount} className="field" />
-                            <button type="button" className="btn btn-primary shrink-0" disabled={!abonoValid || busy} onClick={() => act(() => callApi(`${cfg.base}/${shown.id}/contribute`, 'PATCH', { amount: abonoValue }))}>
-                                {busy ? <CircleNotch size={18} className="animate-spin" /> : 'Registrar'}
-                            </button>
-                        </div>
-                        <p className="small mt-2 px-1 text-secondary">{cfg.effect}</p>
+                        {confirming ? (
+                            <div className="rounded-[18px] p-4" style={{ background: 'var(--card-soft)' }} role="group" aria-label="Confirmar abono">
+                                <p className="body font-semibold">Vas a registrar {formatCurrency(abonoValue)}.</p>
+                                <p className="small mt-1" style={{ color: 'var(--ink)' }}>{cfg.confirmEffect(formatCurrency(abonoValue))}</p>
+                                <div className="mt-3 grid grid-cols-2 gap-3">
+                                    <button type="button" className="btn btn-gray" disabled={busy} onClick={() => setConfirming(false)}>Cambiar</button>
+                                    <button type="button" className="btn btn-primary" disabled={busy} onClick={() => act(() => callApi(`${cfg.base}/${shown.id}/contribute`, 'PATCH', { amount: abonoValue }))}>
+                                        {busy ? <CircleNotch size={18} className="animate-spin" /> : <><Check size={18} weight="bold" /> Confirmar</>}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-2">
+                                    <CurrencyInput value={amount} onChange={setAmount} className="field" placeholder={formatCurrency(shown.remaining)} aria-label={`Monto del ${kind === 'owed' ? 'abono' : 'pago'}`} />
+                                    <button type="button" className="btn btn-primary shrink-0" disabled={!abonoValid || busy} onClick={() => setConfirming(true)}>Registrar</button>
+                                </div>
+                                <button type="button" className="btn btn-plain btn-sm btn-44 mt-1" onClick={() => setAmount(String(shown.remaining))}>Pagar todo ({formatCurrency(shown.remaining)})</button>
+                                <p className="small mt-1 px-1 text-secondary">{cfg.effect}</p>
+                            </>
+                        )}
                     </>
                 )}
 
-                {isPaid && <p className="small mt-4 rounded-[12px] p-3 text-center" style={{ background: 'var(--success-soft)', color: 'var(--success)' }}>Saldada por completo ✓</p>}
+                {isPaid && <p className="small mt-4 flex items-center justify-center gap-2 rounded-[12px] p-3 text-center" style={{ background: 'var(--card-soft)', color: 'var(--ink)' }}><Check size={16} weight="bold" aria-hidden="true" /> Saldada por completo</p>}
 
                 {editing && (
                     <div className="mt-6 space-y-3">
@@ -176,12 +195,12 @@ export const LedgerEntrySheet = ({ entry, kind, onClose, onChanged }) => {
                     </div>
                 )}
 
-                {error && <p className="small mt-4 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
+                {error && <p role="alert" className="small mt-4 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
 
                 {!editing && (
-                    <div className="mt-6 grid grid-cols-2 gap-3">
-                        <button type="button" className="btn btn-gray" onClick={() => setEditing(true)}>Editar</button>
-                        <button type="button" className="btn btn-danger" onClick={() => setShowDelete(true)}>Eliminar</button>
+                    <div className="mt-6 flex flex-col gap-2">
+                        <button type="button" className="btn btn-gray btn-block" onClick={() => setEditing(true)}>Editar</button>
+                        <button type="button" className="btn btn-plain btn-block" style={{ color: 'var(--danger)' }} onClick={() => setShowDelete(true)}>Eliminar</button>
                     </div>
                 )}
             </Sheet>

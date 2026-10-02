@@ -11,6 +11,7 @@ export const LEDGER = {
         abonoTitle: 'Registrar abono',
         abonoCta: 'Registrar abono',
         effect: 'Al registrar un abono, entra como ingreso en tu presupuesto de este mes.',
+        confirmEffect: (amount) => `Entran ${amount} como ingreso en tu presupuesto de este mes.`,
         createEffect: 'Anotarlo aquí no mueve tu presupuesto: solo cuenta cuando te paguen.',
     },
     owe: {
@@ -23,6 +24,7 @@ export const LEDGER = {
         abonoTitle: 'Registrar pago',
         abonoCta: 'Registrar pago',
         effect: 'Al registrar un pago, sale de tu caja en tu presupuesto de este mes.',
+        confirmEffect: (amount) => `Salen ${amount} de tu caja en tu presupuesto de este mes.`,
         createEffect: 'Se suma a lo que debes y puedes ir abonando poco a poco.',
     },
 };

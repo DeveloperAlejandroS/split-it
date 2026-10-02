@@ -345,7 +345,7 @@ const App = () => {
             )}
 
             <main className="xl:pl-[17rem] pb-[calc(140px+var(--safe-bottom))] xl:pb-16">
-                <div className={`mx-auto max-w-3xl px-4 sm:px-6 ${activeTab === 'home' || activeTab === 'personal' ? 'xl:max-w-6xl' : ''}`}>
+                <div className={`mx-auto max-w-3xl px-4 sm:px-6 ${activeTab === 'home' || activeTab === 'personal' || activeTab === 'accounts' ? 'xl:max-w-6xl' : ''}`}>
                 {activeTab === 'home' && (
                     <HomeView
                         key={dataVersion}

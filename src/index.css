@@ -305,7 +305,7 @@ input.input-amount {
   font-family: var(--font-display) !important; font-size: 56px !important; font-weight: 600; letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
 }
-input.input-amount::placeholder { color: var(--lilac); }
+input.input-amount::placeholder { color: var(--ink-3); }
 
 /* ---------- Segmentado en píldora ---------- */
 .segmented { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow-sm); }
@@ -316,6 +316,8 @@ input.input-amount::placeholder { color: var(--lilac); }
 }
 .segmented > button:active { transform: scale(0.97); }
 .segmented-lg > button { height: 44px; }
+/* Ficha que cambia de libro (Cuentas): se levanta con resorte al seleccionarse. */
+.seg-tile { transition: transform 320ms var(--spring), box-shadow 320ms var(--ease-out); }
 .segmented > button[aria-pressed='true'], .segmented > button[aria-selected='true'] {
   background: var(--grad-hero); color: #fff; font-weight: 600; box-shadow: 0 8px 16px -8px var(--primary-glow);
 }
@@ -424,6 +426,7 @@ input.input-amount::placeholder { color: var(--lilac); }
   .btn:active, button.row:active, .glass-interactive:active { transform: none; }
   .skeleton::after { animation: none; }
   .bar-fill { transition: none !important; }
+  .seg-tile { transition: none !important; transform: none !important; }
   .tabbar-lens { transition: opacity 200ms; }
 }
 @media (prefers-reduced-transparency: reduce) {

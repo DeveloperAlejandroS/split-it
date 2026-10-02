@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-02T00:28:07.475205+00:00",
+  "generatedAt": "2026-10-02T00:31:12.827361+00:00",
   "title": "Design System: Split.it",
   "extensions": {
     "colorMeta": {
@@ -537,6 +537,8 @@
       }
     ],
     "dos": [
+      "**Do** separar lo que es una cuenta abierta (sin signo, con la cara de la otra persona) de lo que es plata que se movió (con signo): son dos listas, no una.",
+      "**Do** diseñar el estado \"Todo al día\" como un momento, con su propia tarjeta, y no dejar que la pantalla simplemente se vacíe.",
       "**Do** dar a todas las tarjetas de atención el mismo tratamiento (hoja blanca); la urgencia la dicen el texto y el botón, no un color distinto para la primera.",
       "**Do** comprobar el contraste de todo texto de apoyo (mínimo 4.5:1) y de los avatares con texto blanco; la paleta de avatares está calibrada para eso.",
       "**Do** usar el violeta solo para acciones, selección y marca; todo lo demás con significado usa turquesa, coral o semánticos.",
@@ -547,6 +549,7 @@
       "**Do** limitar el movimiento a lo que comunica (aparecer, confirmar, orientar) con duraciones bajo 300ms para lo frecuente."
     ],
     "donts": [
+      "**Don't** contar los ahorros como gasto: apartar plata no es gastarla, y se muestra aparte de \"Gastaste\".",
       "**Don't** usar vidrio en tarjetas de contenido ni sobre cifras.",
       "**Don't** usar el violeta, ni su degradado, para estados semánticos (peligro, advertencia, éxito).",
       "**Don't** usar sombras grises o negras puras sobre el lienzo lavanda.",

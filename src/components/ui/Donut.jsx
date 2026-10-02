@@ -24,7 +24,7 @@ export const Donut = ({ segments, size = 168, thickness = 22, children }) => {
         <div className="relative shrink-0" style={{ width: size, height: size }}>
             <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }} aria-hidden="true">
                 <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--card-soft)" strokeWidth={thickness} />
-                {arcs.map((a) => (
+                {arcs.filter((a) => a.value > 0).map((a) => (
                     <circle
                         key={a.label}
                         cx={size / 2}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Bell, CaretRight, ChartPieSlice, Clock, HandCoins, Money, PiggyBank, Receipt, UserPlus, Wallet, UsersThree, WarningCircle } from '@phosphor-icons/react';
+import { ArrowDownLeft, ArrowUpRight, Bell, CaretRight, ChartPieSlice, CheckCircle, Clock, HandCoins, Money, PiggyBank, Receipt, UserPlus, Wallet, UsersThree, WarningCircle } from '@phosphor-icons/react';
 import { ScreenHeader, NavAction } from './ui/ScreenHeader';
 import { Avatar } from './ui/Avatar';
 import { Donut } from './ui/Donut';
@@ -107,10 +107,11 @@ export const HomeView = ({
             { label: 'Fijos', value: numberOrZero(s.fixed_expense.actual_total), color: 'var(--primary)' },
             { label: 'Día a día', value: numberOrZero(s.tracked_expense.actual_total), color: 'var(--lilac)' },
             { label: 'Deudas', value: numberOrZero(s.debt.actual_total), color: 'var(--neg-bright)' },
-            { label: 'Ahorros', value: numberOrZero(s.saving.actual_total), color: 'var(--pos-bright)' },
         ];
     }, [budget]);
     const spendingTotal = spending.reduce((sum, s) => sum + s.value, 0);
+    // Apartar a ahorros no es gastar: se muestra aparte, no dentro de "Gastaste".
+    const saved = numberOrZero(budget?.sections?.saving?.actual_total);
 
     // Lo que espera una acción tuya, ordenado por urgencia.
     const attention = useMemo(() => {
@@ -124,6 +125,7 @@ export const HomeView = ({
                         amount: formatCurrency(p.pending_claim_amount),
                         hint: `${expense.description}. Confírmalo.`,
                         icon: <Clock size={22} weight="fill" />,
+                        person: p,
                         run: () => onOpenExpense(expense),
                         action: { label: 'Confirmar', run: () => onConfirmPayment?.(expense.id, p.user_id) },
                     });
@@ -138,6 +140,7 @@ export const HomeView = ({
                         amount: formatCurrency(stake.amount),
                         hint: expense.description,
                         icon: <Receipt size={22} weight="fill" />,
+                        person: expense.paid_by,
                         run: () => onOpenExpense(expense),
                     });
                 }
@@ -161,21 +164,32 @@ export const HomeView = ({
         try { await item.action.run(); } finally { setBusyKey(null); }
     };
 
-    // Feed cronológico que cruza gastos compartidos, presupuesto y cuentas.
-    const feed = useMemo(() => {
-        const rows = [];
-        expenses.slice(0, 6).forEach((e) => {
+    // Dos listas con significado distinto, que antes iban mezcladas:
+    //  - Cuentas abiertas: gastos compartidos con plata pendiente entre personas
+    //    (sin signo: todavía no entró ni salió nada).
+    //  - Movimientos de caja: lo que de verdad se movió (con signo).
+    const { openAccounts, cashMoves } = useMemo(() => {
+        const open = [];
+        const cash = [];
+        expenses.slice(0, 12).forEach((e) => {
             const ts = e.updated_at || e.created_at;
             if (!ts) return;
             const stake = getExpenseStake(e, currentUser?.id);
-            rows.push({
-                key: `e${e.id}`, ts, title: e.description, icon: <Receipt size={22} weight="duotone" />, tone: 'violet',
-                // Lo que importa de un gasto compartido es TU posición, no el total.
-                // Va sin signo: mientras no se pague no es plata que entró ni
-                // que salió, solo una cuenta pendiente (el color dice de qué lado).
-                meta: `${stake.kind === 'owed' ? 'Te deben' : stake.kind === 'owe' ? `Le debes a ${firstNameOf(e.paid_by)}` : stake.kind === 'waiting' ? 'Esperando confirmación' : e.paid_by_me ? 'Pagaste tú' : `Pagó ${firstNameOf(e.paid_by)}`} · ${relativeDay(ts)}`,
-                display: stake.kind === 'settled' ? formatCurrency(e.amount) : formatCurrency(stake.amount),
-                color: stake.kind === 'owed' ? 'var(--pos)' : stake.kind === 'owe' ? 'var(--neg)' : stake.kind === 'waiting' ? 'var(--info)' : 'var(--ink-3)',
+            if (stake.kind === 'settled') {
+                cash.push({
+                    key: `e${e.id}`, ts, title: e.description, icon: <Receipt size={22} weight="duotone" />, tone: 'violet',
+                    meta: `${e.paid_by_me ? 'Pagaste tú' : `Pagó ${firstNameOf(e.paid_by)}`} · ${relativeDay(ts)}`,
+                    display: formatCurrency(e.amount), color: 'var(--ink-3)', onClick: () => onOpenExpense(e),
+                });
+                return;
+            }
+            const others = (e.participants || []).filter((pt) => numberOrZero(pt.user_id) !== numberOrZero(currentUser?.id));
+            const person = stake.kind === 'owed' ? (others.find((pt) => getParticipantStatus(pt) !== 'paid') || others[0]) : e.paid_by;
+            open.push({
+                key: `e${e.id}`, ts, title: e.description, person,
+                meta: `${stake.kind === 'owed' ? `${firstNameOf(person)} te debe` : stake.kind === 'owe' ? `Le debes a ${firstNameOf(e.paid_by)}` : 'Esperando confirmación'} · ${relativeDay(ts)}`,
+                display: formatCurrency(stake.amount),
+                color: stake.kind === 'owed' ? 'var(--pos)' : stake.kind === 'owe' ? 'var(--neg)' : 'var(--info)',
                 onClick: () => onOpenExpense(e),
             });
         });
@@ -189,13 +203,17 @@ export const HomeView = ({
                     key: `b${item.id}`, ts, title: item.label, icon, tone, meta: `${meta} · ${relativeDay(ts)}`,
                     display: `${positive ? '+' : '−'}${formatCurrency(amt)}`, color: positive ? 'var(--pos)' : 'var(--ink)', onClick: () => onNavigate(go),
                 });
-                if (item.libreta_entry_id) rows.push(mk(true, 'Abono que te hicieron', 'teal', <HandCoins size={22} weight="duotone" />, 'accounts'));
-                else if (item.debt_entry_id) rows.push(mk(false, 'Pago de una deuda', 'coral', <HandCoins size={22} weight="duotone" />, 'accounts'));
-                else rows.push(mk(item.section === 'income' || item.section === 'saving', item.section === 'saving' ? 'Ahorro' : 'Presupuesto', item.section === 'income' ? 'teal' : item.section === 'saving' ? 'violet' : 'coral', item.section === 'saving' ? <PiggyBank size={22} weight="duotone" /> : <Money size={22} weight="duotone" />, 'personal'));
+                if (item.libreta_entry_id) cash.push(mk(true, 'Abono que te hicieron', 'teal', <HandCoins size={22} weight="duotone" />, 'accounts'));
+                else if (item.debt_entry_id) cash.push(mk(false, 'Pago de una deuda', 'coral', <HandCoins size={22} weight="duotone" />, 'accounts'));
+                else cash.push(mk(item.section === 'income' || item.section === 'saving', item.section === 'saving' ? 'Ahorro' : 'Presupuesto', item.section === 'income' ? 'teal' : item.section === 'saving' ? 'violet' : 'coral', item.section === 'saving' ? <PiggyBank size={22} weight="duotone" /> : <Money size={22} weight="duotone" />, 'personal'));
             });
         });
-        return rows.sort((a, b) => new Date(b.ts) - new Date(a.ts)).slice(0, 7);
+        const byDate = (x, y) => new Date(y.ts) - new Date(x.ts);
+        return { openAccounts: open.sort(byDate).slice(0, 4), cashMoves: cash.sort(byDate).slice(0, 6) };
     }, [expenses, budget, currentUser?.id, onOpenExpense, onNavigate]);
+
+    // Todo al día: un estado pensado, no una pantalla que simplemente se vacía.
+    const allClear = !isLoading && cashKnown && attention.length === 0 && openAccounts.length === 0 && friendCount > 0;
 
     return (
         <section>
@@ -263,6 +281,16 @@ export const HomeView = ({
                     </div>
                 </div>
 
+                {allClear && (
+                    <div className="card flex items-center gap-3 p-4" style={{ background: 'var(--pos-soft)' }}>
+                        <span className="bubble h-11 w-11 rounded-full" style={{ background: 'var(--pos-bright)', color: '#0b1f3a' }}><CheckCircle size={24} weight="fill" /></span>
+                        <span className="min-w-0 flex-1">
+                            <span className="heading block">Todo al día</span>
+                            <span className="small block" style={{ color: 'var(--ink)' }}>No tienes nada pendiente con nadie.</span>
+                        </span>
+                    </div>
+                )}
+
                 {friendCount === 0 && (
                     <div className="card flex items-center gap-3 p-4">
                         <Bubble tone="violet"><UsersThree size={22} weight="duotone" /></Bubble>
@@ -281,7 +309,11 @@ export const HomeView = ({
                             {attention.map((a) => (
                                 <div key={a.key} className="card flex w-[min(260px,calc(100vw-96px))] flex-col gap-3 p-4">
                                     <button type="button" onClick={a.run} className="flex flex-col gap-3 text-left transition-transform active:scale-[0.98]">
-                                        <span className="bubble h-11 w-11 rounded-full" style={{ background: 'var(--card-tint)', color: 'var(--primary)' }}>{a.icon}</span>
+                                        {a.person ? (
+                                            <Avatar name={displayNameOf(a.person)} size={44} />
+                                        ) : (
+                                            <span className="bubble h-11 w-11 rounded-full" style={{ background: 'var(--card-tint)', color: 'var(--primary)' }}>{a.icon}</span>
+                                        )}
                                         <span>
                                             <span className="heading block">{a.title}</span>
                                             {a.amount && <span className="money-lg mt-1 block">{a.amount}</span>}
@@ -309,7 +341,7 @@ export const HomeView = ({
                   {spendingTotal > 0 ? (
                       <div className="flex items-center gap-5">
                           <Donut segments={spending} size={148} thickness={20}>
-                              <span className="tiny">Salió</span>
+                              <span className="tiny">Gastaste</span>
                               <span className="money text-[17px]">{formatCurrency(spendingTotal)}</span>
                           </Donut>
                           <ul className="min-w-0 flex-1 space-y-2.5">
@@ -323,22 +355,41 @@ export const HomeView = ({
                           </ul>
                       </div>
                   ) : (
-                      <p className="small">Aún no hay movimientos este mes. Toca el botón + para registrar el primero.</p>
+                      <p className="small">Aún no has gastado nada este mes. Toca el botón + para registrar el primer movimiento.</p>
                   )}
+                  {saved > 0 && <p className="small mt-4 flex items-center gap-2"><PiggyBank size={16} weight="fill" style={{ color: "var(--primary)" }} /> Apartaste {formatCurrency(saved)} en ahorros este mes.</p>}
               </div>
 
               <div className="flex flex-col gap-5 xl:order-2">
+                {openAccounts.length > 0 && (
+                    <div>
+                        <h2 className="title mb-3">Cuentas abiertas</h2>
+                        <div className="stack">
+                            {openAccounts.map((r) => (
+                                <button key={r.key} type="button" className="row" onClick={r.onClick}>
+                                    <Avatar name={displayNameOf(r.person)} size={44} />
+                                    <span className="min-w-0 flex-1">
+                                        <span className="body block truncate font-semibold">{r.title}</span>
+                                        <span className="small block truncate">{r.meta}</span>
+                                    </span>
+                                    <span className="money" style={{ color: r.color }}>{r.display}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div>
-                    <h2 className="title mb-3">Movimientos recientes</h2>
-                    {isLoading && feed.length === 0 ? (
+                    <h2 className="title mb-3">Movimientos de caja</h2>
+                    {isLoading && cashMoves.length === 0 ? (
                         <div className="stack" aria-label="Cargando movimientos">
                             {[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 64, borderRadius: 20 }} />)}
                         </div>
-                    ) : feed.length === 0 ? (
-                        <div className="card px-6 py-8 text-center"><p className="small">Todavía no hay movimientos.</p></div>
+                    ) : cashMoves.length === 0 ? (
+                        <div className="card px-6 py-8 text-center"><p className="small">Todavía no hay movimientos de caja.</p></div>
                     ) : (
                         <div className="stack">
-                            {feed.map((r) => (
+                            {cashMoves.map((r) => (
                                 <button key={r.key} type="button" className="row" onClick={r.onClick}>
                                     <Bubble tone={r.tone}>{r.icon}</Bubble>
                                     <span className="min-w-0 flex-1">

@@ -1,0 +1,556 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-02T00:14:13.385800+00:00",
+  "title": "Design System: Split.it",
+  "extensions": {
+    "colorMeta": {
+      "violet": {
+        "role": "primary",
+        "displayName": "Violeta Eléctrico",
+        "canonical": "#5b2ee5",
+        "tonalRamp": [
+          "#170844",
+          "#290f78",
+          "#3a15ac",
+          "#4c1ce0",
+          "#734de9",
+          "#9c81ef",
+          "#c5b4f6",
+          "#ede8fc"
+        ]
+      },
+      "violet-deep": {
+        "role": "primary",
+        "displayName": "Violeta Profundo",
+        "canonical": "#3b1bb5",
+        "tonalRamp": [
+          "#160a43",
+          "#261175",
+          "#3719a8",
+          "#4721db",
+          "#6f51e5",
+          "#9983ed",
+          "#c3b6f4",
+          "#ede9fc"
+        ]
+      },
+      "lilac": {
+        "role": "primary",
+        "displayName": "Lila",
+        "canonical": "#b8a8ff",
+        "tonalRamp": [
+          "#0e004c",
+          "#190087",
+          "#2400c1",
+          "#2e00fb",
+          "#5b37ff",
+          "#8b71ff",
+          "#bbabff",
+          "#eae5ff"
+        ]
+      },
+      "periwinkle": {
+        "role": "primary",
+        "displayName": "Pervinca",
+        "canonical": "#8d7bff",
+        "tonalRamp": [
+          "#0a004c",
+          "#120087",
+          "#1a00c1",
+          "#2200fb",
+          "#5237ff",
+          "#8471ff",
+          "#b7abff",
+          "#e9e5ff"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Lienzo Lavanda",
+        "canonical": "#eceaf8",
+        "tonalRamp": [
+          "#191339",
+          "#2b2265",
+          "#3e3091",
+          "#513fbd",
+          "#7769cd",
+          "#9f94db",
+          "#c6c0ea",
+          "#eeecf9"
+        ]
+      },
+      "canvas-deep": {
+        "role": "neutral",
+        "displayName": "Lienzo Hondo",
+        "canonical": "#e2dff5",
+        "tonalRamp": [
+          "#18123a",
+          "#2a2067",
+          "#3c2e93",
+          "#4e3cc0",
+          "#7566cf",
+          "#9d93dd",
+          "#c5bfeb",
+          "#edecf9"
+        ]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Hoja Blanca",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#262626",
+          "#434343",
+          "#616161",
+          "#7e7e7e",
+          "#9b9b9b",
+          "#b8b8b8",
+          "#d5d5d5",
+          "#f2f2f2"
+        ]
+      },
+      "card-soft": {
+        "role": "neutral",
+        "displayName": "Hoja Suave",
+        "canonical": "#f4f3fc",
+        "tonalRamp": [
+          "#140f3d",
+          "#241b6c",
+          "#33279a",
+          "#4332c9",
+          "#6c5fd7",
+          "#978de3",
+          "#c2bcee",
+          "#ecebfa"
+        ]
+      },
+      "card-tint": {
+        "role": "neutral",
+        "displayName": "Hoja Teñida",
+        "canonical": "#eeeaff",
+        "tonalRamp": [
+          "#0f004c",
+          "#1a0087",
+          "#2500c1",
+          "#3000fb",
+          "#5d37ff",
+          "#8c71ff",
+          "#bbabff",
+          "#eae5ff"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Tinta Índigo",
+        "canonical": "#14113a",
+        "tonalRamp": [
+          "#14113b",
+          "#241f68",
+          "#332c95",
+          "#4339c2",
+          "#6c64d2",
+          "#9791df",
+          "#c2beec",
+          "#ecebf9"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Tinta 2",
+        "canonical": "#5a5780",
+        "tonalRamp": [
+          "#201f2e",
+          "#383750",
+          "#514e73",
+          "#696696",
+          "#8b88ae",
+          "#acaac6",
+          "#cecddd",
+          "#f0f0f5"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Tinta 3",
+        "canonical": "#77739b",
+        "tonalRamp": [
+          "#21202d",
+          "#3a384f",
+          "#545071",
+          "#6d6993",
+          "#8d8aac",
+          "#aeacc4",
+          "#d0cedc",
+          "#f1f0f4"
+        ]
+      },
+      "owed-teal": {
+        "role": "secondary",
+        "displayName": "Turquesa te deben",
+        "canonical": "#08857b",
+        "tonalRamp": [
+          "#044843",
+          "#087f76",
+          "#0bb6a8",
+          "#0eeddb",
+          "#42f4e5",
+          "#79f7ed",
+          "#b0faf4",
+          "#e7fefc"
+        ]
+      },
+      "owed-teal-bright": {
+        "role": "secondary",
+        "displayName": "Turquesa Superficie",
+        "canonical": "#20d3c2",
+        "tonalRamp": [
+          "#0a423d",
+          "#12756c",
+          "#19a89a",
+          "#21dac9",
+          "#51e5d7",
+          "#84ece2",
+          "#b6f4ee",
+          "#e9fcfa"
+        ]
+      },
+      "owe-coral": {
+        "role": "tertiary",
+        "displayName": "Coral debes",
+        "canonical": "#cf4417",
+        "tonalRamp": [
+          "#451708",
+          "#79280d",
+          "#ae3913",
+          "#e24a19",
+          "#eb724b",
+          "#f19b7f",
+          "#f7c4b4",
+          "#fcede8"
+        ]
+      },
+      "owe-coral-bright": {
+        "role": "tertiary",
+        "displayName": "Coral Superficie",
+        "canonical": "#ff7a3d",
+        "tonalRamp": [
+          "#4c1800",
+          "#872a00",
+          "#c13d00",
+          "#fb4f00",
+          "#ff7637",
+          "#ff9e71",
+          "#ffc6ab",
+          "#ffeee5"
+        ]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Peligro",
+        "canonical": "#d6293f",
+        "tonalRamp": [
+          "#400c13",
+          "#711621",
+          "#a21f30",
+          "#d3283e",
+          "#df5768",
+          "#e88894",
+          "#f2b9c0",
+          "#fbeaec"
+        ]
+      },
+      "warn": {
+        "role": "semantic",
+        "displayName": "Aviso",
+        "canonical": "#9a6200",
+        "tonalRamp": [
+          "#4c3100",
+          "#875600",
+          "#c17b00",
+          "#fba000",
+          "#ffb637",
+          "#ffcb71",
+          "#ffe1ab",
+          "#fff6e5"
+        ]
+      },
+      "info": {
+        "role": "semantic",
+        "displayName": "Información",
+        "canonical": "#3a5bd9",
+        "tonalRamp": [
+          "#0c1740",
+          "#162971",
+          "#1f3aa2",
+          "#294cd3",
+          "#5773df",
+          "#889ce8",
+          "#b9c5f1",
+          "#eaedfb"
+        ]
+      },
+      "night-canvas": {
+        "role": "neutral",
+        "displayName": "Noche",
+        "canonical": "#0d0a26",
+        "tonalRamp": [
+          "#15103d",
+          "#251c6b",
+          "#342899",
+          "#4434c7",
+          "#6d60d5",
+          "#978fe1",
+          "#c2bdee",
+          "#ecebfa"
+        ]
+      },
+      "night-card": {
+        "role": "neutral",
+        "displayName": "Noche Tarjeta",
+        "canonical": "#1a1545",
+        "tonalRamp": [
+          "#16123b",
+          "#271f67",
+          "#382d94",
+          "#493bc1",
+          "#7165d0",
+          "#9a92de",
+          "#c3bfeb",
+          "#edebf9"
+        ]
+      },
+      "night-card-soft": {
+        "role": "neutral",
+        "displayName": "Noche Tarjeta Suave",
+        "canonical": "#231d58",
+        "tonalRamp": [
+          "#17133a",
+          "#282165",
+          "#3a3091",
+          "#4b3ebd",
+          "#7368cd",
+          "#9b94dc",
+          "#c4c0ea",
+          "#edecf9"
+        ]
+      },
+      "night-violet": {
+        "role": "primary",
+        "displayName": "Violeta Noche",
+        "canonical": "#8566ff",
+        "tonalRamp": [
+          "#0f004c",
+          "#1b0087",
+          "#2700c1",
+          "#3300fb",
+          "#5f37ff",
+          "#8e71ff",
+          "#bcabff",
+          "#ebe5ff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Saludo y títulos de pantalla."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Títulos de bloque y cifras secundarias."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Encabezados de sección."
+      },
+      "heading": {
+        "displayName": "Heading",
+        "purpose": "Etiquetas de botón y de fila destacada."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Texto de lectura y de filas."
+      },
+      "money-xl": {
+        "displayName": "Money XL",
+        "purpose": "Cifra principal de Inicio; numerales tabulares."
+      }
+    },
+    "shadows": [
+      {
+        "name": "sheet",
+        "value": "0 1px 0 rgba(255,255,255,0.7) inset, 0 12px 32px -14px rgba(66,44,180,0.28)",
+        "purpose": "Tarjetas apoyadas sobre el lienzo."
+      },
+      {
+        "name": "sheet-sm",
+        "value": "0 6px 18px -10px rgba(66,44,180,0.3)",
+        "purpose": "Filas."
+      },
+      {
+        "name": "accent-glow",
+        "value": "0 12px 24px -10px rgba(91,46,229,0.38)",
+        "purpose": "Botón primario y tarjeta principal; sigue el color de la app."
+      },
+      {
+        "name": "glass",
+        "value": "inset 0 1px 0 rgba(255,255,255,0.9), inset 0 0 0 1px rgba(255,255,255,0.45), 0 14px 34px -12px rgba(66,44,180,0.32)",
+        "purpose": "Barra inferior, hojas, avisos y botones del encabezado."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-ios",
+        "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Hojas y transiciones de panel."
+      },
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Presión de botones y hover."
+      },
+      {
+        "name": "spring",
+        "value": "cubic-bezier(0.34, 1.4, 0.64, 1)",
+        "purpose": "Lente de la barra, iconos activos y fichas seleccionadas."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón primario",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "La acción principal de la vista; una por pantalla.",
+      "html": "<button class=\"ds-btn-primary\">Agregar gasto</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 24px;border:0;border-radius:999px;font-family:'Outfit Variable',Outfit,system-ui,sans-serif;font-weight:600;font-size:16px;letter-spacing:-0.01em;cursor:pointer;transition:transform 140ms cubic-bezier(0.23,1,0.32,1),filter 140ms,box-shadow 200ms;background:linear-gradient(140deg,#6b3ff2 0%,#4b2cd8 52%,#2f1fa6 100%);color:#fff;box-shadow:0 12px 24px -10px rgba(91,46,229,0.38);}.ds-btn-primary:hover{filter:brightness(1.07);}.ds-btn-primary:active{transform:translateY(1px) scale(0.98);}.ds-btn-primary:focus-visible{outline:2px solid #5b2ee5;outline-offset:2px;}"
+    },
+    {
+      "name": "Botón secundario",
+      "kind": "button",
+      "refersTo": "button-tinted",
+      "description": "Acción secundaria: violeta suave sobre texto violeta.",
+      "html": "<button class=\"ds-btn-tinted\">Ver más</button>",
+      "css": ".ds-btn-tinted{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 24px;border:0;border-radius:999px;font-family:'Outfit Variable',Outfit,system-ui,sans-serif;font-weight:600;font-size:16px;letter-spacing:-0.01em;cursor:pointer;transition:transform 140ms cubic-bezier(0.23,1,0.32,1),filter 140ms,box-shadow 200ms;background:rgba(91,46,229,0.1);color:#5b2ee5;}.ds-btn-tinted:hover{background:rgba(91,46,229,0.17);}.ds-btn-tinted:active{transform:translateY(1px) scale(0.98);}.ds-btn-tinted:focus-visible{outline:2px solid #5b2ee5;outline-offset:2px;}"
+    },
+    {
+      "name": "Campo de texto",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Campo de 54px, hoja suave, halo violeta al enfocar.",
+      "html": "<input class=\"ds-field\" placeholder=\"Nombre, usuario, correo o teléfono\" />",
+      "css": ".ds-field{width:100%;height:54px;padding:0 18px;border:1.5px solid transparent;border-radius:16px;background:#f4f3fc;color:#14113a;font:16px 'Geist Variable',Geist,system-ui,sans-serif;outline:none;transition:border-color 140ms,background-color 140ms,box-shadow 140ms;}.ds-field::placeholder{color:#77739b;}.ds-field:focus{border-color:#5b2ee5;background:#fff;box-shadow:0 0 0 4px rgba(91,46,229,0.1);}"
+    },
+    {
+      "name": "Fila de gasto",
+      "kind": "card",
+      "refersTo": "row",
+      "description": "Fila táctil de 64px: título, contexto y tu posición a la derecha.",
+      "html": "<div class=\"ds-row\"><span class=\"ds-row-icon\">•</span><span class=\"ds-row-text\"><b>Cena en Andrés Carne</b><small>Pagaste tú · Hoy</small></span><span class=\"ds-row-money\">$ 92.000</span></div>",
+      "css": ".ds-row{display:flex;align-items:center;gap:12px;min-height:64px;padding:12px 14px;border-radius:20px;background:#fff;box-shadow:0 6px 18px -10px rgba(66,44,180,0.3);font-family:'Geist Variable',Geist,system-ui,sans-serif;color:#14113a;}.ds-row-icon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:16px;background:#eeeaff;color:#5b2ee5;}.ds-row-text{flex:1;display:flex;flex-direction:column;font-size:15px;}.ds-row-text small{font-size:13px;color:#5a5780;}.ds-row-money{font-family:'Outfit Variable',Outfit,system-ui,sans-serif;font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;color:#08857b;}"
+    },
+    {
+      "name": "Ficha \"Te deben\"",
+      "kind": "card",
+      "refersTo": "tile-owed",
+      "description": "Superficie turquesa: dinero que te deben. Su par coral significa \"debes\".",
+      "html": "<div class=\"ds-tile\"><span class=\"ds-tile-label\">Te deben</span><span class=\"ds-tile-money\">$ 580.000</span></div>",
+      "css": ".ds-tile{display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:20px;background:linear-gradient(140deg,#3ee3d1 0%,#14a7c4 100%);color:#0b1f3a;box-shadow:0 16px 28px -16px rgba(20,167,196,0.7);}.ds-tile-label{font:13px 'Geist Variable',Geist,system-ui,sans-serif;}.ds-tile-money{font-family:'Outfit Variable',Outfit,system-ui,sans-serif;font-weight:600;font-size:26px;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;}"
+    },
+    {
+      "name": "Tarjeta principal",
+      "kind": "custom",
+      "refersTo": "hero",
+      "description": "Ancla de Inicio: la cifra \"Lo que tienes\" en grande sobre degradado violeta.",
+      "html": "<div class=\"ds-hero\"><span class=\"ds-hero-label\">Lo que tienes</span><span class=\"ds-hero-money\">$ 3.010.000</span></div>",
+      "css": ".ds-hero{display:flex;flex-direction:column;gap:8px;padding:24px;border-radius:28px;color:#fff;background:radial-gradient(120% 90% at 100% 0%,rgba(255,255,255,0.22) 0%,rgba(255,255,255,0) 55%),linear-gradient(140deg,#6b3ff2 0%,#4b2cd8 52%,#2f1fa6 100%);box-shadow:0 22px 44px -18px rgba(91,46,229,0.38);}.ds-hero-label{font:13px 'Geist Variable',Geist,system-ui,sans-serif;opacity:0.82;}.ds-hero-money{font-family:'Outfit Variable',Outfit,system-ui,sans-serif;font-weight:600;font-size:44px;line-height:1;letter-spacing:-0.04em;font-variant-numeric:tabular-nums;}"
+    },
+    {
+      "name": "Chip de estado",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Píldora de 28px con el color de significado.",
+      "html": "<span class=\"ds-chip\">Te deben $ 48.000</span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;background:rgba(32,211,194,0.16);color:#08857b;font:600 12px 'Geist Variable',Geist,system-ui,sans-serif;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "El cuaderno compartido",
+    "overview": "Split.it se siente como una libreta de cuentas que dos personas llevan juntas: ordenada, legible y sin drama por la plata. Las superficies son hojas blancas apoyadas sobre un lienzo lavanda; las cifras son lo primero que se lee y el color no decora, informa. Hay un solo acento, el violeta, que dice \"esto es una acción tuya\"; el turquesa y el naranja existen únicamente para decir de qué lado de la cuenta estás.\n\nLa densidad es media: bloques anchos con aire entre ellos, filas de 64px que se pueden tocar con el pulgar, y jerarquía por tamaño de cifra más que por adornos. Se usa de pie, con prisa, justo después de pagar algo, y también sentado frente al computador para revisar cuentas con calma; el sistema tiene que servir bien en los dos momentos sin sentirse como dos productos.\n\nEl vidrio es una excepción deliberada, no un estilo: solo aparece en la capa de navegación y los controles flotantes (barra inferior, hojas, avisos, botones del encabezado), donde la traslucidez ayuda a entender que algo flota sobre el contenido. El contenido nunca es de vidrio.",
+    "keyCharacteristics": [
+      "Un solo acento (violeta); verde azulado = te deben, naranja = debes, siempre.",
+      "Hojas blancas sobre lienzo lavanda; sombras teñidas de violeta, nunca negro puro.",
+      "Forma fija: tarjetas 24px, fichas 20px, filas 20px, campos 16px, botones y chips en píldora.",
+      "Cifras en Outfit con numerales tabulares; texto de lectura en Geist.",
+      "Vidrio solo en navegación y capas flotantes; sólido de respaldo con transparencia reducida.",
+      "El color de la app es personalizable (se deriva de un color base) sin tocar los colores de significado."
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "El violeta es la única voz de marca. Si algo necesita otro color, es porque significa algo (entra, sale, peligro), no porque se vea bien.",
+        "section": "colors"
+      },
+      {
+        "name": "The Fixed Meaning Rule",
+        "body": "Turquesa es \"te deben\" y coral es \"debes\", incluso cuando la persona cambia el color de la app. El color de la app personaliza la marca, nunca el significado.",
+        "section": "colors"
+      },
+      {
+        "name": "The Signed Number Rule",
+        "body": "Un monto negativo siempre lleva su signo (−). Una cifra sin signo no puede leerse como negativa.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Money Rule",
+        "body": "Todo monto lleva numerales tabulares para que las columnas de cifras se alineen y no bailen al cambiar.",
+        "section": "typography"
+      },
+      {
+        "name": "The 16px Input Rule",
+        "body": "Los campos de texto miden 16px como mínimo; menos hace que el celular acerque la pantalla al enfocar.",
+        "section": "typography"
+      },
+      {
+        "name": "The Glass Is Chrome Rule",
+        "body": "El vidrio vive solo en navegación y capas flotantes. Nunca se usa para tarjetas de contenido ni para cifras: la traslucidez compromete el contraste justo donde más importa.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Tinted Shadow Rule",
+        "body": "Las sombras toman el tono de la marca; un gris o negro puro rompe el lienzo lavanda.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** usar el violeta solo para acciones, selección y marca; todo lo demás con significado usa turquesa, coral o semánticos.",
+      "**Do** mostrar tu posición, no el total: \"te deben $48.000\", no el monto bruto del gasto.",
+      "**Do** poner signo a los montos negativos y numerales tabulares a toda cifra.",
+      "**Do** respetar `prefers-reduced-motion`, `prefers-reduced-transparency` y `prefers-contrast`; el vidrio siempre tiene sólido de respaldo.",
+      "**Do** mantener objetivos táctiles de 44px o más y campos de 16px.",
+      "**Do** limitar el movimiento a lo que comunica (aparecer, confirmar, orientar) con duraciones bajo 300ms para lo frecuente."
+    ],
+    "donts": [
+      "**Don't** usar vidrio en tarjetas de contenido ni sobre cifras.",
+      "**Don't** usar el violeta, ni su degradado, para estados semánticos (peligro, advertencia, éxito).",
+      "**Don't** usar sombras grises o negras puras sobre el lienzo lavanda.",
+      "**Don't** mostrar un monto negativo sin su signo, ni contar lo que te deben como dinero propio hasta que se pague.",
+      "**Don't** animar lo que se hace cientos de veces al día (atajos de teclado, cambio de pestaña con teclado).",
+      "**Don't** introducir una tercera familia tipográfica ni radios fuera de la escala."
+    ]
+  }
+}

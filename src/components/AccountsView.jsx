@@ -33,6 +33,7 @@ const EntryRow = ({ entry, kind, onOpen }) => {
     const pct = entry.amount_owed > 0 ? (entry.amount_paid / entry.amount_owed) * 100 : 0;
     const paid = entry.status === 'paid';
     const color = kind === 'owed' ? 'var(--pos)' : 'var(--neg)';
+    const planText = entry.installments_count ? `Cuotas ${(entry.installments || []).filter((i) => i.paid).length}/${entry.installments_count}` : '';
     // Un nombre accesible que dice qué es y en qué sentido va el dinero.
     const spoken = paid
         ? `${name}, saldada, ${formatCurrency(entry.amount_owed)}. Abrir`
@@ -43,7 +44,7 @@ const EntryRow = ({ entry, kind, onOpen }) => {
             <span className="min-w-0 flex-1">
                 <span className="body block truncate font-semibold">{name}</span>
                 <span className="small block truncate">
-                    {entry.description || (entry.amount_paid > 0 ? `${kind === 'owed' ? 'Ha pagado' : 'Has pagado'} ${formatCurrency(entry.amount_paid)}` : 'Sin abonos todavía')}
+                    {[entry.description, planText].filter(Boolean).join(' · ') || (entry.amount_paid > 0 ? `${kind === 'owed' ? 'Ha pagado' : 'Has pagado'} ${formatCurrency(entry.amount_paid)}` : 'Sin abonos todavía')}
                 </span>
             </span>
             <span className="shrink-0 text-right">

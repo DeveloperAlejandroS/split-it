@@ -26,6 +26,7 @@ export const LEDGER = {
         effect: 'Al registrar un pago, sale de tu caja en tu presupuesto de este mes.',
         confirmEffect: (amount) => `Salen ${amount} de tu caja en tu presupuesto de este mes.`,
         createEffect: 'Se suma a lo que debes y puedes ir abonando poco a poco.',
+        installmentsEffect: 'Cada cuota aparece en tu presupuesto de su mes como pendiente. Al marcarla pagada, sale de tu caja y baja lo que debes.',
     },
 };
 

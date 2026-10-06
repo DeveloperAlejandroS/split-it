@@ -8,6 +8,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { CurrencyInput } from './CurrencyInput';
 import { API_URL } from '../config/api';
 import { formatCurrency } from '../utils/helpers';
+import { getCurrentMonthKey, monthKeyToLabel } from '../utils/budgetHelpers';
 import { LEDGER } from './ledgerConfig';
 
 const TOKEN_KEY = 'splitit_jwt';
@@ -25,11 +26,20 @@ const callApi = async (path, method, body) => {
     return json;
 };
 
+const pad = (n) => String(n).padStart(2, '0');
+const todayKey = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const shortMonth = (key) => { const [y, m] = key.split('-').map(Number); return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('es-CO', { month: 'short', year: 'numeric', timeZone: 'UTC' }); };
+const dateLabel = (key) => new Date(`${key}T00:00:00`).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+
 export const AddLedgerEntrySheet = ({ isOpen, kind, onClose, onCreated }) => {
     const cfg = LEDGER[kind];
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
+    // Solo "Yo debo": fecha de la deuda y, si se quiere, dividirla en cuotas mensuales.
+    const [date, setDate] = useState(todayKey());
+    const [inInstallments, setInInstallments] = useState(false);
+    const [count, setCount] = useState('12');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
@@ -37,18 +47,29 @@ export const AddLedgerEntrySheet = ({ isOpen, kind, onClose, onCreated }) => {
     useEffect(() => {
         if (!isOpen) return;
         setName(''); setDescription(''); setAmount(''); setError('');
+        setDate(todayKey()); setInInstallments(false); setCount('12');
     }, [isOpen]);
     /* eslint-enable react-hooks/set-state-in-effect */
 
     const value = Number(amount);
-    const missing = !name.trim() ? 'Escribe el nombre' : !(value > 0) ? 'Escribe el monto' : '';
+    const supportsPlan = kind === 'owe';
+    const countValue = Number(count);
+    const countValid = Number.isInteger(countValue) && countValue >= 2 && countValue <= 120;
+    const planOn = supportsPlan && inInstallments;
+    const missing = !name.trim() ? 'Escribe el nombre'
+        : !(value > 0) ? 'Escribe el monto'
+        : supportsPlan && !date ? 'Elige la fecha de la deuda'
+        : planOn && !countValid ? 'Indica cuántas cuotas (de 2 a 120)'
+        : '';
+    const perCuota = planOn && countValid && value > 0 ? Math.floor(value / countValue) : 0;
+    const hasRemainder = planOn && countValid && value > 0 && value % countValue !== 0;
 
     const save = async () => {
         if (missing) return;
         setSaving(true);
         setError('');
         try {
-            await callApi(cfg.base, 'POST', { [cfg.nameKey]: name.trim(), description: description.trim() || null, amount_owed: value });
+            await callApi(cfg.base, 'POST', { [cfg.nameKey]: name.trim(), description: description.trim() || null, amount_owed: value, ...(supportsPlan ? { start_date: date, ...(planOn ? { installments: countValue } : {}) } : {}) });
             onCreated?.();
         } catch (err) {
             setError(err.message);
@@ -67,7 +88,30 @@ export const AddLedgerEntrySheet = ({ isOpen, kind, onClose, onCreated }) => {
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder={cfg.nameLabel} aria-label={cfg.nameLabel} autoCapitalize="words" className="field" />
                 <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Motivo (opcional)" aria-label="Motivo" className="field" />
             </div>
-            <p className="small mt-3 px-1 text-secondary">{cfg.createEffect}</p>
+            {supportsPlan && (
+                <div className="mt-3 space-y-3">
+                    <div>
+                        <label className="field-label" htmlFor="ledger-date">Fecha de la deuda</label>
+                        <input id="ledger-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="field" />
+                    </div>
+                    <div className="segmented" role="group" aria-label="Forma de pago">
+                        <button type="button" aria-pressed={!inInstallments} onClick={() => setInInstallments(false)}>Sin cuotas</button>
+                        <button type="button" aria-pressed={inInstallments} onClick={() => setInInstallments(true)}>En cuotas</button>
+                    </div>
+                    {planOn && (
+                        <div>
+                            <label className="field-label" htmlFor="ledger-count">Número de cuotas (una por mes)</label>
+                            <input id="ledger-count" type="number" inputMode="numeric" min="2" max="120" value={count} onChange={(e) => setCount(e.target.value)} className="field" />
+                            {perCuota > 0 && (
+                                <p className="small mt-2 px-1" style={{ color: 'var(--ink)' }}>
+                                    {countValue} cuotas de {formatCurrency(perCuota)}, la primera en {monthKeyToLabel(date.slice(0, 7)).toLowerCase()}.{hasRemainder ? ' La última ajusta la diferencia.' : ''}
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+            <p className="small mt-4 px-1 text-secondary">{planOn ? cfg.installmentsEffect : cfg.createEffect}</p>
             {error && <p role="alert" className="small mt-3 rounded-[12px] p-3" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>{error}</p>}
             <div className="mt-5">
                 <button type="button" className="btn btn-primary btn-block" disabled={Boolean(missing) || saving} onClick={save}>
@@ -116,6 +160,9 @@ export const LedgerEntrySheet = ({ entry, kind, onClose, onChanged }) => {
     const isPaid = shown.status === 'paid';
     const abonoValue = Number(amount);
     const abonoValid = abonoValue > 0 && abonoValue <= shown.remaining + 0.01;
+    const plan = kind === 'owe' && shown.installments?.length > 0 ? shown.installments : null;
+    const paidCount = plan ? plan.filter((i) => i.paid).length : 0;
+    const currentMonth = getCurrentMonthKey();
 
     const act = async (fn) => {
         setBusy(true);
@@ -130,6 +177,7 @@ export const LedgerEntrySheet = ({ entry, kind, onClose, onChanged }) => {
                     <Avatar name={name} size={64} />
                     <h3 className="title mt-3">{name}</h3>
                     {shown.description && <p className="small text-secondary">{shown.description}</p>}
+                    {shown.start_date && kind === 'owe' && <p className="small text-secondary">Desde el {dateLabel(shown.start_date)}{plan ? ` · ${plan.length} cuotas` : ''}</p>}
                 </div>
 
                 <div className="ios-card p-4">
@@ -143,7 +191,40 @@ export const LedgerEntrySheet = ({ entry, kind, onClose, onChanged }) => {
                     </div>
                 </div>
 
-                {!isPaid && !editing && (
+                {plan && !editing && (
+                    <>
+                        <div className="flex items-baseline justify-between px-1 pb-2 pt-6">
+                            <p className="heading">Cuotas</p>
+                            <p className="small">{paidCount} de {plan.length} pagadas</p>
+                        </div>
+                        <ul className="stack">
+                            {plan.map((inst) => {
+                                const late = !inst.paid && inst.due_month < currentMonth;
+                                return (
+                                    <li key={inst.id} className="row" style={{ cursor: 'default' }}>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="body block font-semibold">Cuota {inst.number} de {plan.length}</span>
+                                            <span className="small block" style={late ? { color: 'var(--neg)' } : undefined}>{late ? 'Vencida · ' : ''}{shortMonth(inst.due_month)} · {formatCurrency(inst.amount)}</span>
+                                        </span>
+                                        <button
+                                            type="button"
+                                            className={`btn btn-sm btn-44 shrink-0 ${inst.paid ? 'btn-tinted' : 'btn-gray'}`}
+                                            aria-pressed={inst.paid}
+                                            aria-label={inst.paid ? `Cuota ${inst.number} pagada. Deshacer` : `Marcar la cuota ${inst.number} como pagada`}
+                                            disabled={busy}
+                                            onClick={() => act(() => callApi(`${cfg.base}/${shown.id}/installments/${inst.number}`, 'PATCH', { paid: !inst.paid }))}
+                                        >
+                                            {inst.paid ? <><Check size={16} weight="bold" /> Pagada</> : 'Marcar pagada'}
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                        <p className="small mt-2 px-1 text-secondary">{cfg.installmentsEffect}</p>
+                    </>
+                )}
+
+                {!isPaid && !editing && !plan && (
                     <>
                         <p className="heading px-1 pb-2 pt-6">{cfg.abonoTitle}</p>
                         {confirming ? (
@@ -176,8 +257,14 @@ export const LedgerEntrySheet = ({ entry, kind, onClose, onChanged }) => {
                     <div className="mt-6 space-y-3">
                         <input className="field" value={editName} onChange={(e) => setEditName(e.target.value)} aria-label="Nombre" />
                         <input className="field" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} placeholder="Motivo (opcional)" aria-label="Motivo" />
-                        <CurrencyInput className="field" value={editTotal} onChange={setEditTotal} />
-                        <p className="small px-1 text-secondary">No puedes bajar el total por debajo de lo ya {kind === 'owed' ? 'pagado' : 'abonado'} ({formatCurrency(shown.amount_paid)}).</p>
+                        {plan ? (
+                            <p className="small px-1 text-secondary">El total ({formatCurrency(shown.amount_owed)}) no se cambia en una deuda a cuotas. Si te equivocaste, elimínala y créala de nuevo.</p>
+                        ) : (
+                            <>
+                                <CurrencyInput className="field" value={editTotal} onChange={setEditTotal} />
+                                <p className="small px-1 text-secondary">No puedes bajar el total por debajo de lo ya {kind === 'owed' ? 'pagado' : 'abonado'} ({formatCurrency(shown.amount_paid)}).</p>
+                            </>
+                        )}
                         <div className="grid grid-cols-2 gap-3">
                             <button type="button" className="btn btn-gray" onClick={() => setEditing(false)}>Cancelar</button>
                             <button
@@ -209,7 +296,7 @@ export const LedgerEntrySheet = ({ entry, kind, onClose, onChanged }) => {
                 isOpen={showDelete}
                 tone="danger"
                 title={`¿Eliminar a ${name}?`}
-                message="Los abonos ya registrados siguen contando en tu presupuesto. Solo se borra este registro."
+                message={plan ? 'Las cuotas pendientes se quitan de tu presupuesto. Las que ya pagaste siguen contando.' : 'Los abonos ya registrados siguen contando en tu presupuesto. Solo se borra este registro.'}
                 confirmLabel="Eliminar"
                 isLoading={busy}
                 onConfirm={() => act(async () => { await callApi(`${cfg.base}/${shown.id}`, 'DELETE'); setShowDelete(false); onClose(); })}

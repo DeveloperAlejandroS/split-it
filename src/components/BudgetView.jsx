@@ -44,6 +44,7 @@ const friendly = (err) => (err instanceof TypeError ? 'No hay conexión con el s
 const syncTag = (item) => {
     if (item.is_split_synced) return 'Gasto compartido';
     if (item.libreta_entry_id) return 'Abono recibido';
+    if (item.debt_installment_id) return 'Cuota de deuda';
     if (item.debt_entry_id) return 'Pago de deuda';
     return '';
 };

@@ -5,5 +5,17 @@
       "maxFindings": 5,
       "maxChars": 8000
     }
+  },
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(0.2, 1.35, 0.4, 1)",
+        "createdAt": "2026-11-10T04:12:33.562Z",
+        "reason": "user confirmed: pidió 'lazy bounce' y eligió 'Rebote al llegar al borde'; el retorno con rebote es el efecto pedido"
+      }
+    ]
   }
 }

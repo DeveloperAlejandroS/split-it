@@ -36,6 +36,7 @@ export const AddLedgerEntrySheet = ({ isOpen, kind, onClose, onCreated }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
+    const [note, setNote] = useState(null); // monto original si se escribió en la otra moneda
     // Solo "Yo debo": fecha de la deuda y, si se quiere, dividirla en cuotas mensuales.
     const [date, setDate] = useState(todayKey());
     const [inInstallments, setInInstallments] = useState(false);
@@ -69,7 +70,7 @@ export const AddLedgerEntrySheet = ({ isOpen, kind, onClose, onCreated }) => {
         setSaving(true);
         setError('');
         try {
-            await callApi(cfg.base, 'POST', { [cfg.nameKey]: name.trim(), description: description.trim() || null, amount_owed: value, ...(supportsPlan ? { start_date: date, ...(planOn ? { installments: countValue } : {}) } : {}) });
+            await callApi(cfg.base, 'POST', { [cfg.nameKey]: name.trim(), description: [description.trim(), note].filter(Boolean).join(' · ') || null, amount_owed: value, ...(supportsPlan ? { start_date: date, ...(planOn ? { installments: countValue } : {}) } : {}) });
             onCreated?.();
         } catch (err) {
             setError(err.message);
@@ -82,7 +83,7 @@ export const AddLedgerEntrySheet = ({ isOpen, kind, onClose, onCreated }) => {
         <Sheet isOpen={isOpen} onClose={onClose} title={cfg.addTitle}>
             <div className="py-4 text-center">
                 <label htmlFor="ledger-amount" className="small text-secondary">Monto</label>
-                <CurrencyInput id="ledger-amount" value={amount} onChange={setAmount} autoFocus placeholder="$0" echo className="input-amount" />
+                <CurrencyInput id="ledger-amount" value={amount} onChange={setAmount} onNote={setNote} autoFocus placeholder="$0" echo className="input-amount" />
             </div>
             <div className="space-y-3">
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder={cfg.nameLabel} aria-label={cfg.nameLabel} autoCapitalize="words" className="field" />

@@ -33,6 +33,7 @@ export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, initialSection 
     const [label, setLabel] = useState('');
     const [amount, setAmount] = useState('');
     const [planned, setPlanned] = useState('');
+    const [note, setNote] = useState(null); // monto original si se escribió en la otra moneda
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [contributingId, setContributingId] = useState(null);
@@ -118,10 +119,12 @@ export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, initialSection 
     const create = async () => {
         if (missing) return;
         setSaving(true); setError('');
+        // Un ahorro se reconoce por su nombre: ahí no se agrega la nota.
+        const name = category.section === 'saving' || !note ? label.trim() : `${label.trim()} · ${note}`;
         try {
-            if (mode === 'monthly') await post('/budget/recurring', 'POST', { label: label.trim(), amount: value, start_month: monthKey });
-            else if (mode === 'installments') await post('/budget/recurring', 'POST', { label: label.trim(), total_amount: value, months: countValue, start_month: monthKey });
-            else await post(`/budget/${monthKey}/items`, 'POST', { section: category.section, label: label.trim(), budgeted_amount: canPlan ? plannedValue : value, actual_amount: value });
+            if (mode === 'monthly') await post('/budget/recurring', 'POST', { label: name, amount: value, start_month: monthKey });
+            else if (mode === 'installments') await post('/budget/recurring', 'POST', { label: name, total_amount: value, months: countValue, start_month: monthKey });
+            else await post(`/budget/${monthKey}/items`, 'POST', { section: category.section, label: name, budgeted_amount: canPlan ? plannedValue : value, actual_amount: value });
             onCreated?.();
         } catch (err) { setError(err.message); }
         finally { setSaving(false); }
@@ -213,7 +216,7 @@ export const AddBudgetItemModal = ({ isOpen, onClose, onCreated, initialSection 
                 <>
                     <div className="py-4 text-center">
                         <label htmlFor="budget-amount" className="small text-secondary">{mode === 'monthly' ? 'Monto de cada mes' : mode === 'installments' ? 'Total de la compra' : 'Monto'}</label>
-                        <CurrencyInput id="budget-amount" value={amount} onChange={setAmount} autoFocus placeholder="$0" echo className="input-amount" />
+                        <CurrencyInput id="budget-amount" value={amount} onChange={setAmount} onNote={setNote} autoFocus placeholder="$0" echo className="input-amount" />
                         <p className="tiny mt-1">{mode === 'once' ? `En ${monthLabel}` : `Desde ${monthLabel}`}</p>
                     </div>
                     <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={category?.placeholder || 'Descripción'} aria-label="Nombre" autoCapitalize="sentences" className="field" />

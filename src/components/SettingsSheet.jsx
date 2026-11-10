@@ -6,7 +6,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { API_URL } from '../config/api';
 import { ACCENT_PRESETS, DEFAULT_ACCENT, isValidHex } from '../utils/accent';
 import { fileToAvatar } from '../utils/image';
-import { displayNameOf, CURRENCIES } from '../utils/helpers';
+import { displayNameOf, CURRENCIES, getUsdRate, setUsdRate } from '../utils/helpers';
 import { disablePush, enablePush, getPushState, sendTestPush } from '../utils/push';
 import { useInstall } from '../utils/useInstall';
 import { IosInstallSheet } from './InstallBanner';
@@ -223,6 +223,7 @@ const SecurityPage = ({ form, setForm, error }) => {
 };
 
 const AppearancePage = ({ themePref, onThemeChange, accent, onAccentChange, currency, onCurrencyChange }) => {
+    const [rate, setRate] = useState(() => String(getUsdRate()));
     const isPreset = ACCENT_PRESETS.some((p) => p.hex.toLowerCase() === accent.toLowerCase());
     return (
         <div className="space-y-6">
@@ -243,7 +244,10 @@ const AppearancePage = ({ themePref, onThemeChange, accent, onAccentChange, curr
                         <button key={code} type="button" aria-pressed={currency === code} onClick={() => onCurrencyChange(code)}>{c.label}</button>
                     ))}
                 </div>
-                <p className="tiny px-1 pt-2">Cambia cómo se muestran los montos en este dispositivo. No convierte lo que ya registraste: 50.000 se leerá como 50,000 dólares.</p>
+                <p className="tiny px-1 pt-2">Es la moneda en la que llevas tu cuenta: todos los totales salen en ella. Cambiarla no convierte lo que ya registraste.</p>
+                <label className="field-label mt-4" htmlFor="usd-rate">Precio del dólar, en pesos</label>
+                <input id="usd-rate" className="field" type="text" inputMode="decimal" value={rate} onChange={(e) => { const v = e.target.value.replace(',', '.').replace(/[^\d.]/g, ''); setRate(v); setUsdRate(v); }} />
+                <p className="tiny px-1 pt-2">Al anotar un movimiento puedes escribirlo en la otra moneda: se convierte con este precio y queda anotado el monto original. Actualízalo cuando cambie.</p>
             </section>
 
             <section>

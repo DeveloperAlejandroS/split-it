@@ -33,6 +33,7 @@ export const CreateExpenseSheet = ({
 
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
+    const [note, setNote] = useState(null); // monto original si se escribió en la otra moneda
     const [splitType, setSplitType] = useState('equal');
     const [selected, setSelected] = useState([]); // ids
     const [customAmounts, setCustomAmounts] = useState({});
@@ -102,7 +103,7 @@ export const CreateExpenseSheet = ({
     })();
 
     const payload = () => ({
-        description: description.trim(),
+        description: note ? `${description.trim()} · ${note}` : description.trim(),
         amount: amountNumber,
         split_type: splitType,
         participants: splitType === 'custom'
@@ -155,6 +156,7 @@ export const CreateExpenseSheet = ({
                         id="expense-amount"
                         value={amount}
                         onChange={setAmount}
+                        onNote={setNote}
                         autoFocus={!isEdit}
                         placeholder="$0"
                         echo className="input-amount"

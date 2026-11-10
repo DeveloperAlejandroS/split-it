@@ -30,9 +30,10 @@ export const numberOrZero = (v) => {
 };
 
 // ---- Moneda ------------------------------------------------------------
-// La app muestra todo en una sola moneda, elegida en Ajustes y guardada en
-// este dispositivo. Solo cambia cómo se LEEN los montos (símbolo, separadores,
-// decimales): no convierte lo que ya está guardado.
+// Tu cuenta se lleva en UNA moneda principal (elegida en Ajustes, guardada en
+// este dispositivo): todos los totales están en ella. Lo que pagues en la otra
+// moneda se convierte al registrarlo, con la tasa que tú pones, y queda anotado
+// el monto original en el nombre del movimiento.
 const CURRENCY_KEY = 'splitit_currency';
 export const CURRENCIES = {
     COP: { label: 'Pesos (COP)', locale: 'es-CO', cents: false },
@@ -47,6 +48,22 @@ export const setCurrency = (code) => {
     currency = code;
     try { localStorage.setItem(CURRENCY_KEY, code); } catch { /* vale para esta sesión */ }
 };
+// Tasa: cuántos pesos vale un dólar. La pone la persona; no se consulta en internet.
+const RATE_KEY = 'splitit_usd_rate';
+let usdRate = 4000;
+try { const saved = Number(localStorage.getItem(RATE_KEY)); if (saved > 0) usdRate = saved; } catch { /* sin almacenamiento */ }
+export const getUsdRate = () => usdRate;
+export const setUsdRate = (rate) => {
+    if (!(Number(rate) > 0)) return;
+    usdRate = Number(rate);
+    try { localStorage.setItem(RATE_KEY, String(usdRate)); } catch { /* vale para esta sesión */ }
+};
+export const otherCurrency = () => (currency === 'COP' ? 'USD' : 'COP');
+// De la otra moneda a la principal: pesos enteros, o dólares con centavos.
+export const convertToMain = (amountInOther) => (currency === 'COP' ? Math.round(amountInOther * usdRate) : Math.round((amountInOther / usdRate) * 100) / 100);
+// Monto con la moneda dicha en letras ("US$ 15", "COP 60.000"): para que no se confunda con la principal.
+export const foreignLabel = (code, amount) => `${code === 'USD' ? 'US$' : 'COP'} ${new Intl.NumberFormat(CURRENCIES[code].locale, { maximumFractionDigits: CURRENCIES[code].cents ? 2 : 0 }).format(numberOrZero(amount))}`;
+
 // Por debajo de esto una diferencia se considera saldada (medio peso, o medio centavo).
 export const moneyEpsilon = () => (CURRENCIES[currency].cents ? 0.005 : 0.5);
 

@@ -22,6 +22,7 @@ import { API_URL } from './config/api';
 import { applyAccent, readAccent } from './utils/accent';
 import { useRealtime } from './utils/useRealtime';
 import { useShortcuts } from './utils/useShortcuts';
+import { useEdgeBounce } from './utils/useEdgeBounce';
 
 const TOKEN_KEY = 'splitit_jwt';
 const THEME_KEY = 'splitit_theme_pref';
@@ -327,6 +328,7 @@ const App = () => {
 
     const userName = displayNameOf(currentUser);
     // Atajos de teclado: N agrega, 1–5 cambia de pantalla.
+    useEdgeBounce(isLoggedIn && !isBooting);
     useShortcuts(isLoggedIn, { onAdd: handleAdd, onTab: setActiveTab, tabs: TABS });
 
     const addLabel = activeTab === 'expenses' ? 'Nuevo gasto' : activeTab === 'personal' ? 'Agregar movimiento' : activeTab === 'accounts' ? (accountsSegment === 'owed' ? 'Alguien me debe' : 'Yo debo') : activeTab === 'friends' ? 'Agregar amigo' : 'Agregar';

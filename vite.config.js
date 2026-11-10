@@ -2,9 +2,12 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import vercel from './vercel.json'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // `vite preview` sirve con los mismos encabezados que producción (vercel.json), para probar la política de seguridad.
+  preview: { headers: Object.fromEntries(vercel.headers[0].headers.map((h) => [h.key, h.value])) },
   plugins: [
     react(),
     tailwindcss(),

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 // Dona de segmentos. Los arcos se dibujan al montar (el recorrido crece
 // de 0 a su largo), para que el dato "se arme" en vez de aparecer de golpe.
-export const Donut = ({ segments, size = 168, thickness = 22, children }) => {
+export const Donut = ({ segments, size = 168, thickness = 22, track = 'var(--card-soft)', children }) => {
     const [ready, setReady] = useState(false);
     useEffect(() => {
         const id = requestAnimationFrame(() => setReady(true));
@@ -23,7 +23,7 @@ export const Donut = ({ segments, size = 168, thickness = 22, children }) => {
     return (
         <div className="relative shrink-0" style={{ width: size, height: size }}>
             <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }} aria-hidden="true">
-                <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--card-soft)" strokeWidth={thickness} />
+                <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={track} strokeWidth={thickness} />
                 {arcs.filter((a) => a.value > 0).map((a) => (
                     <circle
                         key={a.label}

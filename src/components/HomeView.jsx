@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, ArrowCounterClockwise, Bell, CaretRight, ChartPieSlice, CheckCircle, Clock, HandCoins, Money, PiggyBank, Receipt, UserPlus, Wallet, UsersThree, WarningCircle } from '@phosphor-icons/react';
+import { ArrowDownLeft, ArrowUpRight, ArrowCounterClockwise, Bell, CaretRight, CheckCircle, Clock, HandCoins, Money, PiggyBank, Receipt, UserPlus, UsersThree, WarningCircle } from '@phosphor-icons/react';
 import { ScreenHeader, NavAction } from './ui/ScreenHeader';
 import { Avatar } from './ui/Avatar';
 import { Donut } from './ui/Donut';
 import { AnimatedNumber } from './AnimatedNumber';
 import { API_URL } from '../config/api';
 import { getCurrentMonthKey } from '../utils/budgetHelpers';
+import { readCache, writeCache } from '../utils/cache';
 import {
     displayNameOf,
     firstNameOf,
@@ -43,10 +44,12 @@ export const HomeView = ({
     onAddFriend,
     onRefreshData,
 }) => {
-    const [budget, setBudget] = useState(null);
-    const [libreta, setLibreta] = useState({ total_pending: 0 });
-    const [debts, setDebts] = useState({ total_pending: 0 });
-    const [isLoading, setIsLoading] = useState(true);
+    // Arranca con la última foto guardada (si es de este mes): las cifras se ven al abrir.
+    const [cached] = useState(() => { const c = readCache('home'); return c?.month === getCurrentMonthKey() ? c : null; });
+    const [budget, setBudget] = useState(cached?.budget || null);
+    const [libreta, setLibreta] = useState(cached?.libreta || { total_pending: 0 });
+    const [debts, setDebts] = useState(cached?.debts || { total_pending: 0 });
+    const [isLoading, setIsLoading] = useState(!cached);
     // Si alguna fuente de cifras falla, se conservan los últimos valores buenos
     // y se avisa: mostrar $0 como si fuera real sería peor que no mostrar nada.
     const [loadFailed, setLoadFailed] = useState(false);
@@ -56,7 +59,7 @@ export const HomeView = ({
     const [confirmed, setConfirmed] = useState([]);
 
     const loadAll = useCallback(async (silent = false) => {
-        if (!silent) setIsLoading(true);
+        if (!silent && !readCache('home')) setIsLoading(true);
         try {
             const headers = { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}`, Accept: 'application/json' };
             const [b, l, d] = await Promise.all([
@@ -70,6 +73,7 @@ export const HomeView = ({
             if (l.ok && lj) setLibreta(lj);
             if (d.ok && dj) setDebts(dj);
             setLoadFailed(!(b.ok && bj && l.ok && lj && d.ok && dj));
+            if (b.ok && bj && l.ok && lj && d.ok && dj && localStorage.getItem(TOKEN_KEY)) writeCache('home', { month: getCurrentMonthKey(), budget: bj, libreta: lj, debts: dj });
         } catch {
             setLoadFailed(true);
         } finally {
@@ -98,6 +102,8 @@ export const HomeView = ({
     const have = cash + savings;
     // Sin presupuesto cargado la caja es desconocida, no cero.
     const cashKnown = budget !== null;
+    // Qué parte de lo que tienes está apartada como ahorro (el centro de la dona).
+    const savingsPct = cashKnown && have > 0 && cash >= 0 ? Math.round((savings / have) * 100) : null;
 
     const today = new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -261,6 +267,7 @@ export const HomeView = ({
     return (
         <section>
             <ScreenHeader
+                className="parallax-head"
                 kicker="Hola,"
                 title={firstNameOf(currentUser)}
                 subtitle={today}
@@ -284,7 +291,8 @@ export const HomeView = ({
 
             <div className="stagger flex flex-col gap-5 xl:grid xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] xl:items-start xl:gap-x-6">
               <div className="flex flex-col gap-5 xl:order-1">
-                <div className="hero p-6">
+                <div className="hero parallax p-6">
+                    <span className="hero-orb" aria-hidden="true" />
                     <p className="small">Lo que tienes</p>
                     {cashKnown ? (
                         <p className="money-xl mt-2"><AnimatedNumber value={have} /></p>
@@ -294,12 +302,32 @@ export const HomeView = ({
                         <p className="money-xl mt-2" aria-label="Sin datos">—</p>
                     )}
                     <p className="small mt-2">Caja y ahorros. Lo que te deben no suma hasta que te paguen.</p>
-                    <button type="button" onClick={() => onNavigate('personal')} className="mt-4 flex min-h-[44px] w-full items-center justify-between gap-2 rounded-[18px] px-3 text-left transition-transform active:scale-[0.98]" style={{ background: 'rgba(255,255,255,0.16)' }}>
-                        <span className="small flex flex-wrap items-center gap-x-4 gap-y-0.5 py-1.5" style={{ color: 'rgba(255,255,255,0.95)' }}>
-                            <span className="whitespace-nowrap"><Wallet size={14} weight="fill" className="mr-1 inline align-[-2px]" />En caja <strong className="money-md" style={{ fontSize: 15 }}>{cashKnown ? formatCurrency(cash) : '—'}</strong></span>
-                            <span className="whitespace-nowrap"><PiggyBank size={14} weight="fill" className="mr-1 inline align-[-2px]" />Ahorros <strong className="money-md" style={{ fontSize: 15 }}>{cashKnown ? formatCurrency(savings) : '—'}</strong></span>
+                    {/* De qué está hecho ese total: la dona reparte caja y ahorros. */}
+                    <button type="button" onClick={() => onNavigate('personal')} aria-label={cashKnown ? `En caja ${formatCurrency(cash)}, ahorros ${formatCurrency(savings)}. Ver presupuesto` : 'Ver presupuesto'} className="mt-4 flex w-full items-center gap-4 rounded-[22px] p-3 text-left transition-transform active:scale-[0.98]" style={{ background: 'rgba(255,255,255,0.16)' }}>
+                        <Donut
+                            size={92}
+                            thickness={12}
+                            track="rgba(255,255,255,0.22)"
+                            segments={[
+                                { label: 'En caja', value: cashKnown ? Math.max(0, cash) : 0, color: '#fff' },
+                                { label: 'Ahorros', value: cashKnown ? Math.max(0, savings) : 0, color: 'var(--lilac)' },
+                            ]}
+                        >
+                            <span className="money-md" style={{ fontSize: 17 }}>{savingsPct === null ? '—' : `${savingsPct} %`}</span>
+                            <span style={{ fontSize: 11, lineHeight: 1.1, color: 'rgba(255,255,255,0.92)' }}>ahorrado</span>
+                        </Donut>
+                        <span className="min-w-0 flex-1 space-y-2">
+                            {[['En caja', cash, '#fff'], ['Ahorros', savings, 'var(--lilac)']].map(([name, amount, dot]) => (
+                                <span key={name} className="flex items-start gap-2">
+                                    <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: dot }} />
+                                    <span className="min-w-0">
+                                        <span className="tiny block" style={{ color: 'rgba(255,255,255,0.92)' }}>{name}</span>
+                                        <span className="money-md block truncate" style={{ fontSize: 16 }}>{cashKnown ? formatCurrency(amount) : '—'}</span>
+                                    </span>
+                                </span>
+                            ))}
                         </span>
-                        <CaretRight size={14} weight="bold" className="shrink-0" />
+                        <CaretRight size={14} weight="bold" className="shrink-0" aria-hidden="true" />
                     </button>
 
                     {/* Lo que está en juego pero aún no es tuyo: una sola franja, con su neto firmado. */}

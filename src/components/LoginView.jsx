@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CircleNotch, Eye, EyeSlash } from '@phosphor-icons/react';
 import { API_URL } from '../config/api';
 import { Logo } from './ui/Logo';
@@ -20,7 +20,11 @@ const post = async (path, body) => {
 // lo necesario (nombre, correo, contraseña): usuario y teléfono son
 // opcionales. El nombre sí se pide porque es lo que tus amigos ven en lugar
 // de un correo.
-export const LoginView = ({ onAuth, loadData }) => {
+export const LoginView = ({ onAuth }) => {
+    // El servidor se duerme cuando nadie lo usa: se despierta mientras escribes,
+    // no cuando ya tocaste Entrar.
+    useEffect(() => { fetch(`${API_URL}/`).catch(() => {}); }, []);
+
     const [mode, setMode] = useState('login');
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
@@ -62,8 +66,7 @@ export const LoginView = ({ onAuth, loadData }) => {
             const session = await post('/auth/login', { identifier: identifier.trim(), password });
             if (!session.ok) throw new Error(session.data.message || 'Usuario o contraseña incorrectos.');
             localStorage.setItem(TOKEN_KEY, session.data.token);
-            await loadData(session.data.token);
-            onAuth();
+            onAuth(session.data.user, session.data.token);
         } catch (err) {
             setError(err instanceof TypeError ? 'No hay conexión con el servidor. Revisa tu internet.' : err.message);
         } finally {

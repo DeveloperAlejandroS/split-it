@@ -1,8 +1,8 @@
 // Encabezado de pantalla: saludo o categoría chiquita, título grande en
 // Outfit y acciones en botones redondos (como en las referencias). No es
 // sticky: el contenido manda; la navegación ya está abajo.
-export const ScreenHeader = ({ kicker, title, subtitle, leading, actions }) => (
-    <header className="flex items-start justify-between gap-3 pb-5" style={{ paddingTop: 'max(14px, var(--safe-top))' }}>
+export const ScreenHeader = ({ kicker, title, subtitle, leading, actions, className = '' }) => (
+    <header className={`flex items-start justify-between gap-3 pb-5 ${className}`} style={{ paddingTop: 'max(14px, var(--safe-top))' }}>
         <div className="flex min-w-0 items-center gap-3">
             {leading}
             <div className="min-w-0">

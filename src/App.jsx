@@ -16,7 +16,8 @@ import { InstallBanner, OfflineNotice } from './components/InstallBanner';
 import { TabBar } from './components/TabBar';
 import { Sidebar } from './components/Sidebar';
 import { LoginView } from './components/LoginView';
-import { displayNameOf, numberOrZero } from './utils/helpers';
+import { displayNameOf, getCurrency, numberOrZero, setCurrency } from './utils/helpers';
+import { clearCache, readCache, writeCache } from './utils/cache';
 import { API_URL } from './config/api';
 import { applyAccent, readAccent } from './utils/accent';
 import { useRealtime } from './utils/useRealtime';
@@ -32,17 +33,24 @@ const tabFromHash = () => {
     return TABS.includes(id) ? id : 'home';
 };
 
+// Con sesión guardada, la app se pinta de una con la última foto de los datos
+// y se actualiza por detrás (antes esperaba al servidor con la pantalla en blanco).
+const bootCache = () => (localStorage.getItem(TOKEN_KEY) ? readCache('app') : null);
+
 const systemTheme = () => (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 
 const App = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [isBooting, setIsBooting] = useState(true);
+    const [cached] = useState(bootCache);
+    const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(localStorage.getItem(TOKEN_KEY)));
+    // Solo se espera al servidor si hay sesión pero ninguna foto guardada.
+    const [isBooting, setIsBooting] = useState(() => Boolean(localStorage.getItem(TOKEN_KEY)) && !cached);
     const [isLoading, setIsLoading] = useState(false);
-    const [currentUser, setCurrentUser] = useState(null);
-    const [balance, setBalance] = useState(EMPTY_BALANCE);
-    const [expenses, setExpenses] = useState([]);
-    const [friends, setFriends] = useState([]);
-    const [pendingFriendRequests, setPendingFriendRequests] = useState([]);
+    const [currentUser, setCurrentUser] = useState(cached?.user || null);
+    const [balance, setBalance] = useState(cached?.balance || EMPTY_BALANCE);
+    const [expenses, setExpenses] = useState(cached?.expenses || []);
+    const [friends, setFriends] = useState(cached?.friends || []);
+    const [pendingFriendRequests, setPendingFriendRequests] = useState(cached?.requests || []);
+    const [currency, setCurrencyState] = useState(getCurrency);
     const [toast, setToast] = useState('');
 
     const [activeTab, setActiveTabState] = useState(tabFromHash);
@@ -131,6 +139,22 @@ const App = () => {
         return () => clearTimeout(t);
     }, [toast]);
 
+    // ---- Cerrar sesión: no queda nada del usuario anterior en memoria ni en el dispositivo
+    const handleLogout = useCallback(() => {
+        localStorage.removeItem(TOKEN_KEY);
+        clearCache();
+        setIsLoggedIn(false);
+        setCurrentUser(null);
+        setBalance(EMPTY_BALANCE);
+        setExpenses([]);
+        setFriends([]);
+        setPendingFriendRequests([]);
+        setSelectedExpenseId(null);
+        setShowAccount(false);
+        setActiveTabState('home');
+        window.history.replaceState(null, '', '#home');
+    }, []);
+
     // ---- Datos -----------------------------------------------------------
     const loadData = useCallback(async (token, { silent = false } = {}) => {
         if (!silent) setIsLoading(true);
@@ -144,7 +168,7 @@ const App = () => {
                 fetch(`${API_URL}/friends/requests`, { headers }),
             ]);
             const [uR, bR, eR, fR, rR] = responses;
-            if (uR.status === 401) throw new Error('Tu sesión expiró. Inicia sesión de nuevo.');
+            if (uR.status === 401) { handleLogout(); throw new Error('Tu sesión se cerró. Inicia sesión de nuevo.'); }
 
             const [userData, balanceData, expensesData, friendsData, requestsData] = await Promise.all(responses.map((r) => r.json()));
             const failed = [!uR.ok && 'perfil', !bR.ok && 'balance', !eR.ok && 'gastos', !fR.ok && 'amigos', !rR.ok && 'solicitudes'].filter(Boolean);
@@ -155,24 +179,34 @@ const App = () => {
                 return Array.isArray(data) ? data : [];
             };
 
-            setCurrentUser(userData.user);
-            setBalance({
-                owed_to_me: numberOrZero(balanceData?.owed_to_me),
-                i_owe: numberOrZero(balanceData?.i_owe),
-                net_balance: numberOrZero(balanceData?.net_balance),
-                by_friend: Array.isArray(balanceData?.by_friend)
-                    ? balanceData.by_friend.map((f) => ({ ...f, owed_to_me: numberOrZero(f?.owed_to_me), i_owe: numberOrZero(f?.i_owe), net: numberOrZero(f?.net) }))
-                    : [],
-            });
-            setExpenses(Array.isArray(expensesData.expenses) ? expensesData.expenses : []);
-            setFriends(pickList(friendsData, 'friends'));
-            setPendingFriendRequests(pickList(requestsData, 'requests', 'friends'));
+            const next = {
+                user: userData.user,
+                balance: {
+                    owed_to_me: numberOrZero(balanceData?.owed_to_me),
+                    i_owe: numberOrZero(balanceData?.i_owe),
+                    net_balance: numberOrZero(balanceData?.net_balance),
+                    by_friend: Array.isArray(balanceData?.by_friend)
+                        ? balanceData.by_friend.map((f) => ({ ...f, owed_to_me: numberOrZero(f?.owed_to_me), i_owe: numberOrZero(f?.i_owe), net: numberOrZero(f?.net) }))
+                        : [],
+                },
+                expenses: Array.isArray(expensesData.expenses) ? expensesData.expenses : [],
+                friends: pickList(friendsData, 'friends'),
+                requests: pickList(requestsData, 'requests', 'friends'),
+            };
+            // Si mientras cargaba se cerró la sesión, estos datos ya no se muestran ni se guardan.
+            if (localStorage.getItem(TOKEN_KEY) !== token) return;
+            setCurrentUser(next.user);
+            setBalance(next.balance);
+            setExpenses(next.expenses);
+            setFriends(next.friends);
+            setPendingFriendRequests(next.requests);
+            writeCache('app', next);
         } catch (err) {
             showToast(err.message);
         } finally {
             setIsLoading(false);
         }
-    }, [showToast]);
+    }, [showToast, handleLogout]);
 
     const refresh = useCallback(() => loadData(localStorage.getItem(TOKEN_KEY)), [loadData]);
 
@@ -217,13 +251,8 @@ const App = () => {
 
     useEffect(() => {
         const token = localStorage.getItem(TOKEN_KEY);
-        if (token) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setIsLoggedIn(true);
-            loadData(token).finally(() => setIsBooting(false));
-        } else {
-            setIsBooting(false);
-        }
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (token) loadData(token).finally(() => setIsBooting(false));
     }, [loadData]);
 
     const performExpenseAction = useCallback(async (path, method = 'PATCH', body = null) => {
@@ -258,19 +287,6 @@ const App = () => {
             await performExpenseAction(`/expenses/${expense.id}`, 'DELETE');
             setSelectedExpenseId(null);
         } catch { /* el aviso ya se mostró */ }
-    };
-
-    const handleLogout = () => {
-        localStorage.removeItem(TOKEN_KEY);
-        setIsLoggedIn(false);
-        setCurrentUser(null);
-        setBalance(EMPTY_BALANCE);
-        setExpenses([]);
-        setFriends([]);
-        setPendingFriendRequests([]);
-        setSelectedExpenseId(null);
-        setActiveTabState('home');
-        window.history.replaceState(null, '', '#home');
     };
 
     // ---- Agregar: cada pantalla sabe qué agregar; Inicio pregunta ---------
@@ -326,7 +342,8 @@ const App = () => {
     }
 
     if (!isLoggedIn) {
-        return <LoginView onAuth={() => setIsLoggedIn(true)} loadData={loadData} />;
+        // Se entra de una con el perfil que devuelve el login; lo demás carga por detrás.
+        return <LoginView onAuth={(user, token) => { setCurrentUser(user); setIsLoggedIn(true); loadData(token); }} />;
     }
 
     return (
@@ -344,7 +361,7 @@ const App = () => {
                 </div>
             )}
 
-            <main className="xl:pl-[17rem] pb-[calc(140px+var(--safe-bottom))] xl:pb-16">
+            <main key={currency} className="xl:pl-[17rem] pb-[calc(140px+var(--safe-bottom))] xl:pb-16">
                 <div className={`mx-auto max-w-3xl px-4 sm:px-6 ${activeTab === 'home' || activeTab === 'personal' || activeTab === 'accounts' ? 'xl:max-w-6xl' : ''}`}>
                 {activeTab === 'home' && (
                     <HomeView
@@ -456,6 +473,8 @@ const App = () => {
                 onThemeChange={setThemePref}
                 accent={accent}
                 onAccentChange={setAccent}
+                currency={currency}
+                onCurrencyChange={(code) => { setCurrency(code); setCurrencyState(code); }}
                 onLogout={handleLogout}
                 onToast={setToast}
             />

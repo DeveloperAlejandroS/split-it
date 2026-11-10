@@ -50,20 +50,25 @@ const syncTag = (item) => {
 };
 const isReadOnly = (item) => Boolean(item.is_split_synced || item.libreta_entry_id || item.debt_entry_id);
 
-const ItemRow = ({ item, section, onOpen }) => {
+const ItemRow = ({ item, section, onOpen, fundTotal }) => {
     const actual = numberOrZero(item.actual_amount);
     const planned = numberOrZero(item.budgeted_amount);
     const tag = syncTag(item);
     const pending = item.is_pending;
     // Una barra solo dice algo si hay un plan contra el cual medir: las filas
     // que vienen de un gasto compartido o de Cuentas no tienen plan propio.
-    const showBar = section.budgeted && planned > 0 && !pending && !tag;
+    // Un gasto que se repite llega cada mes planeado y sin pagar.
+    const unpaidRecurring = Boolean(item.recurring_id) && actual === 0;
+    const showBar = section.budgeted && planned > 0 && !pending && !tag && !unpaidRecurring;
     const pct = showBar ? (actual / planned) * 100 : 0;
     const over = showBar && actual > planned;
     const Icon = section.icon;
 
     let sub = tag;
     if (pending) sub = `${tag || 'Pendiente'} · aún no lo pagas`;
+    else if (unpaidRecurring) sub = 'Se repite · aún sin pagar';
+    else if (item.recurring_id && actual >= planned) sub = 'Se repite · pagado';
+    else if (section.id === 'saving' && fundTotal > actual) sub = `Acumulado ${formatCurrency(fundTotal)}`;
     else if (!tag && section.budgeted && planned > 0) sub = over ? `Te pasaste ${formatCurrency(actual - planned)}` : `Quedan ${formatCurrency(planned - actual)}`;
     else if (!tag && section.id === 'income' && planned > 0 && planned !== actual) sub = `Esperado ${formatCurrency(planned)}`;
 
@@ -76,8 +81,9 @@ const ItemRow = ({ item, section, onOpen }) => {
                 {sub && <span className={`small block ${pending ? '' : 'truncate'}`} style={over ? { color: 'var(--neg)' } : undefined}>{sub}</span>}
             </span>
             <span className="shrink-0 text-right">
-                <span className="money block">{formatCurrency(actual)}</span>
-                {section.budgeted && planned > 0 && !tag && <span className="tiny block">de {formatCurrency(planned)}</span>}
+                {/* Sin pagar: se ve cuánto toca pagar, no un $0 que no dice nada. */}
+                <span className="money block">{formatCurrency(unpaidRecurring ? planned : actual)}</span>
+                {section.budgeted && planned > 0 && !tag && !unpaidRecurring && <span className="tiny block">de {formatCurrency(planned)}</span>}
             </span>
             <CaretRight size={16} weight="bold" style={{ color: 'var(--ink-3)' }} className="shrink-0" aria-hidden="true" />
             {showBar && <span className="block w-full pt-1"><ProgressBar pct={pct} tone={over ? 'neg' : 'primary'} height={7} label={`${item.label}: ${Math.round(pct)} % de lo presupuestado`} /></span>}
@@ -96,6 +102,7 @@ const ItemSheet = ({ item: liveItem, savings, onClose, onChanged, onViewExpense,
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [showDelete, setShowDelete] = useState(false);
+    const [showStop, setShowStop] = useState(false);
 
     /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
@@ -150,6 +157,20 @@ const ItemSheet = ({ item: liveItem, savings, onClose, onChanged, onViewExpense,
                     </>
                 ) : (
                     <>
+                        {item.recurring_id && (
+                            <div className="mb-5 rounded-[18px] p-4" style={{ background: 'var(--card-soft)' }}>
+                                <p className="body font-semibold">Se repite cada mes</p>
+                                <p className="small mt-1">Aparece solo en cada mes como planeado. Cuenta en tu caja cuando lo marcas pagado.</p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {numberOrZero(item.actual_amount) === 0 && numberOrZero(item.budgeted_amount) > 0 && (
+                                        <button type="button" className="btn btn-primary btn-sm btn-44" disabled={busy} onClick={() => run(() => api(`/budget/items/${item.id}`, 'PATCH', { actual_amount: numberOrZero(item.budgeted_amount) }))}>
+                                            <Check size={16} weight="bold" aria-hidden="true" /> Marcar pagado ({formatCurrency(item.budgeted_amount)})
+                                        </button>
+                                    )}
+                                    <button type="button" className="btn btn-gray btn-sm btn-44" disabled={busy} onClick={() => setShowStop(true)}>Dejar de repetir</button>
+                                </div>
+                            </div>
+                        )}
                         <div className="space-y-4">
                             <div>
                                 <label className="field-label" htmlFor="bi-label">Nombre</label>
@@ -214,6 +235,15 @@ const ItemSheet = ({ item: liveItem, savings, onClose, onChanged, onViewExpense,
                 isLoading={busy}
                 onConfirm={() => run(async () => { await api(`/budget/items/${item.id}`, 'DELETE'); setShowDelete(false); })}
                 onCancel={() => setShowDelete(false)}
+            />
+            <ConfirmDialog
+                isOpen={showStop}
+                title="¿Dejar de repetir este gasto?"
+                message="No se agregará en los meses siguientes. Lo de este mes y lo que ya pagaste se queda como está."
+                confirmLabel="Dejar de repetir"
+                isLoading={busy}
+                onConfirm={() => run(async () => { await api(`/budget/recurring/${item.recurring_id}`, 'DELETE'); setShowStop(false); })}
+                onCancel={() => setShowStop(false)}
             />
         </>
     );
@@ -309,6 +339,10 @@ export const BudgetView = ({ onAddToSection, onViewSyncedExpense, onViewAccounts
     const anim = direction === 'forward' ? 'animate-month-in-forward' : 'animate-month-in-back';
 
     const section = SECTIONS.find((s) => s.id === sectionId);
+    // Ahorros creados en meses anteriores: siguen existiendo aunque este mes no tengan movimiento.
+    const funds = data?.savings_funds || [];
+    const carriedFunds = sectionId === 'saving' ? funds.filter((f) => f.item_id === null) : [];
+    const fundTotalOf = (item) => funds.find((f) => f.item_id === item.id)?.total;
     const planned = data ? data.sections.fixed_expense.budgeted_total + data.sections.tracked_expense.budgeted_total : 0;
     const spent = data ? data.sections.fixed_expense.actual_total + data.sections.tracked_expense.actual_total : 0;
     const emptyMonth = data && allItems.length === 0;
@@ -412,10 +446,23 @@ export const BudgetView = ({ onAddToSection, onViewSyncedExpense, onViewAccounts
                                     <button type="button" className="btn btn-tinted btn-sm btn-44" onClick={() => onAddToSection(section.id, monthKey)}><Plus size={14} weight="bold" /> Agregar</button>
                                 )}
                             </div>
-                            {data.sections[section.id].items.length === 0 ? (
+                            {data.sections[section.id].items.length === 0 && carriedFunds.length === 0 ? (
                                 <div className="card px-5 py-6"><p className="small">{section.empty}</p></div>
                             ) : (
-                                <div className="stack">{data.sections[section.id].items.map((i) => <ItemRow key={i.id} item={i} section={section} onOpen={(it) => setOpenId(it.id)} />)}</div>
+                                <div className="stack">
+                                    {data.sections[section.id].items.map((i) => <ItemRow key={i.id} item={i} section={section} fundTotal={fundTotalOf(i)} onOpen={(it) => setOpenId(it.id)} />)}
+                                    {carriedFunds.map((f) => (
+                                        <button key={f.label} type="button" className="row" onClick={() => onAddToSection('saving', monthKey)} aria-label={`${f.label}, ${formatCurrency(f.total)} acumulados. Abonar este mes`}>
+                                            <span className="bubble h-12 w-12" style={{ background: section.bubble[0], color: section.bubble[1] }}><PiggyBank size={24} weight="duotone" aria-hidden="true" /></span>
+                                            <span className="min-w-0 flex-1">
+                                                <span className="body block truncate font-semibold">{f.label}</span>
+                                                <span className="small block truncate">De meses anteriores</span>
+                                            </span>
+                                            <span className="money shrink-0">{formatCurrency(f.total)}</span>
+                                            <Plus size={16} weight="bold" style={{ color: 'var(--ink-3)' }} className="shrink-0" aria-hidden="true" />
+                                        </button>
+                                    ))}
+                                </div>
                             )}
                         </div>
 

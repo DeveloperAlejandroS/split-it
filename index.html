@@ -15,26 +15,11 @@
     <meta name="apple-mobile-web-app-title" content="Split.it" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <!-- Aplica el tema antes del primer pintado: sin esto, quien usa modo
-         oscuro veía un destello claro mientras React arrancaba. -->
-    <script>
-      (function () {
-        try {
-          var pref = localStorage.getItem('splitit_theme_pref') || 'system';
-          var dark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-          // Color de la app elegido por la persona (ver src/utils/accent.js).
-          var css = localStorage.getItem('splitit_accent_css');
-          if (css) {
-            var st = document.createElement('style');
-            st.id = 'accent-style';
-            st.textContent = css;
-            document.head.appendChild(st);
-            document.documentElement.setAttribute('data-accent', '');
-          }
-        } catch (e) {}
-      })();
-    </script>
+    <!-- Tema y color antes del primer pintado (archivo aparte: la política de
+         seguridad no permite scripts en línea). -->
+    <script src="/boot.js"></script>
+    <!-- Abre la conexión con la API mientras carga la app. -->
+    <link rel="preconnect" href="https://expense-tracker-api-0762.onrender.com" crossorigin />
 
     <title>Split.it</title>
   </head>

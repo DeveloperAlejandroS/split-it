@@ -239,6 +239,29 @@ input:focus-visible { outline: none; }
 .hero h1, .hero h2, .hero h3, .hero .small, .hero .tiny { color: inherit; }
 .hero .small { opacity: 0.92; }
 
+/* Brillo de la tarjeta principal: una capa aparte para que pueda moverse a su propio ritmo. */
+.hero-orb {
+  position: absolute; right: -70px; top: -90px; width: 240px; height: 240px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255,255,255,0.26), rgba(255,255,255,0));
+}
+
+/* Parallax del Inicio. Al bajar, la tarjeta principal se queda atrás (baja más
+   lento, se encoge y se apaga), su brillo va a otra velocidad y el saludo se
+   desvanece: tres planos a tres ritmos. Lo mueve el propio scroll (sin
+   JavaScript); donde el navegador no lo soporta, todo queda quieto. */
+@keyframes parallax-recede { to { transform: translateY(56px) scale(0.93); opacity: 0.3; } }
+@keyframes parallax-orb { to { transform: translate(-70px, 120px) scale(1.35); } }
+@keyframes parallax-head { to { transform: translateY(26px); opacity: 0; } }
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Lo que sigue pasa por encima de la tarjeta que se queda atrás. */
+    .parallax ~ * { position: relative; z-index: 1; }
+    .parallax { transform-origin: 50% 0; animation: parallax-recede linear both; animation-timeline: scroll(nearest block); animation-range: 0 480px; }
+    .parallax .hero-orb { animation: parallax-orb linear both; animation-timeline: scroll(nearest block); animation-range: 0 480px; }
+    .parallax-head { animation: parallax-head linear both; animation-timeline: scroll(nearest block); animation-range: 0 200px; }
+  }
+}
+
 /* Tiles de color (acciones rápidas, secciones). */
 .tile { position: relative; overflow: hidden; border-radius: 20px; color: #fff; }
 .tile .small, .tile .tiny { color: inherit; }

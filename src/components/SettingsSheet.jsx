@@ -6,7 +6,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { API_URL } from '../config/api';
 import { ACCENT_PRESETS, DEFAULT_ACCENT, isValidHex } from '../utils/accent';
 import { fileToAvatar } from '../utils/image';
-import { displayNameOf } from '../utils/helpers';
+import { displayNameOf, CURRENCIES } from '../utils/helpers';
 import { disablePush, enablePush, getPushState, sendTestPush } from '../utils/push';
 import { useInstall } from '../utils/useInstall';
 import { IosInstallSheet } from './InstallBanner';
@@ -140,7 +140,7 @@ const RootPage = ({ user, name, onGo, onLogout }) => (
             {[
                 { id: 'profile', label: 'Perfil', hint: 'Foto, nombre y usuario', icon: UserCircle },
                 { id: 'security', label: 'Contraseña', hint: 'Cámbiala cuando quieras', icon: Lock },
-                { id: 'appearance', label: 'Apariencia', hint: 'Tema y color de la app', icon: Palette },
+                { id: 'appearance', label: 'Apariencia', hint: 'Tema, moneda y color de la app', icon: Palette },
                 { id: 'notifications', label: 'Notificaciones', hint: 'Solicitudes, gastos y pagos', icon: Bell },
             ].map(({ id, label, hint, icon: Icon }) => (
                 <button key={id} type="button" className="row" onClick={() => onGo(id)}>
@@ -222,7 +222,7 @@ const SecurityPage = ({ form, setForm, error }) => {
     );
 };
 
-const AppearancePage = ({ themePref, onThemeChange, accent, onAccentChange }) => {
+const AppearancePage = ({ themePref, onThemeChange, accent, onAccentChange, currency, onCurrencyChange }) => {
     const isPreset = ACCENT_PRESETS.some((p) => p.hex.toLowerCase() === accent.toLowerCase());
     return (
         <div className="space-y-6">
@@ -234,6 +234,16 @@ const AppearancePage = ({ themePref, onThemeChange, accent, onAccentChange }) =>
                     ))}
                 </div>
                 <p className="tiny px-1 pt-2">Automático sigue el modo claro u oscuro de tu dispositivo.</p>
+            </section>
+
+            <section>
+                <p className="heading px-1 pb-3">Moneda</p>
+                <div className="segmented segmented-lg" role="group" aria-label="Moneda">
+                    {Object.entries(CURRENCIES).map(([code, c]) => (
+                        <button key={code} type="button" aria-pressed={currency === code} onClick={() => onCurrencyChange(code)}>{c.label}</button>
+                    ))}
+                </div>
+                <p className="tiny px-1 pt-2">Cambia cómo se muestran los montos en este dispositivo. No convierte lo que ya registraste: 50.000 se leerá como 50,000 dólares.</p>
             </section>
 
             <section>
@@ -277,7 +287,7 @@ const AppearancePage = ({ themePref, onThemeChange, accent, onAccentChange }) =>
 
 // ---- Hoja -----------------------------------------------------------------
 
-export const SettingsSheet = ({ isOpen, onClose, user, onUserUpdated, themePref, onThemeChange, accent, onAccentChange, onLogout, onToast }) => {
+export const SettingsSheet = ({ isOpen, onClose, user, onUserUpdated, themePref, onThemeChange, accent, onAccentChange, currency, onCurrencyChange, onLogout, onToast }) => {
     const [page, setPage] = useState('root');
     const [dir, setDir] = useState('forward');
     const [confirmLogout, setConfirmLogout] = useState(false);
@@ -343,9 +353,11 @@ export const SettingsSheet = ({ isOpen, onClose, user, onUserUpdated, themePref,
         setSaving(true);
         setError('');
         try {
-            await request('POST', '/users/me/password', { current_password: password.current, new_password: password.next });
+            const data = await request('POST', '/users/me/password', { current_password: password.current, new_password: password.next });
+            // Cambiar la contraseña cierra las demás sesiones; esta sigue con el token nuevo.
+            if (data.token) localStorage.setItem(TOKEN_KEY, data.token);
             setPassword({ current: '', next: '', repeat: '' });
-            onToast?.('Contraseña actualizada');
+            onToast?.('Contraseña actualizada. Se cerró la sesión en tus otros dispositivos.');
             go('root');
         } catch (err) {
             setError(friendlyError(err));
@@ -402,7 +414,7 @@ export const SettingsSheet = ({ isOpen, onClose, user, onUserUpdated, themePref,
                     )}
                     {page === 'security' && <SecurityPage form={password} setForm={setPassword} error={error} />}
                     {page === 'notifications' && <NotificationsPage onToast={onToast} />}
-                    {page === 'appearance' && <AppearancePage themePref={themePref} onThemeChange={onThemeChange} accent={accent} onAccentChange={onAccentChange} />}
+                    {page === 'appearance' && <AppearancePage themePref={themePref} onThemeChange={onThemeChange} accent={accent} onAccentChange={onAccentChange} currency={currency} onCurrencyChange={onCurrencyChange} />}
                 </div>
             </Sheet>
 

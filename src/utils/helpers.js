@@ -29,13 +29,38 @@ export const numberOrZero = (v) => {
     return Number.isFinite(n) ? n : 0;
 };
 
+// ---- Moneda ------------------------------------------------------------
+// La app muestra todo en una sola moneda, elegida en Ajustes y guardada en
+// este dispositivo. Solo cambia cómo se LEEN los montos (símbolo, separadores,
+// decimales): no convierte lo que ya está guardado.
+const CURRENCY_KEY = 'splitit_currency';
+export const CURRENCIES = {
+    COP: { label: 'Pesos (COP)', locale: 'es-CO', cents: false },
+    USD: { label: 'Dólares (USD)', locale: 'en-US', cents: true },
+};
+let currency = 'COP';
+try { const saved = localStorage.getItem(CURRENCY_KEY); if (CURRENCIES[saved]) currency = saved; } catch { /* sin almacenamiento: pesos */ }
+
+export const getCurrency = () => currency;
+export const setCurrency = (code) => {
+    if (!CURRENCIES[code]) return;
+    currency = code;
+    try { localStorage.setItem(CURRENCY_KEY, code); } catch { /* vale para esta sesión */ }
+};
+// Por debajo de esto una diferencia se considera saldada (medio peso, o medio centavo).
+export const moneyEpsilon = () => (CURRENCIES[currency].cents ? 0.005 : 0.5);
+
 export const formatCurrency = (amount, showSign = false) => {
     const value = numberOrZero(amount);
-    const formatted = new Intl.NumberFormat('es-CO', {
+    const { locale, cents } = CURRENCIES[currency];
+    const abs = Math.abs(value);
+    const formatted = new Intl.NumberFormat(locale, {
         style: 'currency',
-        currency: 'COP',
-        maximumFractionDigits: 0
-    }).format(Math.abs(value));
+        currency,
+        // Dólares: centavos solo cuando los hay ($12 y $12.50, no $12.00).
+        minimumFractionDigits: cents && !Number.isInteger(abs) ? 2 : 0,
+        maximumFractionDigits: cents ? 2 : 0,
+    }).format(abs);
 
     // Un monto negativo SIEMPRE lleva su signo: antes se mostraba el valor
     // absoluto y un saldo de -10 millones se leía como +10 millones.
@@ -103,7 +128,7 @@ export const getExpenseStake = (expense, currentUserId) => {
             return sum + Math.max(0, numberOrZero(p.amount_owed) - numberOrZero(p.amount_paid));
         }, 0);
         const awaiting = others.filter((p) => getParticipantStatus(p) === PARTICIPANT_STATUS.AWAITING_CONFIRMATION).length;
-        if (remaining <= 0.5) return { kind: 'settled', amount: 0, awaiting: 0 };
+        if (remaining <= moneyEpsilon()) return { kind: 'settled', amount: 0, awaiting: 0 };
         return { kind: 'owed', amount: remaining, awaiting };
     }
 
@@ -115,5 +140,5 @@ export const getExpenseStake = (expense, currentUserId) => {
     if (status === PARTICIPANT_STATUS.AWAITING_CONFIRMATION) {
         return { kind: 'waiting', amount: numberOrZero(mine.pending_claim_amount) || remaining, awaiting: 1 };
     }
-    return { kind: remaining > 0.5 ? 'owe' : 'settled', amount: remaining, awaiting: 0 };
+    return { kind: remaining > moneyEpsilon() ? 'owe' : 'settled', amount: remaining, awaiting: 0 };
 };
